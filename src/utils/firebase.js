@@ -113,15 +113,8 @@ export function subscribeToFirebaseTags(onDataReceived, onError) {
         const { migrated } = migrateTagListToTempleLocations(tagList);
         onDataReceived(migrated);
       } else {
-        // Cloud is empty -> Check if user has custom uploaded tags locally first
-        const localTags = getSavedTags();
-        if (localTags && localTags.length > 0 && localTags.length !== 1000) {
-          seedFirebaseData(localTags, true);
-          onDataReceived(localTags);
-        } else {
-          seedFirebaseData(INITIAL_TAG_DATA, true);
-          onDataReceived(INITIAL_TAG_DATA);
-        }
+        // Cloud is empty or cleared -> return empty tag list
+        onDataReceived([]);
       }
     },
     (err) => {

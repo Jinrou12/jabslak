@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Plus, FileSpreadsheet, RotateCcw, Users, MapPin, Cloud, Map as MapIcon } from 'lucide-react';
+import { Tag, Plus, FileSpreadsheet, Trash2, Users, MapPin, Cloud, Map as MapIcon } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function Header({
@@ -99,13 +99,13 @@ export default function Header({
             <span className="hidden md:inline">Excel/CSV</span>
           </button>
 
-          {/* Reset */}
+          {/* Delete All Data */}
           <button
             onClick={onResetData}
-            className="p-2 bg-slate-800/80 hover:bg-rose-900/50 text-slate-400 hover:text-rose-300 border border-slate-700/60 rounded-xl text-xs transition-all shrink-0"
-            title="កំណត់ឡើងវិញទិន្នន័យគំរូ 1,000"
+            className="p-2 bg-rose-950/60 hover:bg-rose-900/90 text-rose-400 hover:text-rose-200 border border-rose-800/80 rounded-xl text-xs transition-all shrink-0 active:scale-95 shadow-md shadow-rose-950/30"
+            title="លុបទិន្នន័យទាំងអស់ (ទាំងចាស់ ទាំងថ្មី)"
           >
-            <RotateCcw className="w-4 h-4" />
+            <Trash2 className="w-4 h-4 text-rose-400" />
           </button>
         </div>
 

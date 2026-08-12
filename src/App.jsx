@@ -152,12 +152,12 @@ export default function App() {
   };
 
   const handleResetData = () => {
-    if (window.confirm('តើអ្នកពិតជាចង់កំណត់ឡើងវិញនូវទិន្នន័យគំរូ ១,០០០ នៃទីតាំងវត្តទាំង ២១ មែនទេ?')) {
-      const reset = resetToSampleData();
-      setTags(reset);
-      pushTagsToCloud(reset);
-      seedFirebaseData(reset, true);
-      showToast('បានកំណត់ឡើងវិញនូវទិន្នន័យគំរូ ១,០០០ នៃទីតាំងវត្តទាំង ២១ រួចរាល់!');
+    if (window.confirm('តើអ្នកពិតជាចង់លុបទិន្នន័យទាំងអស់ (ទាំងចាស់ ទាំងថ្មី) ចោលទាំងស្រុងមែនទេ?')) {
+      setTags([]);
+      saveTags([]);
+      pushTagsToCloud([]);
+      seedFirebaseData([], true);
+      showToast('បានលុបទិន្នន័យទាំងអស់ចោលទាំងស្រុងរួចរាល់!');
     }
   };
 
