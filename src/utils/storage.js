@@ -77,3 +77,72 @@ export function clearAllTags() {
   saveTags([]);
   return [];
 }
+
+const USERS_STORAGE_KEY = 'KHMER_TAG_SYSTEM_USERS_V1';
+const CURRENT_USER_KEY = 'KHMER_TAG_SYSTEM_CURRENT_USER_V1';
+
+export const GUEST_USER = {
+  id: 'u-guest',
+  name: 'អ្នកមើលធម្មតា (Guest)',
+  role: 'guest',
+  email: '',
+  phone: '',
+  pin: ''
+};
+
+export const DEFAULT_USERS = [
+  { id: 'u-owner', name: 'លោកប្រធាន (Owner)', email: 'owner@gmail.com', role: 'owner', phone: '012345678', pin: '1234' },
+  { id: 'u-admin', name: 'អ្នកគ្រប់គ្រង (Admin)', email: 'admin@gmail.com', role: 'admin', phone: '098765432', pin: '1234' },
+  { id: 'u-assistant', name: 'អ្នកជំនួយការ (Assistant)', email: 'assistant@gmail.com', role: 'assistant', phone: '011223344', pin: '1234' }
+];
+
+export function getSavedUsers() {
+  try {
+    const saved = localStorage.getItem(USERS_STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('Error loading users:', err);
+  }
+  saveUsers(DEFAULT_USERS);
+  return DEFAULT_USERS;
+}
+
+export function saveUsers(users) {
+  try {
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
+  } catch (err) {
+    console.error('Error saving users:', err);
+  }
+}
+
+export function getCurrentUser() {
+  try {
+    const saved = localStorage.getItem(CURRENT_USER_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.id) {
+        return parsed;
+      }
+    }
+  } catch (err) {
+    console.error('Error loading current user:', err);
+  }
+  const defaultOwner = DEFAULT_USERS[0];
+  saveCurrentUser(defaultOwner);
+  return defaultOwner;
+}
+
+export function saveCurrentUser(user) {
+  try {
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
+  } catch (err) {
+    console.error('Error saving current user:', err);
+  }
+}
+
+

@@ -13,8 +13,11 @@ import LocationStatsModal from './components/LocationStatsModal';
 import FirebaseConfigModal from './components/FirebaseConfigModal';
 import MobileConnectModal from './components/MobileConnectModal';
 import TempleMapModal from './components/TempleMapModal';
+import RoleManagementModal from './components/RoleManagementModal';
+import UserSwitchModal from './components/UserSwitchModal';
+import LoginModal from './components/LoginModal';
 import { searchTags, westernToKhmerDigits } from './utils/khmerSearch';
-import { getSavedTags, saveTags, resetToSampleData } from './utils/storage';
+import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser } from './utils/storage';
 import {
   subscribeToFirebaseTags,
   saveTagToFirebase,
@@ -30,6 +33,13 @@ export default function App() {
   const [selectedLocation, setSelectedLocation] = useState('ALL');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
   const [isCloudSyncing, setIsCloudSyncing] = useState(true);
+
+  // User & Role State
+  const [users, setUsers] = useState(getSavedUsers());
+  const [currentUser, setCurrentUser] = useState(getCurrentUser());
+  const [isRoleManagementOpen, setIsRoleManagementOpen] = useState(false);
+  const [isUserSwitchOpen, setIsUserSwitchOpen] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // Modals state
   const [selectedTag, setSelectedTag] = useState(null);
@@ -93,6 +103,11 @@ export default function App() {
     return searchTags(tags, searchQuery, selectedLocation);
   }, [tags, searchQuery, selectedLocation]);
 
+  // Arrived count calculation
+  const arrivedCount = useMemo(() => {
+    return tags.filter((t) => !!t.arrived).length;
+  }, [tags]);
+
   // Compute next available tag number
   const nextAvailableTagNumber = useMemo(() => {
     if (!tags || tags.length === 0) return 1;
@@ -104,6 +119,86 @@ export default function App() {
   const handleOpenMapWithLocation = (locName) => {
     setTempleMapTargetLoc(locName);
     setIsTempleMapOpen(true);
+  };
+
+  // Attendance Toggle Handler ("គ្រីសអ្នកបានមកដល់")
+  const handleToggleAttendance = async (tagToToggle) => {
+    if (currentUser?.role === 'guest') {
+      alert('សិទ្ធិ Guest អាចមើល និងស្វែងរកប៉ុណ្ណោះ! មិនអាចគ្រីសមកដល់បានទេ (សម្រាប់តែក្រុមការងារ)');
+      return;
+    }
+
+    const updatedStatus = !tagToToggle.arrived;
+    const updatedTag = {
+      ...tagToToggle,
+      arrived: updatedStatus,
+      arrivedAt: updatedStatus ? new Date().toISOString() : null
+    };
+
+    const updatedTags = tags.map((t) => (t.id === tagToToggle.id ? updatedTag : t));
+    setTags(updatedTags);
+    saveTags(updatedTags);
+
+    // Push to Cloud & Firebase
+    pushTagsToCloud(updatedTags);
+    await saveTagToFirebase(updatedTag);
+
+    if (selectedTag && selectedTag.id === tagToToggle.id) {
+      setSelectedTag(updatedTag);
+    }
+
+    if (updatedStatus) {
+      showToast(`បានគ្រីសរាយការណ៍ស្លាកលេខ ${westernToKhmerDigits(tagToToggle.tagNumber)} (${tagToToggle.name}) មកដល់រួចរាល់! ✔️`);
+      try {
+        confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
+      } catch (e) {}
+    } else {
+      showToast(`បានដកការគ្រីសវត្តមានស្លាកលេខ ${westernToKhmerDigits(tagToToggle.tagNumber)}!`);
+    }
+  };
+
+  // User & Role Management Handlers
+  const handleSaveUser = (userData) => {
+    const exists = users.find((u) => u.id === userData.id);
+    let updated;
+    if (exists) {
+      updated = users.map((u) => (u.id === userData.id ? userData : u));
+      showToast(`បានធ្វើបច្ចុប្បន្នភាពគណនី ${userData.name} (${userData.role}) រួចរាល់!`);
+    } else {
+      updated = [...users, userData];
+      showToast(`បានបន្ថែមគណនីថ្មី ${userData.name} (${userData.role}) រួចរាល់!`);
+    }
+
+    setUsers(updated);
+    saveUsers(updated);
+
+    if (currentUser && currentUser.id === userData.id) {
+      setCurrentUser(userData);
+      saveCurrentUser(userData);
+    }
+  };
+
+  const handleDeleteUser = (userId) => {
+    const updated = users.filter((u) => u.id !== userId);
+    setUsers(updated);
+    saveUsers(updated);
+    showToast('បានលុបគណនីអ្នកប្រើប្រាស់រួចរាល់!');
+  };
+
+  const handleSwitchUser = (selectedUser) => {
+    setCurrentUser(selectedUser);
+    saveCurrentUser(selectedUser);
+    showToast(`បានប្តូរទៅប្រើប្រាស់គណនី ៖ ${selectedUser.name} (${selectedUser.role.toUpperCase()})`);
+  };
+
+  const handleLoginUser = (userObj) => {
+    setCurrentUser(userObj);
+    saveCurrentUser(userObj);
+    if (userObj.role === 'guest') {
+      showToast('បានចូលប្រើប្រាស់ជាអ្នកមើលធម្មតា (Guest) ៖ អាចមើល និងស្វែងរកស្លាកលេខ');
+    } else {
+      showToast(`បានចូលប្រើប្រាស់គណនី ៖ ${userObj.name} (${userObj.role.toUpperCase()})`);
+    }
   };
 
   // CRUD Operations with Firebase & Cloud Sync
@@ -189,6 +284,8 @@ export default function App() {
       <Header
         totalCount={tags.length}
         filteredCount={filteredTags.length}
+        arrivedCount={arrivedCount}
+        currentUser={currentUser}
         onOpenAddModal={() => {
           setEditingTag(null);
           setIsFormOpen(true);
@@ -203,6 +300,9 @@ export default function App() {
           setTempleMapTargetLoc(null);
           setIsTempleMapOpen(true);
         }}
+        onOpenRoleManagement={() => setIsRoleManagementOpen(true)}
+        onOpenUserSwitch={() => setIsUserSwitchOpen(true)}
+        onOpenLoginModal={() => setIsLoginModalOpen(true)}
         isCloudSyncing={isCloudSyncing}
       />
 
@@ -227,8 +327,10 @@ export default function App() {
                 <TagCard
                   key={tag.id}
                   tag={tag}
+                  currentUser={currentUser}
                   onSelectTag={(t) => setSelectedTag(t)}
                   onViewOnMap={handleOpenMapWithLocation}
+                  onToggleAttendance={handleToggleAttendance}
                 />
               ))}
             </div>
@@ -236,8 +338,10 @@ export default function App() {
             <div className="pb-12">
               <TagTableView
                 tags={filteredTags}
+                currentUser={currentUser}
                 onSelectTag={(t) => setSelectedTag(t)}
                 onViewOnMap={handleOpenMapWithLocation}
+                onToggleAttendance={handleToggleAttendance}
               />
             </div>
           )
@@ -265,16 +369,18 @@ export default function App() {
                   សម្អាតពាក្យស្វែងរក
                 </button>
               )}
-              <button
-                onClick={() => {
-                  setEditingTag(null);
-                  setIsFormOpen(true);
-                }}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-1"
-              >
-                <Plus className="w-4 h-4" />
-                <span>បន្ថែមស្លាកលេខនេះថ្មី</span>
-              </button>
+              {currentUser?.role !== 'assistant' && currentUser?.role !== 'guest' && (
+                <button
+                  onClick={() => {
+                    setEditingTag(null);
+                    setIsFormOpen(true);
+                  }}
+                  className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-xl text-xs transition-all flex items-center gap-1"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>បន្ថែមស្លាកលេខនេះថ្មី</span>
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -285,6 +391,7 @@ export default function App() {
       {selectedTag && (
         <TagDetailModal
           tag={selectedTag}
+          currentUser={currentUser}
           onClose={() => setSelectedTag(null)}
           onEdit={(t) => {
             setSelectedTag(null);
@@ -296,6 +403,7 @@ export default function App() {
             setSelectedTag(null);
             handleOpenMapWithLocation(loc);
           }}
+          onToggleAttendance={handleToggleAttendance}
         />
       )}
 
@@ -374,6 +482,10 @@ export default function App() {
             showToast(`បានច្រោះបញ្ជីស្លាកលេខតាម៖ ${locName}`);
           }}
           onAddTagForLocation={(locName) => {
+            if (currentUser?.role === 'assistant' || currentUser?.role === 'guest') {
+              alert('សិទ្ធិ Assistant និង Guest មិនអាចបន្ថែមស្លាកលេខថ្មីបានទេ!');
+              return;
+            }
             setEditingTag({
               locationPreset: locName,
               location: locName,
@@ -385,11 +497,44 @@ export default function App() {
         />
       )}
 
+      {/* 👑 Role & User Management Modal */}
+      {isRoleManagementOpen && (
+        <RoleManagementModal
+          currentUser={currentUser}
+          users={users}
+          onClose={() => setIsRoleManagementOpen(false)}
+          onSaveUser={handleSaveUser}
+          onDeleteUser={handleDeleteUser}
+        />
+      )}
+
+      {/* 🔐 User Role Switcher Modal */}
+      {isUserSwitchOpen && (
+        <UserSwitchModal
+          currentUser={currentUser}
+          users={users}
+          onClose={() => setIsUserSwitchOpen(false)}
+          onSwitchUser={handleSwitchUser}
+        />
+      )}
+
+      {/* 🔑 Email Login Modal */}
+      {isLoginModalOpen && (
+        <LoginModal
+          currentUser={currentUser}
+          users={users}
+          onClose={() => setIsLoginModalOpen(false)}
+          onLoginUser={handleLoginUser}
+        />
+      )}
+
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-4 px-4 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-900 bg-slate-950 py-4 px-4 text-center text-xs text-slate-500 font-kantumruy">
         <p>ប្រព័ន្ធគ្រប់គ្រងស្លាកលេខ និងទីតាំងស្នាក់នៅ © ២០២៦ | Realtime Cloud Sync សម្រាប់ក្រុមការងារ ២០ នាក់</p>
       </footer>
 
     </div>
   );
 }
+
+

@@ -1,19 +1,25 @@
 import React from 'react';
-import { MapPin, Phone, ChevronRight, User, Map as MapIcon } from 'lucide-react';
+import { MapPin, Phone, ChevronRight, User, Map as MapIcon, CheckCircle2, Circle } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
-export default function TagCard({ tag, onSelectTag, onViewOnMap }) {
+export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttendance, currentUser }) {
   const khmerTagNo = westernToKhmerDigits(tag.tagNumber);
+  const isArrived = !!tag.arrived;
+  const isGuest = currentUser?.role === 'guest';
 
   return (
     <div
       onClick={() => onSelectTag(tag)}
-      className="glass-card rounded-2xl p-4 cursor-pointer hover:border-amber-400 hover:shadow-xl hover:shadow-amber-500/15 transition-all group flex flex-col justify-between gap-3 relative overflow-hidden border border-slate-700/80 bg-slate-900/90"
+      className={`glass-card rounded-2xl p-4 cursor-pointer hover:border-amber-400 hover:shadow-xl hover:shadow-amber-500/15 transition-all group flex flex-col justify-between gap-3 relative overflow-hidden border ${
+        isArrived
+          ? 'border-emerald-500/60 bg-emerald-950/20 shadow-md shadow-emerald-500/10'
+          : 'border-slate-700/80 bg-slate-900/90'
+      }`}
     >
       {/* Background Subtle Gradient Glow */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-3xl group-hover:bg-amber-500/20 transition-all pointer-events-none"></div>
 
-      {/* Header Row: Tag Number & Owner Name */}
+      {/* Header Row: Tag Number & Owner Name & Attendance Check-in Button */}
       <div className="flex items-center gap-3">
         {/* Large Tag Badge */}
         <div className="w-14 h-14 rounded-2xl badge-gold flex flex-col items-center justify-center shrink-0 text-slate-950 font-extrabold shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform border border-amber-300">
@@ -33,6 +39,38 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap }) {
             {tag.name}
           </h3>
         </div>
+
+        {/* 📋 Report / Check-in Attendance Button (Assistant & Admin & Owner) */}
+        {onToggleAttendance && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isGuest) {
+                alert('សិទ្ធិ Guest អាចមើល និងស្វែងរកប៉ុណ្ណោះ! មិនអាចគ្រីសមកដល់បានទេ (សម្រាប់តែក្រុមការងារ)');
+                return;
+              }
+              onToggleAttendance(tag);
+            }}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-extrabold font-kantumruy transition-all active:scale-95 border shrink-0 ${
+              isArrived
+                ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
+                : 'bg-slate-800/90 text-slate-400 hover:text-emerald-300 border-slate-700 hover:border-emerald-500/50'
+            } ${isGuest ? 'opacity-60 cursor-not-allowed' : ''}`}
+            title={isArrived ? 'បានមកដល់រួចរាល់ (ចុចដើម្បីលុបការគ្រីស)' : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកបានមកដល់'}
+          >
+            {isArrived ? (
+              <>
+                <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
+                <span className="hidden sm:inline">បានមកដល់</span>
+              </>
+            ) : (
+              <>
+                <Circle className="w-4 h-4 text-slate-400" />
+                <span>គ្រីសមកដល់</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Prominent & Highlighted Location Banner Box (ទីតាំងស្លាកលេខ) */}
@@ -61,7 +99,7 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap }) {
         </div>
 
         {onViewOnMap && (
-          <div className="flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 px-2 py-1 rounded-lg border border-amber-500/30 shrink-0 transition-all">
+          <div className="flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 px-2 py-1 rounded-lg border border-amber-500/30 shrink-0 transition-all font-kantumruy">
             <MapIcon className="w-3 h-3" />
             <span>ផែនទី</span>
           </div>
@@ -69,7 +107,7 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap }) {
       </div>
 
       {/* Footer Row: Phone & Action Arrow */}
-      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/80 text-xs text-slate-400">
+      <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-800/80 text-xs text-slate-400 font-kantumruy">
         <div className="flex items-center gap-1.5 truncate">
           {tag.phone ? (
             <span className="flex items-center gap-1 text-sky-400 font-semibold font-sans-en">
@@ -90,3 +128,6 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap }) {
     </div>
   );
 }
+
+
+

@@ -1,10 +1,13 @@
 import React from 'react';
-import { X, MapPin, Phone, User, Edit3, Trash2, Share2, Printer, CheckCircle2, MessageCircle, QrCode, Sparkles, Tag, Navigation, Map as MapIcon } from 'lucide-react';
+import { X, MapPin, Phone, User, Edit3, Trash2, Share2, Printer, CheckCircle2, Circle, QrCode, Sparkles, Tag, Navigation, Map as MapIcon, Lock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
-export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewOnMap }) {
+export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewOnMap, onToggleAttendance, currentUser }) {
   if (!tag) return null;
+
+  const isAssistant = currentUser?.role === 'assistant';
+  const isArrived = !!tag.arrived;
 
   const khmerTagNo = westernToKhmerDigits(tag.tagNumber);
   const tagQrPayload = JSON.stringify({
@@ -38,7 +41,7 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/70 backdrop-blur-xl" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-[2rem] relative max-h-[92vh] overflow-y-auto no-scrollbar"
+        className="w-full max-w-md rounded-[2rem] relative max-h-[92vh] overflow-y-auto no-scrollbar font-kantumruy"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'linear-gradient(165deg, rgba(15,23,42,0.97) 0%, rgba(10,15,30,0.99) 50%, rgba(15,23,42,0.97) 100%)',
@@ -79,7 +82,7 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
               <div className="absolute inset-0 rounded-[1.5rem] overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent rounded-t-[1.5rem]" />
               </div>
-              <span className="text-[10px] font-bold tracking-widest uppercase opacity-70 relative z-10">ស្លាកលេខ</span>
+              <span className="text-[10px] font-bold tracking-widest uppercase opacity-70 relative z-10 font-sans-en">ស្លាកលេខ</span>
               <span className="text-4xl font-black font-kantumruy relative z-10 leading-none mt-0.5">
                 {khmerTagNo}
               </span>
@@ -100,16 +103,37 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
             {tag.name}
           </h2>
 
-          {/* Status Pill */}
-          <div className="inline-flex items-center gap-1.5 mt-3 px-4 py-1.5 rounded-full text-xs font-semibold"
-            style={{
-              background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05))',
-              border: '1px solid rgba(16,185,129,0.25)',
-              color: '#6ee7b7',
-            }}>
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>ព័ត៌មានទីតាំងពិតប្រាកដ</span>
-          </div>
+          {/* 📋 Attendance Check-in Button Pill */}
+          {onToggleAttendance && (
+            <div className="mt-3 flex justify-center">
+              <button
+                onClick={() => {
+                  if (currentUser?.role === 'guest') {
+                    alert('សិទ្ធិ Guest អាចមើល និងស្វែងរកប៉ុណ្ណោះ! មិនអាចគ្រីសមកដល់បានទេ');
+                    return;
+                  }
+                  onToggleAttendance(tag);
+                }}
+                className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all shadow-lg active:scale-95 border ${
+                  isArrived
+                    ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-emerald-500/25'
+                    : 'bg-slate-800 text-emerald-300 border-emerald-500/40 hover:bg-slate-700'
+                } ${currentUser?.role === 'guest' ? 'opacity-60 cursor-not-allowed' : ''}`}
+              >
+                {isArrived ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
+                    <span>បានមកដល់រួចរាល់ (ចុចដើម្បីដកចេញ)</span>
+                  </>
+                ) : (
+                  <>
+                    <Circle className="w-4 h-4 text-emerald-400" />
+                    <span>👉 គ្រីសអ្នកបានមកដល់ (Report Check-in)</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ═══════════════ DETAIL CARDS ═══════════════ */}
@@ -256,19 +280,43 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
               <span className="text-[10px] font-semibold">បោះពុម្ព</span>
             </button>
 
+            {/* Edit (Restricted for Assistant) */}
             <button
-              onClick={() => onEdit(tag)}
-              className="flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all duration-200 group"
+              onClick={() => {
+                if (isAssistant) {
+                  alert('សិទ្ធិ Assistant មិនអាចកែប្រែព័ត៌មានបានទេ! (សម្រាប់តែ Admin/Owner)');
+                  return;
+                }
+                onEdit(tag);
+              }}
+              className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 group ${
+                isAssistant
+                  ? 'text-slate-600 cursor-not-allowed opacity-50'
+                  : 'text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10'
+              }`}
+              title={isAssistant ? 'សម្រាប់តែ Admin/Owner' : 'កែប្រែព័ត៌មាន'}
             >
-              <Edit3 className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" />
+              {isAssistant ? <Lock className="w-[18px] h-[18px]" /> : <Edit3 className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" />}
               <span className="text-[10px] font-semibold">កែប្រែ</span>
             </button>
 
+            {/* Delete (Restricted for Assistant) */}
             <button
-              onClick={() => onDelete(tag)}
-              className="flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all duration-200 group"
+              onClick={() => {
+                if (isAssistant) {
+                  alert('សិទ្ធិ Assistant មិនអាចលុបទិន្នន័យបានទេ! (សម្រាប់តែ Admin/Owner)');
+                  return;
+                }
+                onDelete(tag);
+              }}
+              className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 group ${
+                isAssistant
+                  ? 'text-slate-600 cursor-not-allowed opacity-50'
+                  : 'text-slate-400 hover:text-rose-300 hover:bg-rose-500/10'
+              }`}
+              title={isAssistant ? 'សម្រាប់តែ Admin/Owner' : 'លុបទិន្នន័យ'}
             >
-              <Trash2 className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" />
+              {isAssistant ? <Lock className="w-[18px] h-[18px]" /> : <Trash2 className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" />}
               <span className="text-[10px] font-semibold">លុប</span>
             </button>
           </div>
@@ -278,3 +326,4 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
     </div>
   );
 }
+
