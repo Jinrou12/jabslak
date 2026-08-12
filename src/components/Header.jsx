@@ -118,10 +118,11 @@ export default function Header({
             {(isOwner || isAdmin) && (
               <button
                 onClick={onOpenRoleManagement}
-                className="p-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-700/80 text-amber-400 hover:text-amber-300 rounded-xl text-xs transition-all active:scale-95 animate-in zoom-in-50 duration-200"
+                className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 rounded-xl px-2 py-1.5 text-xs font-bold font-kantumruy transition-all active:scale-95 animate-in zoom-in-50 duration-200 shadow-sm"
                 title="គ្រប់គ្រងសិទ្ធិ និងគណនីក្រុមការងារ (Role Management)"
               >
-                <UserCog className="w-4 h-4" />
+                <UserCog className="w-4 h-4 text-amber-400" />
+                <span className="text-[11px]">សិទ្ធិ</span>
               </button>
             )}
 
