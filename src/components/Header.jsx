@@ -215,13 +215,15 @@ export default function Header({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-800/50 rounded-xl px-2.5 py-1 text-[11px] text-emerald-300 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>មកដល់ (Report) ៖</span>
-            <span className="text-emerald-400 font-bold font-sans-en">
-              {westernToKhmerDigits(arrivedCount || 0)} នាក់
-            </span>
-          </div>
+          {!isGuest && (
+            <div className="flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-800/50 rounded-xl px-2.5 py-1 text-[11px] text-emerald-300 shrink-0 animate-in zoom-in-50 duration-200">
+              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+              <span>មកដល់ (Report) ៖</span>
+              <span className="text-emerald-400 font-bold font-sans-en">
+                {westernToKhmerDigits(arrivedCount || 0)} នាក់
+              </span>
+            </div>
+          )}
         </div>
 
       </div>

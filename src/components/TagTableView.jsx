@@ -16,7 +16,7 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
               <th scope="col" className="px-4 py-3.5">ឈ្មោះម្ចាស់ស្លាក</th>
               <th scope="col" className="px-4 py-3.5">ទីតាំងស្លាកលេខ (Location)</th>
               <th scope="col" className="px-4 py-3.5">លេខទូរស័ព្ទ</th>
-              <th scope="col" className="px-4 py-3.5 text-center">វត្តមាន (Check-in)</th>
+              {!isGuest && <th scope="col" className="px-4 py-3.5 text-center">វត្តមាន (Check-in)</th>}
               <th scope="col" className="px-4 py-3.5 text-center">មើលលម្អិត</th>
             </tr>
           </thead>
@@ -77,39 +77,37 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                     )}
                   </td>
 
-                  {/* 📋 Attendance / Check-in Column */}
-                  <td className="px-4 py-3 text-center">
-                    {onToggleAttendance && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isGuest) {
-                            alert('សិទ្ធិ Guest អាចមើល និងស្វែងរកប៉ុណ្ណោះ!');
-                            return;
-                          }
-                          onToggleAttendance(tag);
-                        }}
-                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition-all active:scale-95 border ${
-                          isArrived
-                            ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
-                            : 'bg-slate-800 text-slate-400 hover:text-emerald-300 border-slate-700'
-                        } ${isGuest ? 'opacity-50 cursor-not-allowed' : ''}`}
-                        title={isArrived ? 'បានមកដល់ (ចុចដើម្បីលុប)' : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកមកដល់'}
-                      >
-                        {isArrived ? (
-                          <>
-                            <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />
-                            <span>បានមកដល់</span>
-                          </>
-                        ) : (
-                          <>
-                            <Circle className="w-3.5 h-3.5 text-slate-400" />
-                            <span>គ្រីសមកដល់</span>
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </td>
+                  {/* 📋 Attendance / Check-in Column (Only for Owner, Admin, Assistant) */}
+                  {!isGuest && (
+                    <td className="px-4 py-3 text-center animate-in zoom-in-50 duration-200">
+                      {onToggleAttendance && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onToggleAttendance(tag);
+                          }}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition-all active:scale-95 border ${
+                            isArrived
+                              ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
+                              : 'bg-slate-800 text-slate-400 hover:text-emerald-300 border-slate-700'
+                          }`}
+                          title={isArrived ? 'បានមកដល់ (ចុចដើម្បីលុប)' : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកមកដល់'}
+                        >
+                          {isArrived ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />
+                              <span>បានមកដល់</span>
+                            </>
+                          ) : (
+                            <>
+                              <Circle className="w-3.5 h-3.5 text-slate-400" />
+                              <span>គ្រីសមកដល់</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </td>
+                  )}
 
                   {/* Action Button */}
                   <td className="px-4 py-3 text-center">

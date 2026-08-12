@@ -40,22 +40,18 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
           </h3>
         </div>
 
-        {/* 📋 Report / Check-in Attendance Button (Assistant & Admin & Owner) */}
-        {onToggleAttendance && (
+        {/* 📋 Report / Check-in Attendance Button (Assistant & Admin & Owner only) */}
+        {!isGuest && onToggleAttendance && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              if (isGuest) {
-                alert('សិទ្ធិ Guest អាចមើល និងស្វែងរកប៉ុណ្ណោះ! មិនអាចគ្រីសមកដល់បានទេ (សម្រាប់តែក្រុមការងារ)');
-                return;
-              }
               onToggleAttendance(tag);
             }}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-extrabold font-kantumruy transition-all active:scale-95 border shrink-0 ${
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-extrabold font-kantumruy transition-all active:scale-95 border shrink-0 animate-in zoom-in-50 duration-200 ${
               isArrived
                 ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
                 : 'bg-slate-800/90 text-slate-400 hover:text-emerald-300 border-slate-700 hover:border-emerald-500/50'
-            } ${isGuest ? 'opacity-60 cursor-not-allowed' : ''}`}
+            }`}
             title={isArrived ? 'បានមកដល់រួចរាល់ (ចុចដើម្បីលុបការគ្រីស)' : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកបានមកដល់'}
           >
             {isArrived ? (

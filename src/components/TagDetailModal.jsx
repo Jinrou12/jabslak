@@ -103,22 +103,18 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
             {tag.name}
           </h2>
 
-          {/* 📋 Attendance Check-in Button Pill */}
-          {onToggleAttendance && (
-            <div className="mt-3 flex justify-center">
+          {/* 📋 Attendance Check-in Button Pill (Owner, Admin, Assistant only) */}
+          {!isGuest && onToggleAttendance && (
+            <div className="mt-3 flex justify-center animate-in zoom-in-50 duration-200">
               <button
                 onClick={() => {
-                  if (currentUser?.role === 'guest') {
-                    alert('សិទ្ធិ Guest អាចមើល និងស្វែងរកប៉ុណ្ណោះ! មិនអាចគ្រីសមកដល់បានទេ');
-                    return;
-                  }
                   onToggleAttendance(tag);
                 }}
                 className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all shadow-lg active:scale-95 border ${
                   isArrived
                     ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-emerald-500/25'
                     : 'bg-slate-800 text-emerald-300 border-emerald-500/40 hover:bg-slate-700'
-                } ${currentUser?.role === 'guest' ? 'opacity-60 cursor-not-allowed' : ''}`}
+                }`}
               >
                 {isArrived ? (
                   <>
