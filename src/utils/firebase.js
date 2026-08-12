@@ -57,7 +57,7 @@ export function migrateTagListToTempleLocations(tagList) {
   if (!Array.isArray(tagList)) return { migrated: tagList, hasOld: false };
   let hasOld = false;
 
-  const migrated = tagList.map((item, idx) => {
+  const migrated = tagList.map((item) => {
     const locStr = item.baseLocation || item.location || '';
     const isOld =
       locStr.includes('អាគារ A') ||
@@ -66,16 +66,12 @@ export function migrateTagListToTempleLocations(tagList) {
       locStr.includes('សាលាឆាន់ - ជួរ') ||
       locStr.includes('រោងបុណ្យ');
 
-    if (isOld || !item.templeLocationId) {
+    if (isOld) {
       hasOld = true;
-      const locObj = INITIAL_TEMPLE_LOCATIONS[idx % INITIAL_TEMPLE_LOCATIONS.length];
-      const tableMatch = item.location ? item.location.match(/\(តុ [^\)]+\)/) : null;
-      const tableStr = tableMatch ? ` ${tableMatch[0]}` : ` (តុ ${((idx % 25) + 1 < 10 ? '០' : '') + ((idx % 25) + 1)})`;
       return {
         ...item,
-        baseLocation: locObj.name,
-        templeLocationId: locObj.id,
-        location: `${locObj.name}${tableStr}`
+        baseLocation: 'មិនទាន់ដៅលើ Map',
+        location: 'មិនទាន់ដៅលើ Map'
       };
     }
     return item;

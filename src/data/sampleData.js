@@ -28,10 +28,8 @@ export function generateSampleData(count = 1000) {
     const ln = lastNames[(i * 13) % lastNames.length];
     const fullName = `${title} ${fn} ${ln}`;
 
-    const locObj = INITIAL_TEMPLE_LOCATIONS[i % INITIAL_TEMPLE_LOCATIONS.length];
-    const locationName = locObj.name;
-    const tableNo = (i % 25) + 1;
-    const fullLocation = `${locationName} (តុ ${tableNo < 10 ? '០' + tableNo : tableNo})`;
+    const locationName = 'មិនទាន់ដៅលើ Map';
+    const fullLocation = 'មិនទាន់ដៅលើ Map';
 
     const phonePrefixes = ['012', '010', '069', '077', '088', '097', '092', '015'];
     const phonePrefix = phonePrefixes[i % phonePrefixes.length];
@@ -54,8 +52,8 @@ export function generateSampleData(count = 1000) {
       tagNumber: i,
       name: fullName,
       location: fullLocation,
-      baseLocation: locationName,
-      templeLocationId: locObj.id,
+      baseLocation: '',
+      templeLocationId: '',
       phone: phone,
       notes: notes,
       status: i % 15 === 0 ? 'CHECKED_OUT' : 'ACTIVE',

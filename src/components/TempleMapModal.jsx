@@ -24,7 +24,8 @@ import {
   Sparkles,
   Layers,
   Map as MapIcon,
-  Move
+  Move,
+  Tag
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
@@ -79,6 +80,11 @@ export default function TempleMapModal({
     category: '🏢 ក្រុមអគារ និង កុដិ'
   });
   const [formError, setFormError] = useState('');
+
+  // Tab 3 Pinning Tag State (Direct manual tagging)
+  const [selectedTagForPin, setSelectedTagForPin] = useState('');
+  const [pendingPinTag, setPendingPinTag] = useState(null);
+  const [taggerSubView, setTaggerSubView] = useState('locations'); // 'locations' | 'tags'
 
   // Custom Category Modal State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -249,13 +255,28 @@ export default function TempleMapModal({
       x: pctX,
       y: pctY
     });
-    setModalForm({
-      id: String(currentLocations.length + 1),
-      name: '',
-      type: 'building',
-      pos: 'R',
-      category: '🏢 ក្រុមអគារ និង កុដិ'
-    });
+
+    if (pendingPinTag) {
+      setModalForm({
+        id: String(pendingPinTag.tagNumber || currentLocations.length + 1),
+        name: pendingPinTag.name || pendingPinTag.location || `ស្លាកលេខ #${pendingPinTag.tagNumber}`,
+        type: 'building',
+        pos: 'R',
+        category: pendingPinTag.baseLocation || '🏢 ក្រុមអគារ និង កុដិ'
+      });
+      setSelectedTagForPin(String(pendingPinTag.tagNumber));
+      setPendingPinTag(null);
+    } else {
+      setModalForm({
+        id: String(currentLocations.length + 1),
+        name: '',
+        type: 'building',
+        pos: 'R',
+        category: '🏢 ក្រុមអគារ និង កុដិ'
+      });
+      setSelectedTagForPin('');
+    }
+
     setFormError('');
     setIsEditModalOpen(true);
   };
@@ -666,7 +687,7 @@ export default function TempleMapModal({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🖼️ ប្លង់មានឈ្មោះ</span>
+              <span>🖼️ ផ្ទាំងទី១ ៖ ប្លង់មានឈ្មោះ</span>
             </button>
 
             <button
@@ -677,7 +698,7 @@ export default function TempleMapModal({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>📍 អន្តរកម្ម (លេខ & ABCDE)</span>
+              <span>📍 ផ្ទាំងទី២ ៖ អន្តរកម្ម (លេខ & ABCDE)</span>
             </button>
 
             <button
@@ -688,7 +709,7 @@ export default function TempleMapModal({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🏷️ គ្រប់គ្រងទីតាំង (លេខ & ABCDE)</span>
+              <span>🏷️ ផ្ទាំងទី៣ ៖ ដៅស្លាកលេខលើ Map (Admin & Owner)</span>
             </button>
           </div>
 
@@ -712,6 +733,51 @@ export default function TempleMapModal({
             </button>
           </div>
         </div>
+
+        {/* ════════ TAB 3 ADMIN / OWNER STATUS BANNER ════════ */}
+        {activeTab === 'tagger' && (
+          <div className="px-3 sm:px-5 py-2 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/15 border-b border-amber-500/30 flex items-center justify-between gap-2 shrink-0 flex-wrap">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-300">
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+              {canCustomizeMap ? (
+                <span>
+                  👑 <strong className="text-amber-400 font-moul">សិទ្ធិ Admin & Owner</strong> ៖ ចុចលើរូបភាពផែនទី ឬ អូស Pin ដើម្បីដៅទីតាំងស្លាកលេខដោយដៃផ្ទាល់ ( Realtime Cloud Sync )
+                </span>
+              ) : (
+                <span>
+                  🔒 <strong className="text-amber-400 font-moul">របៀបមើល</strong> ៖ មានតែ Admin & Owner ទើបអាចដៅ ឬកែប្រែទីតាំងស្លាកលេខលើ Map ដោយដៃផ្ទាល់
+                </span>
+              )}
+            </div>
+            {canCustomizeMap && (
+              <button
+                onClick={handleOpenAddModal}
+                className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>ដៅទីតាំងថ្មីដោយដៃ</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ════════ PENDING PIN TAG NOTIFICATION ════════ */}
+        {pendingPinTag && (
+          <div className="px-4 py-2 bg-emerald-500/20 border-b border-emerald-500/40 flex items-center justify-between gap-2 text-emerald-300 text-xs font-bold animate-pulse shrink-0">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>
+                🎯 របៀបដៅស្លាកលេខ ៖ សូមចុចលើទីតាំងណាមួយលើរូបភាព Map ដើម្បីដៅស្លាកលេខ #{westernToKhmerDigits(pendingPinTag.tagNumber)} ({pendingPinTag.name || 'គ្មានឈ្មោះ'})
+              </span>
+            </div>
+            <button
+              onClick={() => setPendingPinTag(null)}
+              className="px-2.5 py-0.5 bg-slate-900 text-slate-300 hover:text-white rounded-lg border border-slate-700 text-xs shrink-0"
+            >
+              បោះបង់
+            </button>
+          </div>
+        )}
 
         {/* ═══════════════ MAIN CONTENT BODY (MAP & LEGEND) ═══════════════ */}
         <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3">
@@ -1004,46 +1070,141 @@ export default function TempleMapModal({
               </div>
             </div>
 
-            {/* Category Filter Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
-                  selectedCategory === 'all'
-                    ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                    : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-                }`}
-              >
-                🌐 ទាំងអស់ ({currentLocations.length})
-              </button>
-
-              {Object.keys(categoryGroups).map((catName) => (
+            {/* Sub-view switcher for Tab 3 */}
+            {activeTab === 'tagger' && (
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
                 <button
-                  key={catName}
-                  onClick={() => setSelectedCategory(catName)}
-                  className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
-                    selectedCategory === catName
+                  onClick={() => setTaggerSubView('locations')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                    taggerSubView === 'locations'
                       ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                       : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
                   }`}
                 >
-                  {catName} ({categoryGroups[catName].length})
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>📍 បញ្ជីទីតាំងលើ Map ({currentLocations.length})</span>
                 </button>
-              ))}
 
-              {canCustomizeMap && (
                 <button
-                  onClick={() => {
-                    setNewCategoryName('');
-                    setSelectedLocationIdsForGroup([]);
-                    setIsCategoryModalOpen(true);
-                  }}
-                  className="px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 bg-amber-500/10 border border-dashed border-amber-500/50 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition-all ml-auto"
+                  onClick={() => setTaggerSubView('tags')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 ${
+                    taggerSubView === 'tags'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                      : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                  }`}
                 >
-                  ➕ Group ថ្មី
+                  <Tag className="w-3.5 h-3.5" />
+                  <span>🏷️ បញ្ជីស្លាកលេខប្រព័ន្ធ ({allTags.length})</span>
                 </button>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* TAG LIST VIEW FOR TAB 3 MANUAL TAGGING */}
+            {activeTab === 'tagger' && taggerSubView === 'tags' ? (
+              <div className="space-y-2 pt-1 font-kantumruy">
+                <div className="text-xs text-amber-300 font-bold mb-2 flex items-center justify-between">
+                  <span>បញ្ជីស្លាកលេខក្នុងប្រព័ន្ធ ៖ (ចុច «📍 ដៅលើ Map ដោយដៃ» រួចចុចលើរូបភាពផែនទី)</span>
+                  <span className="text-slate-400 font-normal">សរុប {westernToKhmerDigits(allTags.length)} ស្លាក</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-72 overflow-y-auto pr-1">
+                  {allTags
+                    .filter((t) => {
+                      const q = searchQuery.trim().toLowerCase();
+                      if (!q) return true;
+                      return (
+                        String(t.tagNumber).includes(q) ||
+                        (t.name && t.name.toLowerCase().includes(q)) ||
+                        (t.location && t.location.toLowerCase().includes(q))
+                      );
+                    })
+                    .map((t) => {
+                      const isPinned = currentLocations.some(
+                        (loc) => loc.id === String(t.tagNumber) || (t.location && loc.name.toLowerCase().includes(t.location.toLowerCase()))
+                      );
+                      return (
+                        <div
+                          key={t.id || t.tagNumber}
+                          className="p-2.5 rounded-xl border border-slate-800 bg-slate-900 flex flex-col justify-between gap-1.5 hover:border-amber-500/40 transition-all"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="w-6 h-6 rounded-lg bg-amber-500 text-slate-950 font-bold font-moul text-[10px] flex items-center justify-center shrink-0">
+                                {westernToKhmerDigits(t.tagNumber)}
+                              </span>
+                              <span className="text-xs font-bold text-slate-200 truncate">
+                                {t.name || 'គ្មានឈ្មោះ'}
+                              </span>
+                            </div>
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md shrink-0 ${isPinned ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'}`}>
+                              {isPinned ? '✓ ដៅរួច' : 'មិនទាន់ដៅ'}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 truncate">
+                            📍 ទីតាំង ៖ {t.location || 'មិនទាន់បញ្ជាក់'}
+                          </div>
+                          {canCustomizeMap && (
+                            <button
+                              onClick={() => {
+                                setPendingPinTag(t);
+                                setTaggerSubView('locations');
+                                viewportRef.current?.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                              className="w-full mt-1 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded-lg shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95"
+                            >
+                              <MapPin className="w-3 h-3" />
+                              <span>📍 ចុចដៅលើ Map ដោយដៃ</span>
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* Category Filter Chips */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
+                      selectedCategory === 'all'
+                        ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                        : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                    }`}
+                  >
+                    🌐 ទាំងអស់ ({currentLocations.length})
+                  </button>
+
+                  {Object.keys(categoryGroups).map((catName) => (
+                    <button
+                      key={catName}
+                      onClick={() => setSelectedCategory(catName)}
+                      className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
+                        selectedCategory === catName
+                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                          : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                      }`}
+                    >
+                      {catName} ({categoryGroups[catName].length})
+                    </button>
+                  ))}
+
+                  {canCustomizeMap && (
+                    <button
+                      onClick={() => {
+                        setNewCategoryName('');
+                        setSelectedLocationIdsForGroup([]);
+                        setIsCategoryModalOpen(true);
+                      }}
+                      className="px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 bg-amber-500/10 border border-dashed border-amber-500/50 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition-all ml-auto"
+                    >
+                      ➕ Group ថ្មី
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
 
             {/* Accordion Group Cards */}
             <div className="space-y-2">
@@ -1189,6 +1350,43 @@ export default function TempleMapModal({
               {formError && (
                 <div className="mb-3 p-2.5 rounded-xl bg-rose-500/20 border border-rose-500/40 text-rose-300 text-xs font-bold">
                   ⚠️ {formError}
+                </div>
+              )}
+
+              {/* Tag selector dropdown for manual tagging */}
+              {allTags && allTags.length > 0 && (
+                <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-2.5 mb-3">
+                  <label className="block text-xs font-bold text-amber-300 mb-1 flex items-center gap-1">
+                    <Tag className="w-3.5 h-3.5 text-amber-400" />
+                    <span>🔗 ជ្រើសរើសស្លាកលេខដែលមានក្នុងប្រព័ន្ធដើម្បីដៅលើ Map ៖</span>
+                  </label>
+                  <select
+                    value={selectedTagForPin || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedTagForPin(val);
+                      if (val) {
+                        const found = allTags.find((t) => String(t.tagNumber) === String(val));
+                        if (found) {
+                          setModalForm((prev) => ({
+                            ...prev,
+                            id: String(found.tagNumber),
+                            name: found.name || found.location || `ស្លាកលេខ #${found.tagNumber}`,
+                            category: found.baseLocation || prev.category || '🏢 ក្រុមអគារ និង កុដិ'
+                          }));
+                          setFormError('');
+                        }
+                      }
+                    }}
+                    className="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-xs text-amber-200 focus:outline-none focus:border-amber-400 font-kantumruy"
+                  >
+                    <option value="">-- ជ្រើសរើសស្លាកលេខពីប្រព័ន្ធ ឬ បញ្ចូលព័ត៌មានដោយដៃ --</option>
+                    {allTags.map((t) => (
+                      <option key={t.id || t.tagNumber} value={t.tagNumber}>
+                        ស្លាកលេខ #{westernToKhmerDigits(t.tagNumber)} ៖ {t.name || 'គ្មានឈ្មោះ'} ({t.location || 'គ្មានទីតាំង'})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
 
