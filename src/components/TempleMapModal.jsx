@@ -24,9 +24,7 @@ import {
   Sparkles,
   Layers,
   Map as MapIcon,
-  Move,
-  Cloud,
-  CloudCheck
+  Move
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
@@ -48,7 +46,6 @@ export default function TempleMapModal({
   onAddTagForLocation
 }) {
   const [locations, setLocations] = useState(getSavedTempleLocations());
-  const [isCloudSynced, setIsCloudSynced] = useState(false);
   const [activeTab, setActiveTab] = useState('labeled'); // 'labeled' | 'interactive' | 'tagger'
   const [zoomScale, setZoomScale] = useState(1.0);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
@@ -89,7 +86,6 @@ export default function TempleMapModal({
       (cloudLocations) => {
         if (Array.isArray(cloudLocations) && cloudLocations.length > 0) {
           setLocations(cloudLocations);
-          setIsCloudSynced(true);
         }
       },
       (err) => {
@@ -511,10 +507,6 @@ export default function TempleMapModal({
                 <span className="bg-amber-500/20 text-amber-300 text-[10px] sm:text-xs font-bold px-2 py-0.2 rounded-full border border-amber-500/30 shrink-0">
                   {westernToKhmerDigits(locations.length)} ទីតាំង
                 </span>
-                <span className="bg-emerald-500/15 text-emerald-400 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded-full border border-emerald-500/30 shrink-0 hidden xs:inline-flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  <span>Sync ផ្ទាល់</span>
-                </span>
               </div>
               <p className="text-[10px] sm:text-xs text-slate-400 truncate hidden sm:block">
                 ប្លង់វត្តអន្តរកម្ម ទិសទាំង ៨ និងការគ្រប់គ្រងទីតាំងស្លាកលេខ
@@ -589,7 +581,7 @@ export default function TempleMapModal({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>📍 អន្តរកម្ម & កែប្រែ</span>
+              <span>📍 អន្តរកម្ម (លេខ & ABCDE)</span>
             </button>
 
             <button
@@ -600,7 +592,7 @@ export default function TempleMapModal({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🏷️ គ្រប់គ្រងទីតាំង</span>
+              <span>🏷️ គ្រប់គ្រងទីតាំង (លេខ & ABCDE)</span>
             </button>
           </div>
 
@@ -722,11 +714,11 @@ export default function TempleMapModal({
                             onMouseEnter={() => setHoveredLocation(loc)}
                             onMouseLeave={() => setHoveredLocation(null)}
                             className={`map-pin-element relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 transition-transform duration-100 ${
-                              canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-120' : 'cursor-pointer hover:scale-115'
-                            } ${isHighlighted || isCurrentlyDragging ? 'scale-125 z-40' : 'z-20'}`}
+                              canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-125' : 'cursor-pointer hover:scale-115'
+                            } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-40' : 'z-20'}`}
                             style={{ touchAction: 'none' }}
                           >
-                            {/* Exact Mathematical Pin Badge Center */}
+                            {/* Exact Mathematical Pin Badge Center (Rendered in ALL Tabs) */}
                             <div
                               className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center font-moul text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-950 border border-white sm:border-2 shadow-md shrink-0 z-10 ${
                                 isGate
@@ -741,27 +733,44 @@ export default function TempleMapModal({
                               {loc.id}
                             </div>
 
-                            {/* Floating Directional Name Label (Positioned relative to badge center) */}
-                            <div
-                              className={`absolute text-[7.5px] sm:text-[9px] md:text-[10.5px] font-bold py-0.5 px-1.5 rounded-lg border shadow-lg whitespace-nowrap pointer-events-none z-0 ${
-                                isGate
-                                  ? 'bg-slate-950/92 border-amber-400/90 text-amber-200'
-                                  : 'bg-slate-950/92 border-sky-400/90 text-sky-100'
-                              } ${isHighlighted ? 'ring-1.5 ring-amber-400 bg-slate-950' : ''} ${
-                                pos === 'L'
-                                  ? 'right-full mr-1 top-1/2 -translate-y-1/2'
-                                  : pos === 'T'
-                                  ? 'bottom-full mb-1 left-1/2 -translate-x-1/2'
-                                  : pos === 'B'
-                                  ? 'top-full mt-1 left-1/2 -translate-x-1/2'
-                                  : 'left-full ml-1 top-1/2 -translate-y-1/2'
-                              }`}
-                              style={{
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.6)'
-                              }}
-                            >
-                              <span>{loc.name}</span>
-                            </div>
+                            {/* Floating Name Label: RENDERED ONLY IN TAB 1 (ប្លង់មានឈ្មោះ) */}
+                            {activeTab === 'labeled' && (
+                              <div
+                                className={`absolute text-[7.5px] sm:text-[9px] md:text-[10.5px] font-bold py-0.5 px-1.5 rounded-lg border shadow-lg whitespace-nowrap pointer-events-none z-0 ${
+                                  isGate
+                                    ? 'bg-slate-950/92 border-amber-400/90 text-amber-200'
+                                    : 'bg-slate-950/92 border-sky-400/90 text-sky-100'
+                                } ${isHighlighted ? 'ring-1.5 ring-amber-400 bg-slate-950' : ''} ${
+                                  pos === 'L'
+                                    ? 'right-full mr-1 top-1/2 -translate-y-1/2'
+                                    : pos === 'T'
+                                    ? 'bottom-full mb-1 left-1/2 -translate-x-1/2'
+                                    : pos === 'B'
+                                    ? 'top-full mt-1 left-1/2 -translate-x-1/2'
+                                    : 'left-full ml-1 top-1/2 -translate-y-1/2'
+                                }`}
+                                style={{
+                                  boxShadow: '0 2px 8px rgba(0,0,0,0.6)'
+                                }}
+                              >
+                                <span>{loc.name}</span>
+                              </div>
+                            )}
+
+                            {/* Floating Tooltip: In Tab 2 and Tab 3 on Hover/Focus */}
+                            {activeTab !== 'labeled' && (
+                              <div
+                                className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 bg-slate-950/95 text-white font-bold text-[10px] sm:text-xs px-2 py-0.5 rounded-lg border shadow-2xl pointer-events-none whitespace-nowrap transition-all duration-150 z-50 ${
+                                  isGate ? 'border-amber-400 text-amber-200' : 'border-sky-400 text-sky-100'
+                                } ${
+                                  isHighlighted || hoveredLocation?.id === loc.id
+                                    ? 'opacity-100 scale-100'
+                                    : 'opacity-0 scale-90 pointer-events-none'
+                                }`}
+                              >
+                                <span className="font-moul text-amber-400">[{loc.id}]</span> {loc.name}
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
