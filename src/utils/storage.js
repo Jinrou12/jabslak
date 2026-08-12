@@ -91,9 +91,10 @@ export const GUEST_USER = {
 };
 
 export const DEFAULT_USERS = [
-  { id: 'u-owner', name: 'លោកប្រធាន (Owner)', email: 'owner@gmail.com', role: 'owner', phone: '012345678', pin: '1234' },
-  { id: 'u-admin', name: 'អ្នកគ្រប់គ្រង (Admin)', email: 'admin@gmail.com', role: 'admin', phone: '098765432', pin: '1234' },
-  { id: 'u-assistant', name: 'អ្នកជំនួយការ (Assistant)', email: 'assistant@gmail.com', role: 'assistant', phone: '011223344', pin: '1234' }
+  { id: 'u-owner', name: 'លោកប្រធាន (Owner)', email: 'thonvisal12@gmail.com', role: 'owner', phone: '012345678', pin: '123' },
+  { id: 'u-admin', name: 'អ្នកគ្រប់គ្រង (Admin)', email: 'admin@gmail.com', role: 'admin', phone: '098765432', pin: '123' },
+  { id: 'u-assistant', name: 'អ្នកជំនួយការ (Assistant)', email: 'assistant@gmail.com', role: 'assistant', phone: '011223344', pin: '123' },
+  { id: 'u-assistant2', name: 'អ្នកជំនួយការ (Assistion)', email: 'assistion@gmail.com', role: 'assistant', phone: '011223344', pin: '123' }
 ];
 
 export function getSavedUsers() {
@@ -132,9 +133,8 @@ export function getCurrentUser() {
   } catch (err) {
     console.error('Error loading current user:', err);
   }
-  const defaultOwner = DEFAULT_USERS[0];
-  saveCurrentUser(defaultOwner);
-  return defaultOwner;
+  saveCurrentUser(GUEST_USER);
+  return GUEST_USER;
 }
 
 export function saveCurrentUser(user) {
@@ -144,5 +144,6 @@ export function saveCurrentUser(user) {
     console.error('Error saving current user:', err);
   }
 }
+
 
 

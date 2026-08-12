@@ -14,10 +14,9 @@ import FirebaseConfigModal from './components/FirebaseConfigModal';
 import MobileConnectModal from './components/MobileConnectModal';
 import TempleMapModal from './components/TempleMapModal';
 import RoleManagementModal from './components/RoleManagementModal';
-import UserSwitchModal from './components/UserSwitchModal';
 import LoginModal from './components/LoginModal';
 import { searchTags, westernToKhmerDigits } from './utils/khmerSearch';
-import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser } from './utils/storage';
+import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER } from './utils/storage';
 import {
   subscribeToFirebaseTags,
   saveTagToFirebase,
@@ -38,7 +37,6 @@ export default function App() {
   const [users, setUsers] = useState(getSavedUsers());
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
   const [isRoleManagementOpen, setIsRoleManagementOpen] = useState(false);
-  const [isUserSwitchOpen, setIsUserSwitchOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   // Modals state
@@ -185,10 +183,10 @@ export default function App() {
     showToast('បានលុបគណនីអ្នកប្រើប្រាស់រួចរាល់!');
   };
 
-  const handleSwitchUser = (selectedUser) => {
-    setCurrentUser(selectedUser);
-    saveCurrentUser(selectedUser);
-    showToast(`បានប្តូរទៅប្រើប្រាស់គណនី ៖ ${selectedUser.name} (${selectedUser.role.toUpperCase()})`);
+  const handleLogout = () => {
+    setCurrentUser(GUEST_USER);
+    saveCurrentUser(GUEST_USER);
+    showToast('បានចាកចេញពីគណនី (Logout) ៖ ត្រឡប់ទៅជាអ្នកមើលធម្មតា (Guest)');
   };
 
   const handleLoginUser = (userObj) => {
@@ -301,8 +299,8 @@ export default function App() {
           setIsTempleMapOpen(true);
         }}
         onOpenRoleManagement={() => setIsRoleManagementOpen(true)}
-        onOpenUserSwitch={() => setIsUserSwitchOpen(true)}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
+        onLogout={handleLogout}
         isCloudSyncing={isCloudSyncing}
       />
 

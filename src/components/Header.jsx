@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Plus, FileSpreadsheet, Trash2, Users, MapPin, Cloud, Map as MapIcon, Crown, Shield, UserCheck, Lock, UserCog, LogIn, Eye } from 'lucide-react';
+import { Tag, Plus, FileSpreadsheet, Trash2, Users, MapPin, Cloud, Map as MapIcon, Crown, Shield, UserCheck, Lock, UserCog, LogIn, Eye, LogOut } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function Header({
@@ -16,8 +16,8 @@ export default function Header({
   onOpenMobileConnect,
   onOpenTempleMap,
   onOpenRoleManagement,
-  onOpenUserSwitch,
   onOpenLoginModal,
+  onLogout,
   isCloudSyncing
 }) {
   const isOwner = currentUser?.role === 'owner';
@@ -70,22 +70,11 @@ export default function Header({
             </div>
           </div>
 
-          {/* User Profile Badge & Role Switcher */}
+          {/* User Profile Badge & Authentication Controls */}
           <div className="flex items-center gap-1.5 shrink-0 font-kantumruy">
-            {/* 🔑 Email / Account Login Button (Next to Cloud Sync) */}
-            <button
-              onClick={onOpenLoginModal}
-              className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all active:scale-95 shadow-sm"
-              title="ចូលប្រើប្រាស់តាម Email (Firebase / Gmail)"
-            >
-              <LogIn className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">Login</span>
-            </button>
-
-            {/* Active User Switch Button */}
-            <button
-              onClick={onOpenUserSwitch}
-              className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all active:scale-95 border ${
+            {/* Current Active User Badge */}
+            <div
+              className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold border ${
                 isOwner
                   ? 'bg-amber-950/80 border-amber-500/50 text-amber-300 shadow-md shadow-amber-500/10'
                   : isAdmin
@@ -94,12 +83,34 @@ export default function Header({
                   ? 'bg-sky-950/80 border-sky-500/50 text-sky-300'
                   : 'bg-slate-900 border-slate-700 text-slate-400'
               }`}
-              title="ប្តូរគណនី / Role"
             >
               {getRoleIcon()}
-              <span className="truncate max-w-[90px] sm:max-w-[120px]">{currentUser?.name || 'User'}</span>
+              <span className="truncate max-w-[90px] sm:max-w-[140px] font-sans-en">
+                {currentUser?.email || currentUser?.name || 'Guest'}
+              </span>
               <span className="text-[10px] opacity-75 font-sans-en">({getRoleText()})</span>
+            </div>
+
+            {/* 🔑 Email Login Button */}
+            <button
+              onClick={onOpenLoginModal}
+              className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all active:scale-95 shadow-sm"
+              title="ចូលប្រើប្រាស់តាម Email (Login)"
+            >
+              <LogIn className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">Login</span>
             </button>
+
+            {/* Logout Button (for non-guest users) */}
+            {!isGuest && (
+              <button
+                onClick={onLogout}
+                className="p-1.5 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl text-xs transition-all active:scale-95"
+                title="ចាកចេញ (Logout)"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            )}
 
             {/* Role Management (Owner & Admin Only) */}
             {(isOwner || isAdmin) && (
