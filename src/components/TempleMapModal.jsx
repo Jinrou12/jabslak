@@ -930,7 +930,7 @@ export default function TempleMapModal({
                                     : 'opacity-0 scale-90 pointer-events-none'
                                 }`}
                               >
-                                <span className="font-moul text-amber-400">[{loc.id}]</span> {loc.name}
+                                <span>{loc.name}</span>
                               </div>
                             )}
                           </div>
@@ -1566,7 +1566,7 @@ export default function TempleMapModal({
                             }}
                             className="rounded border-slate-700 text-amber-500 focus:ring-0"
                           />
-                          <span className="font-bold text-amber-400 font-moul">[{loc.id}]</span>
+                          <span className="font-bold text-amber-400 font-moul">{loc.id}.</span>
                           <span>{loc.name}</span>
                         </label>
                       );
