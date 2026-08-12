@@ -139,11 +139,11 @@ export default function App() {
   };
 
   const handleResetData = () => {
-    if (window.confirm('តើអ្នកពិតជាចង់កំណត់ឡើងវិញនូវទិន្នន័យគំរូ ១,០០០ មែនទេ?')) {
+    if (window.confirm('តើអ្នកពិតជាចង់កំណត់ឡើងវិញនូវទិន្នន័យគំរូ ១,០០០ នៃទីតាំងវត្តទាំង ២១ មែនទេ?')) {
       const reset = resetToSampleData();
       setTags(reset);
-      seedFirebaseData(reset);
-      showToast('បានកំណត់ឡើងវិញនូវទិន្នន័យគំរូ ១,០០០ ស្លាកលេខ!');
+      seedFirebaseData(reset, true);
+      showToast('បានកំណត់ឡើងវិញនូវទិន្នន័យគំរូ ១,០០០ នៃទីតាំងវត្តទាំង ២១ រួចរាល់!');
     }
   };
 

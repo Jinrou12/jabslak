@@ -1,5 +1,7 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue, set, remove, get } from 'firebase/database';
+import { INITIAL_TEMPLE_LOCATIONS } from '../data/templeLocations';
+import { INITIAL_TAG_DATA } from '../data/sampleData';
 
 // Firebase configuration (Can be updated with user's Firebase project keys or default demo keys)
 const firebaseConfig = {
@@ -22,6 +24,40 @@ try {
   isConnected = true;
 } catch (err) {
   console.warn('Firebase init warning (running in offline mode):', err);
+}
+
+/**
+ * Migrate any old locations (like អាគារ A) to authentic 21 temple locations
+ */
+export function migrateTagListToTempleLocations(tagList) {
+  if (!Array.isArray(tagList)) return { migrated: tagList, hasOld: false };
+  let hasOld = false;
+
+  const migrated = tagList.map((item, idx) => {
+    const locStr = item.baseLocation || item.location || '';
+    const isOld =
+      locStr.includes('អាគារ A') ||
+      locStr.includes('អាគារ B') ||
+      locStr.includes('រោងទី') ||
+      locStr.includes('សាលាឆាន់ - ជួរ') ||
+      locStr.includes('រោងបុណ្យ');
+
+    if (isOld || !item.templeLocationId) {
+      hasOld = true;
+      const locObj = INITIAL_TEMPLE_LOCATIONS[idx % INITIAL_TEMPLE_LOCATIONS.length];
+      const tableMatch = item.location ? item.location.match(/\(តុ [^\)]+\)/) : null;
+      const tableStr = tableMatch ? ` ${tableMatch[0]}` : ` (តុ ${((idx % 25) + 1 < 10 ? '០' : '') + ((idx % 25) + 1)})`;
+      return {
+        ...item,
+        baseLocation: locObj.name,
+        templeLocationId: locObj.id,
+        location: `${locObj.name}${tableStr}`
+      };
+    }
+    return item;
+  });
+
+  return { migrated, hasOld };
 }
 
 /**
@@ -48,9 +84,19 @@ export function subscribeToFirebaseTags(onDataReceived, onError) {
         }
         // Sort by tag number ascending
         tagList.sort((a, b) => Number(a.tagNumber) - Number(b.tagNumber));
-        onDataReceived(tagList);
+
+        // Auto migrate if cloud had old data
+        const { migrated, hasOld } = migrateTagListToTempleLocations(tagList);
+        if (hasOld) {
+          console.log('Migrating Firebase cloud data to 21 temple locations...');
+          seedFirebaseData(migrated, true);
+        }
+
+        onDataReceived(migrated);
       } else {
-        onDataReceived(null); // Empty in cloud
+        // Empty in cloud -> seed initial authentic data
+        seedFirebaseData(INITIAL_TAG_DATA, true);
+        onDataReceived(INITIAL_TAG_DATA);
       }
     },
     (err) => {
@@ -93,12 +139,21 @@ export async function deleteTagFromFirebase(tagId) {
 }
 
 /**
- * Seed initial 1,000 tag records into Firebase if empty
+ * Seed initial 1,000 tag records into Firebase
  */
-export async function seedFirebaseData(initialData) {
+export async function seedFirebaseData(initialData, force = false) {
   if (!db) return false;
   try {
     const tagsRef = ref(db, 'tags');
+    if (force) {
+      const dataMap = {};
+      initialData.forEach((t) => {
+        dataMap[t.id] = t;
+      });
+      await set(tagsRef, dataMap);
+      console.log('Successfully updated 1,000 authentic tags to Firebase Realtime Database!');
+      return true;
+    }
     const snapshot = await get(tagsRef);
     if (!snapshot.exists()) {
       const dataMap = {};
@@ -106,7 +161,6 @@ export async function seedFirebaseData(initialData) {
         dataMap[t.id] = t;
       });
       await set(tagsRef, dataMap);
-      console.log('Successfully seeded 1,000 tags into Firebase Realtime Database!');
       return true;
     }
   } catch (err) {
