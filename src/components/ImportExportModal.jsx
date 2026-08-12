@@ -48,11 +48,26 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
   const parseKhmerRowsToTags = (rawRows) => {
     if (!Array.isArray(rawRows) || rawRows.length === 0) return [];
 
-    const ignoreList = [
-      'ល.រ', 'លរ', 'លេខរៀង', 'គោតមនាម', 'នាម', 'គោតមនាម និងនាម', 'ឈ្មោះ', 'ឈ្មោះ (name)',
-      'ភេទ', 'ស្លាកលេខ', 'ស្លាកលេខយានយន្ត', 'លេខទូរស័ព្ទ', 'បញ្ជីឈ្មោះ', 'សម្រាប់ប្រើប្រាស់',
-      'កំណត់សម្គាល់', 'ទីតាំង', 'no', 'id', 'name', 'phone', 'location', 'gender'
-    ];
+    const isHeaderOrFooter = (str) => {
+      if (!str) return true;
+      const s = String(str).trim().toLowerCase();
+      return (
+        s.includes('គោតមនាម') ||
+        s.includes('បញ្ជីឈ្មោះ') ||
+        s.includes('សម្រាប់ប្រើប្រាស់') ||
+        s.includes('សរុប') ||
+        s.includes('total') ||
+        s.includes('summary') ||
+        s.includes('លេខរៀង') ||
+        s.includes('ស្លាកលេខយានយន្ត') ||
+        s === 'ឈ្មោះ' ||
+        s === 'name' ||
+        s === 'ល.រ' ||
+        s === 'លរ' ||
+        s === 'ភេទ' ||
+        s === 'gender'
+      );
+    };
 
     const validTags = [];
     let seqNumber = 1;
@@ -73,12 +88,12 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
 
       // Scan all cells in the current row
       for (const cell of cells) {
-        const lower = cell.toLowerCase();
-
-        // Skip exact header matches or title banners
-        if (ignoreList.some((ig) => lower === ig || lower.includes('បញ្ជីឈ្មោះ') || lower.includes('សម្រាប់ប្រើប្រាស់'))) {
+        // Skip exact header/footer matches or title banners
+        if (isHeaderOrFooter(cell)) {
           continue;
         }
+
+        const lower = cell.toLowerCase();
 
         // Check if phone number (8 to 11 digits)
         const digitsOnly = cell.replace(/[^0-9]/g, '');
@@ -93,7 +108,7 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
           continue;
         }
 
-        // Check if location (contains កុដិ, អាគារ, ធម្មសាលា, វត្ត, តុ)
+        // Check if location (contains កុដិ, អាគារ, ធម្មសាលា, វត្ត)
         if (lower.includes('កុដិ') || lower.includes('អាគារ') || lower.includes('ធម្មសាលា') || lower.includes('វត្ត')) {
           if (!locVal) locVal = cell;
           continue;
@@ -109,8 +124,8 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
         }
       }
 
-      // Skip row if no valid person name was found or if name matches header label
-      if (!nameVal || ignoreList.some((ig) => nameVal.toLowerCase() === ig)) {
+      // Skip row if no valid person name was found or if name is a header/footer label
+      if (!nameVal || isHeaderOrFooter(nameVal)) {
         continue;
       }
 
