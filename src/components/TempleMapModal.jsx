@@ -185,9 +185,9 @@ export default function TempleMapModal({
     viewportRef.current.scrollTop = touchStartRef.current.scrollTop - dy;
   };
 
-  // Map Click in Tab 3 (Add new pin)
+  // Map Click in Tab 2 or Tab 3 (Add new pin)
   const handleMapClick = (e) => {
-    if (activeTab !== 'tagger' || draggingPinId || pinMovedFlagRef.current) return;
+    if ((activeTab !== 'tagger' && activeTab !== 'interactive') || draggingPinId || pinMovedFlagRef.current) return;
     const rect = mapContainerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
@@ -209,9 +209,9 @@ export default function TempleMapModal({
     setIsEditModalOpen(true);
   };
 
-  // Ultra-Smooth Pin Dragging (Exclusively in Tab 3: កែប្រែទីតាំង)
+  // Smooth Pin Dragging (Supported in Tab 2 & Tab 3)
   const handlePinDragStart = (e, loc) => {
-    if (activeTab !== 'tagger') return;
+    if (activeTab !== 'tagger' && activeTab !== 'interactive') return;
 
     e.stopPropagation();
     pinMovedFlagRef.current = false;
@@ -273,7 +273,37 @@ export default function TempleMapModal({
     document.addEventListener('touchend', onEnd);
   };
 
-  // Save / Edit Location Modal
+  // Open Edit Modal for a specific location
+  const handleOpenEditModal = (loc) => {
+    setEditingLoc(loc);
+    setModalForm({
+      id: loc.id,
+      name: loc.name,
+      type: loc.type || 'building',
+      category: loc.category || '🏢 ក្រុមអគារ និង កុដិ'
+    });
+    setFormError('');
+    setIsEditModalOpen(true);
+  };
+
+  // Open Add New Location Modal
+  const handleOpenAddModal = () => {
+    setEditingLoc({
+      isNew: true,
+      x: 50,
+      y: 50
+    });
+    setModalForm({
+      id: String(locations.length + 1),
+      name: '',
+      type: 'building',
+      category: '🏢 ក្រុមអគារ និង កុដិ'
+    });
+    setFormError('');
+    setIsEditModalOpen(true);
+  };
+
+  // Save / Edit Location Modal (Updates Tab 1, 2, 3 synchronously)
   const handleSaveLocationForm = () => {
     const id = modalForm.id.trim();
     const name = modalForm.name.trim();
@@ -309,6 +339,15 @@ export default function TempleMapModal({
             }
           : l
       );
+      if (selectedLocation?.id === editingLoc.id) {
+        setSelectedLocation({
+          ...selectedLocation,
+          id: id,
+          name: name,
+          type: modalForm.type,
+          category: modalForm.category
+        });
+      }
     } else {
       const newPoint = {
         id: id,
@@ -320,6 +359,7 @@ export default function TempleMapModal({
         category: modalForm.category
       };
       updated = [...locations, newPoint];
+      setSelectedLocation(newPoint);
     }
 
     setLocations(updated);
@@ -328,6 +368,7 @@ export default function TempleMapModal({
     setEditingLoc(null);
   };
 
+  // Delete Location (Updates Tab 1, 2, 3 synchronously)
   const handleDeleteLocation = (id) => {
     if (window.confirm(`តើអ្នកពិតជាចង់លុបទីតាំង #${id} នេះមែនទេ?`)) {
       const updated = locations.filter((l) => l.id !== id);
@@ -451,6 +492,15 @@ export default function TempleMapModal({
           {/* Quick Header Actions */}
           <div className="flex items-center gap-1.5 shrink-0">
             <button
+              onClick={handleOpenAddModal}
+              className="p-1.5 sm:px-2.5 sm:py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl border border-emerald-400/50 shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1"
+              title="បន្ថែមទីតាំងថ្មីលើផែនទី"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">បន្ថែមទីតាំង</span>
+            </button>
+
+            <button
               onClick={handleResetLocations}
               className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 transition-all active:scale-95 flex items-center gap-1"
               title="កំណត់ទីតាំងដើមឡើងវិញ"
@@ -506,18 +556,18 @@ export default function TempleMapModal({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>📍 អន្តរកម្ម (ចុចមើល)</span>
+              <span>📍 អន្តរកម្ម & កែប្រែ</span>
             </button>
 
             <button
               onClick={() => setActiveTab('tagger')}
               className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all ${
                 activeTab === 'tagger'
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/50'
+                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🏷️ គ្រប់គ្រង/កែប្រែ</span>
+              <span>🏷️ គ្រប់គ្រងទីតាំង</span>
             </button>
           </div>
 
@@ -542,17 +592,25 @@ export default function TempleMapModal({
           </div>
         </div>
 
-        {/* Tab 3 Guidance Banner (Shown only in Tab 3) */}
-        {activeTab === 'tagger' && (
-          <div className="px-4 py-2 bg-gradient-to-r from-emerald-950/80 via-slate-900 to-emerald-950/80 border-b border-emerald-500/30 flex items-center justify-between text-xs text-emerald-300 shrink-0">
+        {/* Tab 2 & 3 Interactive Sync Guidance Banner */}
+        {(activeTab === 'interactive' || activeTab === 'tagger') && (
+          <div className="px-4 py-2 bg-gradient-to-r from-sky-950/80 via-slate-900 to-amber-950/80 border-b border-amber-500/30 flex items-center justify-between text-xs text-amber-300 shrink-0">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 animate-pulse" />
+              <Sparkles className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
               <span>
-                <strong>ផ្ទាំងទី៣ (កែប្រែ) ៖</strong> អ្នកអាច <strong>ចុចអូសផ្លាស់ទី Pin</strong>, <strong>ចុចលើ Pin ដើម្បីកែ/លុប</strong>, ឬ <strong>ចុចលើផែនទីដើម្បីបន្ថែមទីតាំងថ្មី</strong> បានតាមចិត្ត!
+                {activeTab === 'interactive' ? (
+                  <>
+                    <strong>ផ្ទាំងអន្តរកម្ម & កែប្រែ ៖</strong> ចុចលើចំណុចដើម្បី <strong>មើល/កែប្រែ/លុប</strong>, ចុចអូសផ្លាស់ទី Pin, ឬចុចលើផែនទីដើម្បី <strong>បន្ថែមទីតាំងថ្មី</strong> (ធ្វើបច្ចុប្បន្នភាព Tab ទាំង ៣ ស្វ័យប្រវត្តិ)
+                  </>
+                ) : (
+                  <>
+                    <strong>ផ្ទាំងគ្រប់គ្រងទីតាំង ៖</strong> ចុចលើចំណុចដើម្បី <strong>កែប្រែ/លុប</strong>, ចុចអូសផ្លាស់ទី Pin, ឬចុចលើផែនទីដើម្បី <strong>បង្កើតចំណុចថ្មី</strong>
+                  </>
+                )}
               </span>
             </div>
-            <span className="bg-emerald-500/20 text-emerald-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30 shrink-0 hidden md:inline">
-              មិនប៉ះពាល់ Tab ១ & ២ ឡើយ
+            <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0 hidden md:inline">
+              Sync គ្រប់ផ្ទាំងទាំងអស់
             </span>
           </div>
         )}
@@ -630,7 +688,7 @@ export default function TempleMapModal({
                       const tagCount = tagCountsByLocation[loc.id] || 0;
                       const isCurrentlyDragging = draggingPinId === loc.id;
 
-                      // TAB 1: READ-ONLY OFFICIAL LABELED VIEW (Protected from accidental drag)
+                      // TAB 1: READ-ONLY OFFICIAL LABELED VIEW (Synchronized automatically)
                       if (activeTab === 'labeled') {
                         return (
                           <div
@@ -680,23 +738,27 @@ export default function TempleMapModal({
                         );
                       }
 
-                      // TAB 2: INTERACTIVE HOVER PIN (Protected from accidental drag)
+                      // TAB 2: INTERACTIVE HOVER & EDIT PIN (Draggable, Editable & Synced)
                       if (activeTab === 'interactive') {
                         return (
                           <div
                             key={loc.id}
+                            onMouseDown={(e) => handlePinDragStart(e, loc)}
+                            onTouchStart={(e) => handlePinDragStart(e, loc)}
                             onClick={(e) => {
+                              if (pinMovedFlagRef.current) return;
                               e.stopPropagation();
                               setSelectedLocation(loc);
                             }}
                             onMouseEnter={() => setHoveredLocation(loc)}
                             onMouseLeave={() => setHoveredLocation(null)}
-                            className={`map-pin-element absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 z-20 group ${
-                              isHighlighted ? 'scale-130 z-30' : 'hover:scale-125'
+                            className={`map-pin-element absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing transition-all duration-150 z-20 group ${
+                              isHighlighted || isCurrentlyDragging ? 'scale-135 z-30' : 'hover:scale-125'
                             }`}
                             style={{
                               left: `${loc.x}%`,
-                              top: `${loc.y}%`
+                              top: `${loc.y}%`,
+                              touchAction: 'none'
                             }}
                           >
                             {/* Pin Badge */}
@@ -748,15 +810,7 @@ export default function TempleMapModal({
                             onClick={(e) => {
                               if (pinMovedFlagRef.current) return;
                               e.stopPropagation();
-                              setEditingLoc(loc);
-                              setModalForm({
-                                id: loc.id,
-                                name: loc.name,
-                                type: loc.type || 'building',
-                                category: loc.category || '🏢 ក្រុមអគារ និង កុដិ'
-                              });
-                              setFormError('');
-                              setIsEditModalOpen(true);
+                              handleOpenEditModal(loc);
                             }}
                             className={`map-pin-element absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing transition-transform z-20 group ${
                               draggingPinId === loc.id ? 'scale-140 z-40' : 'hover:scale-125'
@@ -815,11 +869,11 @@ export default function TempleMapModal({
               </button>
             </div>
 
-            {/* Selected Location Banner Popover */}
+            {/* Selected Location Banner Popover (With Edit & Delete options in Tab 2 & 3) */}
             {selectedLocation && (
-              <div className="absolute top-3 left-3 max-w-[260px] sm:max-w-sm bg-slate-950/95 border border-amber-500/60 rounded-2xl p-2.5 sm:p-3 shadow-2xl backdrop-blur-md z-30 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute top-3 left-3 max-w-[280px] sm:max-w-sm bg-slate-950/95 border border-amber-500/60 rounded-2xl p-2.5 sm:p-3 shadow-2xl backdrop-blur-md z-30 animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
                     <div
                       className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-moul font-bold text-slate-950 text-[10px] sm:text-[11px] shadow-md shrink-0 ${
                         selectedLocation.type === 'gate' ? 'badge-gold' : 'bg-sky-400 text-slate-950'
@@ -838,13 +892,13 @@ export default function TempleMapModal({
                   </div>
                   <button
                     onClick={() => setSelectedLocation(null)}
-                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 shrink-0"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="mt-2 pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+                <div className="mt-2 pt-2 border-t border-slate-800 flex items-center justify-between gap-1.5 flex-wrap">
                   <div className="text-[10px] sm:text-[11px] text-slate-300">
                     ស្លាកលេខ ៖{' '}
                     <span className="text-amber-400 font-bold font-sans-en">
@@ -852,18 +906,30 @@ export default function TempleMapModal({
                     </span>
                   </div>
 
-                  {onFilterByLocation && (
+                  <div className="flex items-center gap-1 ml-auto">
+                    {/* Edit button directly in popover */}
                     <button
-                      onClick={() => {
-                        onFilterByLocation(selectedLocation.name);
-                        onClose();
-                      }}
-                      className="px-2 py-0.5 sm:px-2.5 sm:py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 shadow-sm"
+                      onClick={() => handleOpenEditModal(selectedLocation)}
+                      className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 hover:border-amber-400/50 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all flex items-center gap-1"
+                      title="កែប្រែឈ្មោះ ឬព័ត៌មានទីតាំងនេះ"
                     >
-                      <Search className="w-3 h-3" />
-                      <span>មើលស្លាកលេខ</span>
+                      <Edit2 className="w-3 h-3" />
+                      <span>កែ</span>
                     </button>
-                  )}
+
+                    {onFilterByLocation && (
+                      <button
+                        onClick={() => {
+                          onFilterByLocation(selectedLocation.name);
+                          onClose();
+                        }}
+                        className="px-2 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 shadow-sm"
+                      >
+                        <Search className="w-3 h-3" />
+                        <span>មើលស្លាក</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
@@ -881,16 +947,26 @@ export default function TempleMapModal({
                 </h3>
               </div>
 
-              {/* Search input in legend */}
-              <div className="relative w-full sm:w-60">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="ស្វែងរកទីតាំង..."
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-kantumruy"
-                />
+              {/* Search & Add button in legend */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <div className="relative flex-1 sm:w-56">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="ស្វែងរកទីតាំង..."
+                    className="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-kantumruy"
+                  />
+                </div>
+
+                <button
+                  onClick={handleOpenAddModal}
+                  className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl border border-emerald-400/50 shrink-0 transition-all flex items-center gap-1"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">បន្ថែម</span>
+                </button>
               </div>
             </div>
 
@@ -1015,39 +1091,29 @@ export default function TempleMapModal({
                                 </div>
                               </div>
 
-                              {/* Tagger Tab Actions */}
-                              {activeTab === 'tagger' && (
-                                <div className="flex items-center gap-1 shrink-0">
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingLoc(loc);
-                                      setModalForm({
-                                        id: loc.id,
-                                        name: loc.name,
-                                        type: loc.type || 'building',
-                                        category: loc.category || '🏢 ក្រុមអគារ និង កុដិ'
-                                      });
-                                      setFormError('');
-                                      setIsEditModalOpen(true);
-                                    }}
-                                    className="p-1 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-md"
-                                    title="កែប្រែ"
-                                  >
-                                    <Edit2 className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteLocation(loc.id);
-                                    }}
-                                    className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-md"
-                                    title="លុប"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              )}
+                              {/* Edit & Delete Action Buttons (Available across Tabs) */}
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenEditModal(loc);
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-md transition-colors"
+                                  title="កែប្រែទីតាំងនេះ"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteLocation(loc.id);
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-md transition-colors"
+                                  title="លុបទីតាំងនេះ"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                           );
                         })}
