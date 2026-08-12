@@ -22,6 +22,7 @@ import {
   seedFirebaseData,
   isConnected as isFirebaseConnected
 } from './utils/firebase';
+import { pushTagsToCloud, subscribeToCloudTags } from './utils/cloudSync';
 
 export default function App() {
   const [tags, setTags] = useState([]);
@@ -52,31 +53,41 @@ export default function App() {
     }, 3500);
   };
 
-  // Load initial tags & subscribe to Firebase Realtime updates
+  // Load initial tags & subscribe to Cloud & Firebase Realtime updates
   useEffect(() => {
     // 1. Load local fallback
     const localTags = getSavedTags();
     setTags(localTags);
 
-    // 2. Subscribe to Firebase Realtime Database
-    const unsubscribe = subscribeToFirebaseTags(
-      (cloudTags) => {
-        if (cloudTags && cloudTags.length > 0) {
-          setTags(cloudTags);
-          saveTags(cloudTags); // Cache locally
+    // 2. Subscribe to Zero-Config Cloud Sync (Auto-Sync PC & Mobile)
+    const unsubscribeCloud = subscribeToCloudTags((cloudTags) => {
+      if (cloudTags && cloudTags.length > 0) {
+        setTags(cloudTags);
+        saveTags(cloudTags);
+        setIsCloudSyncing(true);
+      }
+    });
+
+    // 3. Subscribe to Firebase Realtime Database (if configured)
+    const unsubscribeFirebase = subscribeToFirebaseTags(
+      (fbTags) => {
+        if (fbTags && fbTags.length > 0) {
+          setTags(fbTags);
+          saveTags(fbTags);
           setIsCloudSyncing(true);
         } else {
-          // Cloud empty -> Seed with 1,000 initial tags
           seedFirebaseData(localTags);
         }
       },
       (err) => {
         console.warn('Using Local Storage fallback:', err);
-        setIsCloudSyncing(false);
       }
     );
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeCloud();
+      unsubscribeFirebase();
+    };
   }, []);
 
   // Filter tags in real-time
@@ -97,7 +108,7 @@ export default function App() {
     setIsTempleMapOpen(true);
   };
 
-  // CRUD Operations with Firebase Sync
+  // CRUD Operations with Firebase & Cloud Sync
   const handleSaveTag = async (tagData) => {
     let updated;
     if (editingTag) {
@@ -114,7 +125,8 @@ export default function App() {
     setTags(updated);
     saveTags(updated);
     
-    // Cloud Sync
+    // Push to Zero-Config Cloud Sync & Firebase
+    pushTagsToCloud(updated);
     await saveTagToFirebase(tagData);
 
     setIsFormOpen(false);
@@ -130,7 +142,8 @@ export default function App() {
       setTags(updated);
       saveTags(updated);
       
-      // Cloud Delete Sync
+      // Push to Zero-Config Cloud Sync & Firebase
+      pushTagsToCloud(updated);
       await deleteTagFromFirebase(tagToDelete.id);
 
       setSelectedTag(null);
@@ -142,6 +155,7 @@ export default function App() {
     if (window.confirm('តើអ្នកពិតជាចង់កំណត់ឡើងវិញនូវទិន្នន័យគំរូ ១,០០០ នៃទីតាំងវត្តទាំង ២១ មែនទេ?')) {
       const reset = resetToSampleData();
       setTags(reset);
+      pushTagsToCloud(reset);
       seedFirebaseData(reset, true);
       showToast('បានកំណត់ឡើងវិញនូវទិន្នន័យគំរូ ១,០០០ នៃទីតាំងវត្តទាំង ២១ រួចរាល់!');
     }
@@ -152,7 +166,8 @@ export default function App() {
     setTags(importedTags);
     saveTags(importedTags);
     
-    // Overwrite Firebase Realtime Database with newly imported tags (auto-delete old cloud data)
+    // Push to Zero-Config Cloud Sync (PC to Mobile instant sync) & Firebase
+    pushTagsToCloud(importedTags);
     seedFirebaseData(importedTags, true);
 
     showToast(`បានលុបទិន្នន័យចាស់ និងជំនួសដោយទិន្នន័យថ្មីចំនួន ${westernToKhmerDigits(importedTags.length)} ស្លាកលេខ!`);
