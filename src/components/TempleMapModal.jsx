@@ -24,7 +24,8 @@ import {
   Sparkles,
   Layers,
   Map as MapIcon,
-  Move
+  Move,
+  Hand
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
@@ -44,6 +45,7 @@ export default function TempleMapModal({
 }) {
   const [locations, setLocations] = useState(getSavedTempleLocations());
   const [activeTab, setActiveTab] = useState('labeled'); // 'labeled' | 'interactive' | 'tagger'
+  const [isDragModeActive, setIsDragModeActive] = useState(false);
   const [zoomScale, setZoomScale] = useState(1.0);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -74,6 +76,7 @@ export default function TempleMapModal({
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
   const [draggingPinId, setDraggingPinId] = useState(null);
+  const pinMovedFlagRef = useRef(false);
 
   // Focus on highlighted location if passed from parent
   useEffect(() => {
@@ -134,7 +137,7 @@ export default function TempleMapModal({
 
   // Viewport Panning (Mouse & Touch)
   const handleMouseDown = (e) => {
-    if (zoomScale <= 1.0) return;
+    if (zoomScale <= 1.0 || isDragModeActive || activeTab === 'tagger') return;
     if (e.target.closest('.map-pin-element') || e.target.closest('.zoom-toolbar')) return;
     setIsPanning(true);
     panStartRef.current = {
@@ -163,7 +166,7 @@ export default function TempleMapModal({
   // Touch Panning
   const touchStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
   const handleTouchStart = (e) => {
-    if (zoomScale <= 1.0) return;
+    if (zoomScale <= 1.0 || isDragModeActive || activeTab === 'tagger') return;
     if (e.target.closest('.map-pin-element') || e.target.closest('.zoom-toolbar')) return;
     const touch = e.touches[0];
     touchStartRef.current = {
@@ -185,7 +188,7 @@ export default function TempleMapModal({
 
   // Map Click in Tab 3 (Add new pin)
   const handleMapClick = (e) => {
-    if (activeTab !== 'tagger' || draggingPinId) return;
+    if (activeTab !== 'tagger' || draggingPinId || pinMovedFlagRef.current) return;
     const rect = mapContainerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
@@ -207,10 +210,13 @@ export default function TempleMapModal({
     setIsEditModalOpen(true);
   };
 
-  // Pin Drag in Tab 3
+  // Ultra-Smooth Pin Dragging (Mouse & Touch on ALL Devices)
   const handlePinDragStart = (e, loc) => {
-    if (activeTab !== 'tagger') return;
+    const canDrag = activeTab === 'tagger' || isDragModeActive;
+    if (!canDrag) return;
+
     e.stopPropagation();
+    pinMovedFlagRef.current = false;
     setDraggingPinId(loc.id);
 
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -218,11 +224,16 @@ export default function TempleMapModal({
     let hasMoved = false;
 
     const onMove = (moveEvt) => {
+      if (moveEvt.cancelable) {
+        moveEvt.preventDefault();
+      }
+
       const currentX = moveEvt.touches ? moveEvt.touches[0].clientX : moveEvt.clientX;
       const currentY = moveEvt.touches ? moveEvt.touches[0].clientY : moveEvt.clientY;
 
-      if (Math.abs(currentX - clientX) > 4 || Math.abs(currentY - clientY) > 4) {
+      if (Math.abs(currentX - clientX) > 3 || Math.abs(currentY - clientY) > 3) {
         hasMoved = true;
+        pinMovedFlagRef.current = true;
       }
 
       if (hasMoved && mapContainerRef.current) {
@@ -244,6 +255,7 @@ export default function TempleMapModal({
       document.removeEventListener('mouseup', onEnd);
       document.removeEventListener('touchmove', onMove);
       document.removeEventListener('touchend', onEnd);
+      
       setDraggingPinId(null);
 
       if (hasMoved) {
@@ -251,12 +263,15 @@ export default function TempleMapModal({
           saveTempleLocations(prev);
           return prev;
         });
+        setTimeout(() => {
+          pinMovedFlagRef.current = false;
+        }, 150);
       }
     };
 
-    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mousemove', onMove, { passive: false });
     document.addEventListener('mouseup', onEnd);
-    document.addEventListener('touchmove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
     document.addEventListener('touchend', onEnd);
   };
 
@@ -508,12 +523,22 @@ export default function TempleMapModal({
             </button>
           </div>
 
-          {/* Eye Toggle & Hint */}
+          {/* Drag Mode Toggle & Eye Toggle */}
           <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 text-xs">
-            <div className="flex items-center gap-1 text-[11px] text-slate-400">
-              <Move className="w-3 h-3 text-amber-400" />
-              <span>{zoomScale > 1.0 ? 'អូស Pan ផែនទី' : 'ចុច + ដើម្បី Zoom'}</span>
-            </div>
+            
+            {/* Quick Drag Mode Toggle Button */}
+            <button
+              onClick={() => setIsDragModeActive(!isDragModeActive)}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-xl border text-xs font-bold transition-all active:scale-95 ${
+                isDragModeActive || activeTab === 'tagger'
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/20 animate-pulse'
+                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-amber-400'
+              }`}
+              title="បើក/បិទ មុខងារចុចអូសផ្លាស់ប្តូរទីតាំងលើផែនទី"
+            >
+              <Hand className="w-3.5 h-3.5" />
+              <span>{isDragModeActive || activeTab === 'tagger' ? '🖐️ កំពុងបើកអូស' : '🖐️ បើកអូស'}</span>
+            </button>
 
             <button
               onClick={() => setIsPinsVisible(!isPinsVisible)}
@@ -600,25 +625,31 @@ export default function TempleMapModal({
 
                       const isGate = loc.type === 'gate';
                       const tagCount = tagCountsByLocation[loc.id] || 0;
+                      const canDragThisPin = activeTab === 'tagger' || isDragModeActive;
+                      const isCurrentlyDragging = draggingPinId === loc.id;
 
                       // TAB 1: DIRECT BADGE + LABEL TAG
                       if (activeTab === 'labeled') {
                         return (
                           <div
                             key={loc.id}
+                            onMouseDown={(e) => canDragThisPin && handlePinDragStart(e, loc)}
+                            onTouchStart={(e) => canDragThisPin && handlePinDragStart(e, loc)}
                             onClick={(e) => {
+                              if (pinMovedFlagRef.current) return;
                               e.stopPropagation();
                               setSelectedLocation(loc);
                             }}
                             onMouseEnter={() => setHoveredLocation(loc)}
                             onMouseLeave={() => setHoveredLocation(null)}
-                            className={`map-pin-element absolute flex items-center -translate-y-1/2 cursor-pointer transition-transform duration-150 z-20 hover:scale-110 ${
-                              isHighlighted ? 'scale-115 z-30' : ''
-                            }`}
+                            className={`map-pin-element absolute flex items-center -translate-y-1/2 transition-transform duration-100 z-20 ${
+                              canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-115' : 'cursor-pointer hover:scale-110'
+                            } ${isHighlighted || isCurrentlyDragging ? 'scale-120 z-30' : ''}`}
                             style={{
                               left: `${loc.x}%`,
                               top: `${loc.y}%`,
-                              transform: 'translate(-10px, -50%)'
+                              transform: 'translate(-10px, -50%)',
+                              touchAction: 'none'
                             }}
                           >
                             {/* Round Badge Number */}
@@ -627,7 +658,7 @@ export default function TempleMapModal({
                                 isGate
                                   ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 ring-1 sm:ring-2 ring-amber-400/50'
                                   : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 ring-1 sm:ring-2 ring-sky-400/50'
-                              }`}
+                              } ${canDragThisPin ? 'ring-2 ring-emerald-400 animate-pulse' : ''}`}
                             >
                               {loc.id}
                             </div>
@@ -656,18 +687,22 @@ export default function TempleMapModal({
                         return (
                           <div
                             key={loc.id}
+                            onMouseDown={(e) => canDragThisPin && handlePinDragStart(e, loc)}
+                            onTouchStart={(e) => canDragThisPin && handlePinDragStart(e, loc)}
                             onClick={(e) => {
+                              if (pinMovedFlagRef.current) return;
                               e.stopPropagation();
                               setSelectedLocation(loc);
                             }}
                             onMouseEnter={() => setHoveredLocation(loc)}
                             onMouseLeave={() => setHoveredLocation(null)}
-                            className={`map-pin-element absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer transition-all duration-200 z-20 group ${
-                              isHighlighted ? 'scale-130 z-30' : 'hover:scale-125'
-                            }`}
+                            className={`map-pin-element absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-150 z-20 group ${
+                              canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-130' : 'cursor-pointer hover:scale-125'
+                            } ${isHighlighted || isCurrentlyDragging ? 'scale-135 z-30' : ''}`}
                             style={{
                               left: `${loc.x}%`,
-                              top: `${loc.y}%`
+                              top: `${loc.y}%`,
+                              touchAction: 'none'
                             }}
                           >
                             {/* Pin Badge */}
@@ -680,7 +715,7 @@ export default function TempleMapModal({
                                 isHighlighted
                                   ? 'ring-2 sm:ring-4 ring-amber-400 animate-pulse'
                                   : 'group-hover:ring-2 group-hover:ring-white'
-                              }`}
+                              } ${canDragThisPin ? 'ring-2 ring-emerald-400' : ''}`}
                             >
                               {loc.id}
                             </div>
@@ -717,6 +752,7 @@ export default function TempleMapModal({
                             onMouseDown={(e) => handlePinDragStart(e, loc)}
                             onTouchStart={(e) => handlePinDragStart(e, loc)}
                             onClick={(e) => {
+                              if (pinMovedFlagRef.current) return;
                               e.stopPropagation();
                               setEditingLoc(loc);
                               setModalForm({
@@ -729,11 +765,12 @@ export default function TempleMapModal({
                               setIsEditModalOpen(true);
                             }}
                             className={`map-pin-element absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing transition-transform z-20 group ${
-                              draggingPinId === loc.id ? 'scale-135 z-40' : 'hover:scale-120'
+                              draggingPinId === loc.id ? 'scale-140 z-40' : 'hover:scale-125'
                             }`}
                             style={{
                               left: `${loc.x}%`,
-                              top: `${loc.y}%`
+                              top: `${loc.y}%`,
+                              touchAction: 'none'
                             }}
                             title="ចុចដើម្បីកែប្រែ ឬអូសដើម្បីផ្លាស់ប្តូរទីតាំង"
                           >
@@ -742,7 +779,7 @@ export default function TempleMapModal({
                                 isGate
                                   ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500'
                                   : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500'
-                              } ring-2 ring-emerald-400/80`}
+                              } ring-2 ring-emerald-400/90 shadow-emerald-500/20`}
                             >
                               {loc.id}
                             </div>
