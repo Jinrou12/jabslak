@@ -42,6 +42,102 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
     document.body.removeChild(link);
   };
 
+  const [autoSequence, setAutoSequence] = useState(true);
+
+  // Helper parser function to map Excel/CSV row data to tag object
+  const parseRowToTag = (row, idx) => {
+    // 1. Tag Number Parsing
+    let tagNum = null;
+    if (!autoSequence) {
+      const tagKeys = [
+        'លេខស្លាក (Tag Number)', 'លេខស្លាក', 'ស្លាកលេខ', 'Tag Number', 
+        'tagNumber', 'Tag', 'tag', 'No', 'no', 'លេខរៀង', 'ID', 'id'
+      ];
+      for (const k of tagKeys) {
+        if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
+          const parsed = parseInt(String(row[k]).replace(/[^0-9]/g, ''), 10);
+          if (!isNaN(parsed) && parsed > 0) {
+            tagNum = parsed;
+            break;
+          }
+        }
+      }
+    }
+    // If autoSequence is true or no valid tag number in row, sequence 1, 2, 3... based on file row order
+    if (!tagNum) {
+      tagNum = idx + 1;
+    }
+
+    // 2. Name Parsing
+    const nameKeys = [
+      'ឈ្មោះ (Name)', 'ឈ្មោះ', 'ឈ្មោះមនុស្ស', 'ឈ្មោះម្ចាស់', 'ឈ្មោះអ្នកស្នាក់នៅ', 
+      'Name', 'name', 'Full Name', 'fullname'
+    ];
+    let nameVal = '';
+    for (const k of nameKeys) {
+      if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
+        nameVal = String(row[k]).trim();
+        break;
+      }
+    }
+    // Fallback name search if headers differ
+    if (!nameVal) {
+      for (const key of Object.keys(row)) {
+        const val = String(row[key] || '').trim();
+        if (val && !key.includes('ស្លាក') && !key.includes('tag') && !key.includes('phone') && !key.includes('ទូរស័ព្ទ')) {
+          nameVal = val;
+          break;
+        }
+      }
+    }
+
+    // 3. Location Parsing
+    const locKeys = [
+      'ទីតាំង (Location)', 'ទីតាំង', 'កុដិ', 'អាគារ', 'Location', 'location', 'Address', 'address'
+    ];
+    let locVal = '';
+    for (const k of locKeys) {
+      if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
+        locVal = String(row[k]).trim();
+        break;
+      }
+    }
+
+    // 4. Phone Parsing
+    const phoneKeys = [
+      'លេខទូរស័ព្ទ (Phone)', 'លេខទូរស័ព្ទ', 'ទូរស័ព្ទ', 'Phone', 'phone', 'Tel', 'tel', 'Mobile', 'mobile'
+    ];
+    let phoneVal = '';
+    for (const k of phoneKeys) {
+      if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
+        phoneVal = String(row[k]).trim();
+        break;
+      }
+    }
+
+    // 5. Notes Parsing
+    const notesKeys = [
+      'កំណត់សម្គាល់ (Notes)', 'កំណត់សម្គាល់', 'សម្គាល់', 'Notes', 'notes', 'Remark', 'remark'
+    ];
+    let notesVal = '';
+    for (const k of notesKeys) {
+      if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
+        notesVal = String(row[k]).trim();
+        break;
+      }
+    }
+
+    return {
+      id: `imported-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
+      tagNumber: tagNum,
+      name: nameVal || `ឈ្មោះ #${idx + 1}`,
+      location: locVal || 'ទីតាំងមិនទាន់កំណត់',
+      phone: phoneVal,
+      notes: notesVal,
+      updatedAt: new Date().toISOString()
+    };
+  };
+
   // 3. Import File Handler (Excel or CSV)
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
@@ -59,18 +155,10 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
           const ws = wb.Sheets[wsname];
           const jsonData = XLSX.utils.sheet_to_json(ws);
 
-          const formattedTags = jsonData.map((row, idx) => ({
-            id: `imported-${Date.now()}-${idx}`,
-            tagNumber: Number(row['លេខស្លាក (Tag Number)'] || row['លេខស្លាក'] || row['tagNumber'] || idx + 1),
-            name: String(row['ឈ្មោះ (Name)'] || row['ឈ្មោះ'] || row['name'] || 'គ្មានឈ្មោះ'),
-            location: String(row['ទីតាំង (Location)'] || row['ទីតាំង'] || row['location'] || 'ទីតាំងមិនទាន់កំណត់'),
-            phone: String(row['លេខទូរស័ព្ទ (Phone)'] || row['លេខទូរស័ព្ទ'] || row['phone'] || ''),
-            notes: String(row['កំណត់សម្គាល់ (Notes)'] || row['កំណត់សម្គាល់'] || row['notes'] || ''),
-            updatedAt: new Date().toISOString()
-          }));
+          const formattedTags = jsonData.map((row, idx) => parseRowToTag(row, idx));
 
           onImportData(formattedTags);
-          setImportStatus(`បាននាំចូលទិន្នន័យ ${formattedTags.length} ស្លាកលេខ ដោយជោគជ័យ!`);
+          setImportStatus(`បាននាំចូលទិន្នន័យ ${formattedTags.length} ស្លាកលេខ ដោយជោគជ័យ (រត់លេខតាមលំដាប់ឈ្មោះ)!`);
         } catch (err) {
           setImportStatus('មានបញ្ហាក្នុងការអានឯកសារ Excel');
         }
@@ -81,18 +169,10 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
         header: true,
         skipEmptyLines: true,
         complete: (results) => {
-          const formattedTags = results.data.map((row, idx) => ({
-            id: `csv-${Date.now()}-${idx}`,
-            tagNumber: Number(row.tagNumber || row['លេខស្លាក'] || idx + 1),
-            name: String(row.name || row['ឈ្មោះ'] || 'គ្មានឈ្មោះ'),
-            location: String(row.location || row['ទីតាំង'] || 'ទីតាំងមិនទាន់កំណត់'),
-            phone: String(row.phone || row['លេខទូរស័ព្ទ'] || ''),
-            notes: String(row.notes || row['កំណត់សម្គាល់'] || ''),
-            updatedAt: new Date().toISOString()
-          }));
+          const formattedTags = results.data.map((row, idx) => parseRowToTag(row, idx));
 
           onImportData(formattedTags);
-          setImportStatus(`បាននាំចូលទិន្នន័យ CSV ចំនួន ${formattedTags.length} ដោយជោគជ័យ!`);
+          setImportStatus(`បាននាំចូលទិន្នន័យ CSV ចំនួន ${formattedTags.length} ដោយជោគជ័យ (រត់លេខតាមលំដាប់ឈ្មោះ)!`);
         }
       });
     } else {
@@ -147,6 +227,19 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
             <p className="text-xs text-slate-400 mt-1 mb-3 font-kantumruy">
               ជ្រើសរើសឯកសារ .xlsx ឬ .csv ដើម្បីបញ្ចូលបញ្ជីស្លាកលេខរាប់ពាន់
             </p>
+
+            {/* Auto Sequence Option */}
+            <div className="my-3 text-left bg-slate-900/90 p-2.5 rounded-xl border border-slate-800/80 flex items-center justify-between gap-2">
+              <label className="text-[11px] text-emerald-300 font-semibold cursor-pointer flex items-center gap-2 select-none font-kantumruy">
+                <input
+                  type="checkbox"
+                  checked={autoSequence}
+                  onChange={(e) => setAutoSequence(e.target.checked)}
+                  className="w-4 h-4 accent-emerald-500 rounded cursor-pointer"
+                />
+                <span>រត់លេខស្លាកស្វ័យប្រវត្តិ (#១, #២, #៣...) តាមលំដាប់ឈ្មោះក្នុងឯកសារ</span>
+              </label>
+            </div>
 
             <label className="inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-900/30 cursor-pointer transition-all active:scale-95">
               <FileSpreadsheet className="w-4 h-4" />
