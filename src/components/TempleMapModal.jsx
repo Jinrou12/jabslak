@@ -25,7 +25,8 @@ import {
   Layers,
   Map as MapIcon,
   Move,
-  Info
+  Tag,
+  Hash
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
@@ -45,6 +46,7 @@ export default function TempleMapModal({
 }) {
   const [locations, setLocations] = useState(getSavedTempleLocations());
   const [activeTab, setActiveTab] = useState('labeled'); // 'labeled' | 'interactive' | 'tagger'
+  const [showNameLabels, setShowNameLabels] = useState(false); // Default to clean numbered badges on mobile to prevent clutter
   const [zoomScale, setZoomScale] = useState(1.0);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -545,7 +547,7 @@ export default function TempleMapModal({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🖼️ ស្លាកឈ្មោះ (អាន)</span>
+              <span>🖼️ ប្លង់ផែនទី</span>
             </button>
 
             <button
@@ -571,12 +573,22 @@ export default function TempleMapModal({
             </button>
           </div>
 
-          {/* Eye Toggle & Hint */}
+          {/* Clean Pins vs Full Labels Toggle & Eye Toggle */}
           <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 text-xs">
-            <div className="flex items-center gap-1 text-[11px] text-slate-400">
-              <Move className="w-3 h-3 text-amber-400" />
-              <span>{zoomScale > 1.0 ? 'អូស Pan ផែនទី' : 'ចុច + ដើម្បី Zoom'}</span>
-            </div>
+            
+            {/* Label Display Toggle Button (Switch between Clean Badge & Full Name) */}
+            <button
+              onClick={() => setShowNameLabels(!showNameLabels)}
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-xl border text-xs font-bold transition-all active:scale-95 ${
+                showNameLabels
+                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
+                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-amber-400'
+              }`}
+              title="បិទ/បើក ការបង្ហាញឈ្មោះវែងលើ Pin"
+            >
+              {showNameLabels ? <Tag className="w-3.5 h-3.5" /> : <Hash className="w-3.5 h-3.5" />}
+              <span>{showNameLabels ? '🏷️ ឈ្មោះពេញ' : '🔢 ស្លាកលេខស្អាត'}</span>
+            </button>
 
             <button
               onClick={() => setIsPinsVisible(!isPinsVisible)}
@@ -591,29 +603,6 @@ export default function TempleMapModal({
             </button>
           </div>
         </div>
-
-        {/* Tab 2 & 3 Interactive Sync Guidance Banner */}
-        {(activeTab === 'interactive' || activeTab === 'tagger') && (
-          <div className="px-4 py-2 bg-gradient-to-r from-sky-950/80 via-slate-900 to-amber-950/80 border-b border-amber-500/30 flex items-center justify-between text-xs text-amber-300 shrink-0">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-amber-400 shrink-0 animate-pulse" />
-              <span>
-                {activeTab === 'interactive' ? (
-                  <>
-                    <strong>ផ្ទាំងអន្តរកម្ម & កែប្រែ ៖</strong> ចុចលើចំណុចដើម្បី <strong>មើល/កែប្រែ/លុប</strong>, ចុចអូសផ្លាស់ទី Pin, ឬចុចលើផែនទីដើម្បី <strong>បន្ថែមទីតាំងថ្មី</strong> (ធ្វើបច្ចុប្បន្នភាព Tab ទាំង ៣ ស្វ័យប្រវត្តិ)
-                  </>
-                ) : (
-                  <>
-                    <strong>ផ្ទាំងគ្រប់គ្រងទីតាំង ៖</strong> ចុចលើចំណុចដើម្បី <strong>កែប្រែ/លុប</strong>, ចុចអូសផ្លាស់ទី Pin, ឬចុចលើផែនទីដើម្បី <strong>បង្កើតចំណុចថ្មី</strong>
-                  </>
-                )}
-              </span>
-            </div>
-            <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-500/30 shrink-0 hidden md:inline">
-              Sync គ្រប់ផ្ទាំងទាំងអស់
-            </span>
-          </div>
-        )}
 
         {/* ═══════════════ MAIN CONTENT BODY (MAP & LEGEND) ═══════════════ */}
         <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3">
@@ -687,98 +676,61 @@ export default function TempleMapModal({
                       const isGate = loc.type === 'gate';
                       const tagCount = tagCountsByLocation[loc.id] || 0;
                       const isCurrentlyDragging = draggingPinId === loc.id;
+                      const canDragThisPin = activeTab === 'interactive' || activeTab === 'tagger';
 
-                      // TAB 1: READ-ONLY OFFICIAL LABELED VIEW (Synchronized automatically)
-                      if (activeTab === 'labeled') {
-                        return (
+                      return (
+                        <div
+                          key={loc.id}
+                          onMouseDown={(e) => canDragThisPin && handlePinDragStart(e, loc)}
+                          onTouchStart={(e) => canDragThisPin && handlePinDragStart(e, loc)}
+                          onClick={(e) => {
+                            if (pinMovedFlagRef.current) return;
+                            e.stopPropagation();
+                            setSelectedLocation(loc);
+                          }}
+                          onMouseEnter={() => setHoveredLocation(loc)}
+                          onMouseLeave={() => setHoveredLocation(null)}
+                          className={`map-pin-element absolute flex items-center -translate-x-1/2 -translate-y-1/2 transition-transform duration-100 z-20 ${
+                            canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-125' : 'cursor-pointer hover:scale-120'
+                          } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-40' : ''}`}
+                          style={{
+                            left: `${loc.x}%`,
+                            top: `${loc.y}%`,
+                            touchAction: 'none'
+                          }}
+                        >
+                          {/* Round Crisp Number Badge (Clean, Never Cluttered) */}
                           <div
-                            key={loc.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedLocation(loc);
-                            }}
-                            onMouseEnter={() => setHoveredLocation(loc)}
-                            onMouseLeave={() => setHoveredLocation(null)}
-                            className={`map-pin-element absolute flex items-center -translate-y-1/2 cursor-pointer transition-transform duration-150 z-20 hover:scale-110 ${
-                              isHighlighted ? 'scale-115 z-30' : ''
+                            className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center font-moul text-[9px] sm:text-[10px] md:text-[11px] font-black text-slate-950 border border-white sm:border-2 shadow-lg shrink-0 ${
+                              isGate
+                                ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 ring-1 sm:ring-2 ring-amber-400/50'
+                                : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 ring-1 sm:ring-2 ring-sky-400/50'
+                            } ${
+                              isHighlighted
+                                ? 'ring-2 sm:ring-4 ring-amber-400 ring-offset-1 animate-pulse'
+                                : ''
                             }`}
-                            style={{
-                              left: `${loc.x}%`,
-                              top: `${loc.y}%`,
-                              transform: 'translate(-10px, -50%)'
-                            }}
                           >
-                            {/* Round Badge Number */}
-                            <div
-                              className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center font-moul text-[9px] sm:text-[10px] md:text-[11px] font-black text-slate-950 border border-white sm:border-2 shadow-md shrink-0 z-10 ${
-                                isGate
-                                  ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 ring-1 sm:ring-2 ring-amber-400/50'
-                                  : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 ring-1 sm:ring-2 ring-sky-400/50'
-                              }`}
-                            >
-                              {loc.id}
-                            </div>
+                            {loc.id}
+                          </div>
 
-                            {/* Name Pill Tag */}
+                          {/* Optional Label Pill (Shown on Desktop or when Toggle is Active) */}
+                          {showNameLabels && (
                             <div
-                              className={`text-[9px] sm:text-[11px] md:text-xs font-bold px-1.5 py-0.5 sm:px-2.5 sm:py-1 rounded-r-xl border shadow-xl -ml-2 pl-2.5 sm:pl-3.5 flex items-center gap-1 text-white ${
+                              className={`text-[9px] sm:text-[10px] md:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-r-xl border shadow-xl -ml-1 pl-2 flex items-center gap-1 text-white whitespace-nowrap pointer-events-none ${
                                 isGate
-                                  ? 'bg-slate-950/95 border-amber-400 text-amber-200'
-                                  : 'bg-slate-950/95 border-sky-400 text-sky-100'
+                                  ? 'bg-slate-950/90 border-amber-400/80 text-amber-200'
+                                  : 'bg-slate-950/90 border-sky-400/80 text-sky-100'
                               } ${isHighlighted ? 'ring-2 ring-amber-400' : ''}`}
                             >
-                              <span className="whitespace-nowrap">{loc.name}</span>
-                              {tagCount > 0 && (
-                                <span className="bg-amber-500 text-slate-950 font-sans-en text-[8px] sm:text-[9px] md:text-[10px] font-black px-1 sm:px-1.5 py-0.1 rounded-full ml-0.5">
-                                  {tagCount}
-                                </span>
-                              )}
+                              <span>{loc.name}</span>
                             </div>
-                          </div>
-                        );
-                      }
+                          )}
 
-                      // TAB 2: INTERACTIVE HOVER & EDIT PIN (Draggable, Editable & Synced)
-                      if (activeTab === 'interactive') {
-                        return (
-                          <div
-                            key={loc.id}
-                            onMouseDown={(e) => handlePinDragStart(e, loc)}
-                            onTouchStart={(e) => handlePinDragStart(e, loc)}
-                            onClick={(e) => {
-                              if (pinMovedFlagRef.current) return;
-                              e.stopPropagation();
-                              setSelectedLocation(loc);
-                            }}
-                            onMouseEnter={() => setHoveredLocation(loc)}
-                            onMouseLeave={() => setHoveredLocation(null)}
-                            className={`map-pin-element absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing transition-all duration-150 z-20 group ${
-                              isHighlighted || isCurrentlyDragging ? 'scale-135 z-30' : 'hover:scale-125'
-                            }`}
-                            style={{
-                              left: `${loc.x}%`,
-                              top: `${loc.y}%`,
-                              touchAction: 'none'
-                            }}
-                          >
-                            {/* Pin Badge */}
+                          {/* Hover Tooltip (When not showing full labels) */}
+                          {!showNameLabels && (
                             <div
-                              className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center font-moul text-[9px] sm:text-[10px] md:text-[11px] font-black text-slate-950 border border-white sm:border-2 shadow-xl ${
-                                isGate
-                                  ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500'
-                                  : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500'
-                              } ${
-                                isHighlighted
-                                  ? 'ring-2 sm:ring-4 ring-amber-400 animate-pulse'
-                                  : 'group-hover:ring-2 group-hover:ring-white'
-                              }`}
-                            >
-                              {loc.id}
-                            </div>
-
-                            {/* Floating Tooltip */}
-                            <div
-                              className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 bg-slate-950/95 text-white font-bold text-[11px] sm:text-xs px-2.5 py-1 rounded-xl border shadow-2xl pointer-events-none whitespace-nowrap transition-all duration-150 z-40 ${
+                              className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-slate-950/95 text-white font-bold text-[10px] sm:text-xs px-2 py-0.5 rounded-lg border shadow-2xl pointer-events-none whitespace-nowrap transition-all duration-150 z-50 ${
                                 isGate ? 'border-amber-400 text-amber-200' : 'border-sky-400 text-sky-100'
                               } ${
                                 isHighlighted || hoveredLocation?.id === loc.id
@@ -786,56 +738,11 @@ export default function TempleMapModal({
                                   : 'opacity-0 scale-90 pointer-events-none'
                               }`}
                             >
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-moul text-amber-400">[{loc.id}]</span>
-                                <span>{loc.name}</span>
-                                {tagCount > 0 && (
-                                  <span className="bg-amber-500/30 text-amber-300 text-[10px] px-1.5 py-0.2 rounded-md">
-                                    {tagCount} ស្លាក
-                                  </span>
-                                )}
-                              </div>
+                              <span className="font-moul text-amber-400">[{loc.id}]</span> {loc.name}
                             </div>
-                          </div>
-                        );
-                      }
-
-                      // TAB 3: CUSTOM TAGGER / MANAGE PIN (Freely Editable, Draggable & Customizable)
-                      if (activeTab === 'tagger') {
-                        return (
-                          <div
-                            key={loc.id}
-                            onMouseDown={(e) => handlePinDragStart(e, loc)}
-                            onTouchStart={(e) => handlePinDragStart(e, loc)}
-                            onClick={(e) => {
-                              if (pinMovedFlagRef.current) return;
-                              e.stopPropagation();
-                              handleOpenEditModal(loc);
-                            }}
-                            className={`map-pin-element absolute -translate-x-1/2 -translate-y-1/2 cursor-grab active:cursor-grabbing transition-transform z-20 group ${
-                              draggingPinId === loc.id ? 'scale-140 z-40' : 'hover:scale-125'
-                            }`}
-                            style={{
-                              left: `${loc.x}%`,
-                              top: `${loc.y}%`,
-                              touchAction: 'none'
-                            }}
-                            title="ចុចដើម្បីកែប្រែ ឬអូសដើម្បីផ្លាស់ប្តូរទីតាំង"
-                          >
-                            <div
-                              className={`w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center font-moul text-[10px] sm:text-[11px] md:text-xs font-black text-slate-950 border border-white sm:border-2 shadow-xl ${
-                                isGate
-                                  ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500'
-                                  : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500'
-                              } ring-2 ring-emerald-400/90 shadow-emerald-500/20`}
-                            >
-                              {loc.id}
-                            </div>
-                          </div>
-                        );
-                      }
-
-                      return null;
+                          )}
+                        </div>
+                      );
                     })}
                   </div>
                 )}
@@ -869,9 +776,9 @@ export default function TempleMapModal({
               </button>
             </div>
 
-            {/* Selected Location Banner Popover (With Edit & Delete options in Tab 2 & 3) */}
+            {/* Selected Location Banner Popover (Crystal Clear Floating Card) */}
             {selectedLocation && (
-              <div className="absolute top-3 left-3 max-w-[280px] sm:max-w-sm bg-slate-950/95 border border-amber-500/60 rounded-2xl p-2.5 sm:p-3 shadow-2xl backdrop-blur-md z-30 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute top-3 left-3 max-w-[280px] sm:max-w-sm bg-slate-950/95 border border-amber-500/60 rounded-2xl p-2.5 sm:p-3 shadow-2xl backdrop-blur-md z-40 animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div
@@ -902,7 +809,7 @@ export default function TempleMapModal({
                   <div className="text-[10px] sm:text-[11px] text-slate-300">
                     ស្លាកលេខ ៖{' '}
                     <span className="text-amber-400 font-bold font-sans-en">
-                      {tagCountsByLocation[selectedLocation.id] || 0} នាក់
+                      {westernToKhmerDigits(tagCountsByLocation[selectedLocation.id] || 0)} នាក់
                     </span>
                   </div>
 
@@ -1063,7 +970,7 @@ export default function TempleMapModal({
                               }}
                               className={`p-2 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
                                 isSel
-                                  ? 'bg-amber-500/15 border-amber-500/60 shadow-md shadow-amber-500/10'
+                                  ? 'bg-amber-500/15 border-amber-500/60 shadow-md shadow-amber-500/10 ring-1 ring-amber-400/40'
                                   : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-800/50'
                               }`}
                             >
@@ -1091,7 +998,7 @@ export default function TempleMapModal({
                                 </div>
                               </div>
 
-                              {/* Edit & Delete Action Buttons (Available across Tabs) */}
+                              {/* Edit & Delete Action Buttons */}
                               <div className="flex items-center gap-1 shrink-0">
                                 <button
                                   onClick={(e) => {
