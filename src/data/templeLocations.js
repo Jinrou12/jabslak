@@ -24,14 +24,14 @@ export const INITIAL_TEMPLE_LOCATIONS = [
 ];
 
 export const TEMPLE_PALI_DIRECTIONS = [
-  { key: 'N',  name: 'ឧត្តរ (ជើង)',   type: 'cardinal', positionClass: 'top-[-2.5rem] left-1/2 -translate-x-1/2' },
-  { key: 'S',  name: 'ទក្សិណ (ត្បូង)', type: 'cardinal', positionClass: 'bottom-[-2.5rem] left-1/2 -translate-x-1/2' },
-  { key: 'E',  name: 'បូព៌ (កើត)',    type: 'cardinal', positionClass: 'top-1/2 right-[-8.5rem] -translate-y-1/2' },
-  { key: 'W',  name: 'បស្ចឹម (លិច)',   type: 'cardinal', positionClass: 'top-1/2 left-[-8.5rem] -translate-y-1/2' },
-  { key: 'NE', name: 'ឦសាន',           type: 'intercardinal', positionClass: 'top-[-2rem] right-[-2.5rem]' },
-  { key: 'SE', name: 'អាគ្នេយ៍',       type: 'intercardinal', positionClass: 'bottom-[-2rem] right-[-2.5rem]' },
-  { key: 'SW', name: 'និរតី',          type: 'intercardinal', positionClass: 'bottom-[-2rem] left-[-2.5rem]' },
-  { key: 'NW', name: 'ពាយ័ព្យ',        type: 'intercardinal', positionClass: 'top-[-2rem] left-[-2.5rem]' },
+  { key: 'N',  name: 'ឧត្តរ (ជើង)',   type: 'cardinal', positionClass: 'top-1 left-1/2 -translate-x-1/2' },
+  { key: 'S',  name: 'ទក្សិណ (ត្បូង)', type: 'cardinal', positionClass: 'bottom-1 left-1/2 -translate-x-1/2' },
+  { key: 'E',  name: 'បូព៌ (កើត)',    type: 'cardinal', positionClass: 'top-1/2 right-1 -translate-y-1/2' },
+  { key: 'W',  name: 'បស្ចឹម (លិច)',   type: 'cardinal', positionClass: 'top-1/2 left-1 -translate-y-1/2' },
+  { key: 'NE', name: 'ឦសាន',           type: 'intercardinal', positionClass: 'top-1 right-1' },
+  { key: 'SE', name: 'អាគ្នេយ៍',       type: 'intercardinal', positionClass: 'bottom-1 right-1' },
+  { key: 'SW', name: 'និរតី',          type: 'intercardinal', positionClass: 'bottom-1 left-1' },
+  { key: 'NW', name: 'ពាយ័ព្យ',        type: 'intercardinal', positionClass: 'top-1 left-1' },
 ];
 
 const STORAGE_KEY = 'TEMPLE_MAP_LOCATIONS_PERSIST_V4';
