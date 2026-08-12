@@ -167,7 +167,7 @@ export default function TempleMapModal({
   // Zoom handlers
   const handleZoom = (delta) => {
     setZoomScale((prev) => {
-      const next = Math.max(1.0, Math.min(3.0, parseFloat((prev + delta).toFixed(2))));
+      const next = Math.max(0.5, Math.min(3.0, parseFloat((prev + delta).toFixed(2))));
       return next;
     });
   };
