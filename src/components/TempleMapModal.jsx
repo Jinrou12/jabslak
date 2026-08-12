@@ -24,15 +24,20 @@ import {
   Sparkles,
   Layers,
   Map as MapIcon,
-  Move
+  Move,
+  Cloud,
+  CloudCheck
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
   TEMPLE_PALI_DIRECTIONS,
   getSavedTempleLocations,
-  saveTempleLocations,
   resetTempleLocations
 } from '../data/templeLocations';
+import {
+  subscribeToFirebaseTempleLocations,
+  saveTempleLocationsToFirebase
+} from '../utils/firebase';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function TempleMapModal({
@@ -43,6 +48,7 @@ export default function TempleMapModal({
   onAddTagForLocation
 }) {
   const [locations, setLocations] = useState(getSavedTempleLocations());
+  const [isCloudSynced, setIsCloudSynced] = useState(false);
   const [activeTab, setActiveTab] = useState('labeled'); // 'labeled' | 'interactive' | 'tagger'
   const [zoomScale, setZoomScale] = useState(1.0);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
@@ -76,6 +82,23 @@ export default function TempleMapModal({
   const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
   const [draggingPinId, setDraggingPinId] = useState(null);
   const pinMovedFlagRef = useRef(false);
+
+  // ════════ REAL-TIME CLOUD SYNC FOR PC & PHONE ════════
+  useEffect(() => {
+    const unsubscribe = subscribeToFirebaseTempleLocations(
+      (cloudLocations) => {
+        if (Array.isArray(cloudLocations) && cloudLocations.length > 0) {
+          setLocations(cloudLocations);
+          setIsCloudSynced(true);
+        }
+      },
+      (err) => {
+        console.warn('Temple locations using local cache:', err);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
 
   // Focus on highlighted location if passed from parent
   useEffect(() => {
@@ -210,7 +233,7 @@ export default function TempleMapModal({
     setIsEditModalOpen(true);
   };
 
-  // Smooth Pin Dragging (Supported in Tab 2 & Tab 3)
+  // Ultra-Precise Pin Dragging (Synchronizes to Cloud on End)
   const handlePinDragStart = (e, loc) => {
     if (activeTab !== 'tagger' && activeTab !== 'interactive') return;
 
@@ -259,7 +282,7 @@ export default function TempleMapModal({
 
       if (hasMoved) {
         setLocations((prev) => {
-          saveTempleLocations(prev);
+          saveTempleLocationsToFirebase(prev);
           return prev;
         });
         setTimeout(() => {
@@ -306,7 +329,7 @@ export default function TempleMapModal({
     setIsEditModalOpen(true);
   };
 
-  // Save / Edit Location Modal (Updates Tab 1, 2, 3 synchronously)
+  // Save / Edit Location (Syncs to Firebase Cloud Database)
   const handleSaveLocationForm = () => {
     const id = modalForm.id.trim();
     const name = modalForm.name.trim();
@@ -368,27 +391,28 @@ export default function TempleMapModal({
     }
 
     setLocations(updated);
-    saveTempleLocations(updated);
+    saveTempleLocationsToFirebase(updated);
     setIsEditModalOpen(false);
     setEditingLoc(null);
   };
 
-  // Delete Location (Updates Tab 1, 2, 3 synchronously)
+  // Delete Location (Syncs to Firebase Cloud Database)
   const handleDeleteLocation = (id) => {
     if (window.confirm(`តើអ្នកពិតជាចង់លុបទីតាំង #${id} នេះមែនទេ?`)) {
       const updated = locations.filter((l) => l.id !== id);
       setLocations(updated);
-      saveTempleLocations(updated);
+      saveTempleLocationsToFirebase(updated);
       setIsEditModalOpen(false);
       if (selectedLocation?.id === id) setSelectedLocation(null);
     }
   };
 
-  // Reset to default
+  // Reset to default (Syncs to Firebase Cloud Database)
   const handleResetLocations = () => {
     if (window.confirm('តើអ្នកពិតជាចង់កំណត់ទីតាំងឡើងវិញទៅទិន្នន័យដើមទាំង ២១ ចំណុចមែនទេ?')) {
       const reset = resetTempleLocations();
       setLocations(reset);
+      saveTempleLocationsToFirebase(reset);
       setSelectedLocation(null);
     }
   };
@@ -402,7 +426,7 @@ export default function TempleMapModal({
     dlAnchorElem.click();
   };
 
-  // Import JSON
+  // Import JSON (Syncs to Firebase Cloud Database)
   const handleImportJSON = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -413,7 +437,7 @@ export default function TempleMapModal({
         const list = Array.isArray(parsed) ? parsed : parsed.locations || [];
         if (list.length > 0) {
           setLocations(list);
-          saveTempleLocations(list);
+          saveTempleLocationsToFirebase(list);
           alert(`បាននាំចូលទិន្នន័យទីតាំងចំនួន ${list.length} ចំណុចដោយជោគជ័យ!`);
         }
       } catch (err) {
@@ -440,7 +464,7 @@ export default function TempleMapModal({
     });
 
     setLocations(updated);
-    saveTempleLocations(updated);
+    saveTempleLocationsToFirebase(updated);
     setIsCategoryModalOpen(false);
     setNewCategoryName('');
     setSelectedLocationIdsForGroup([]);
@@ -480,12 +504,16 @@ export default function TempleMapModal({
               <MapIcon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <h2 className="text-sm sm:text-base md:text-lg font-bold font-moul text-amber-400 truncate">
                   ផែនទីវត្ត និង ទីតាំង
                 </h2>
                 <span className="bg-amber-500/20 text-amber-300 text-[10px] sm:text-xs font-bold px-2 py-0.2 rounded-full border border-amber-500/30 shrink-0">
                   {westernToKhmerDigits(locations.length)} ទីតាំង
+                </span>
+                <span className="bg-emerald-500/15 text-emerald-400 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.2 rounded-full border border-emerald-500/30 shrink-0 hidden xs:inline-flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Sync ផ្ទាល់</span>
                 </span>
               </div>
               <p className="text-[10px] sm:text-xs text-slate-400 truncate hidden sm:block">
@@ -656,9 +684,9 @@ export default function TempleMapModal({
                   ))}
                 </div>
 
-                {/* ════════ MAP PIN MARKERS & SMART DIRECTIONAL LABELS ════════ */}
+                {/* ════════ MAP PIN MARKERS & MATHEMATICALLY LOCKED BADGES ════════ */}
                 {isPinsVisible && (
-                  <div className="absolute inset-0 z-20">
+                  <div className="absolute inset-0 z-20 pointer-events-none">
                     {locations.map((loc) => {
                       const isHighlighted =
                         selectedLocation?.id === loc.id ||
@@ -670,76 +698,70 @@ export default function TempleMapModal({
                       const isCurrentlyDragging = draggingPinId === loc.id;
                       const canDragThisPin = activeTab === 'interactive' || activeTab === 'tagger';
                       
-                      // Smart Directional Placement to Prevent Any Overlap:
                       const pos = loc.pos || (loc.x > 75 ? 'L' : 'R');
-                      
-                      let containerFlex = 'flex-row items-center -translate-y-1/2';
-                      let labelMargin = '-ml-1.5 pl-2.5 pr-1.5';
-                      let transformStyle = 'translate(-8px, -50%)';
-
-                      if (pos === 'L') {
-                        containerFlex = 'flex-row-reverse items-center -translate-y-1/2 -translate-x-full';
-                        labelMargin = '-mr-1.5 pr-2.5 pl-1.5';
-                        transformStyle = 'translate(8px, -50%)';
-                      } else if (pos === 'T') {
-                        containerFlex = 'flex-col-reverse items-center -translate-x-1/2 -translate-y-full';
-                        labelMargin = '-mb-1 pb-1.5 pt-1 px-1.5';
-                        transformStyle = 'translate(-50%, 8px)';
-                      } else if (pos === 'B') {
-                        containerFlex = 'flex-col items-center -translate-x-1/2';
-                        labelMargin = '-mt-1 pt-1.5 pb-1 px-1.5';
-                        transformStyle = 'translate(-50%, -8px)';
-                      }
 
                       return (
                         <div
                           key={loc.id}
-                          onMouseDown={(e) => canDragThisPin && handlePinDragStart(e, loc)}
-                          onTouchStart={(e) => canDragThisPin && handlePinDragStart(e, loc)}
-                          onClick={(e) => {
-                            if (pinMovedFlagRef.current) return;
-                            e.stopPropagation();
-                            setSelectedLocation(loc);
-                          }}
-                          onMouseEnter={() => setHoveredLocation(loc)}
-                          onMouseLeave={() => setHoveredLocation(null)}
-                          className={`map-pin-element absolute flex ${containerFlex} transition-transform duration-100 z-20 ${
-                            canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-115' : 'cursor-pointer hover:scale-110'
-                          } ${isHighlighted || isCurrentlyDragging ? 'scale-125 z-40' : ''}`}
                           style={{
+                            position: 'absolute',
                             left: `${loc.x}%`,
-                            top: `${loc.y}%`,
-                            transform: transformStyle,
-                            touchAction: 'none'
+                            top: `${loc.y}%`
                           }}
+                          className="pointer-events-auto"
                         >
-                          {/* Round Crisp Number Badge */}
+                          {/* Central Anchor Wrapper: Center is locked exactly at (loc.x, loc.y) */}
                           <div
-                            className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center font-moul text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-950 border border-white sm:border-2 shadow-md shrink-0 z-10 ${
-                              isGate
-                                ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 ring-1 ring-amber-400/50'
-                                : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 ring-1 ring-sky-400/50'
-                            } ${
-                              isHighlighted
-                                ? 'ring-2 sm:ring-4 ring-amber-400 ring-offset-1 animate-pulse'
-                                : ''
-                            }`}
-                          >
-                            {loc.id}
-                          </div>
-
-                          {/* Smart, Compact, Non-Overlapping Name Pill */}
-                          <div
-                            className={`text-[7.5px] sm:text-[9px] md:text-[10.5px] font-bold py-0.5 rounded-lg border shadow-lg flex items-center gap-1 text-white whitespace-nowrap z-0 ${labelMargin} ${
-                              isGate
-                                ? 'bg-slate-950/92 border-amber-400/90 text-amber-200'
-                                : 'bg-slate-950/92 border-sky-400/90 text-sky-100'
-                            } ${isHighlighted ? 'ring-1.5 ring-amber-400 bg-slate-950' : ''}`}
-                            style={{
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.6)'
+                            onMouseDown={(e) => canDragThisPin && handlePinDragStart(e, loc)}
+                            onTouchStart={(e) => canDragThisPin && handlePinDragStart(e, loc)}
+                            onClick={(e) => {
+                              if (pinMovedFlagRef.current) return;
+                              e.stopPropagation();
+                              setSelectedLocation(loc);
                             }}
+                            onMouseEnter={() => setHoveredLocation(loc)}
+                            onMouseLeave={() => setHoveredLocation(null)}
+                            className={`map-pin-element relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 transition-transform duration-100 ${
+                              canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-120' : 'cursor-pointer hover:scale-115'
+                            } ${isHighlighted || isCurrentlyDragging ? 'scale-125 z-40' : 'z-20'}`}
+                            style={{ touchAction: 'none' }}
                           >
-                            <span>{loc.name}</span>
+                            {/* Exact Mathematical Pin Badge Center */}
+                            <div
+                              className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center font-moul text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-950 border border-white sm:border-2 shadow-md shrink-0 z-10 ${
+                                isGate
+                                  ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 ring-1 ring-amber-400/50'
+                                  : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 ring-1 ring-sky-400/50'
+                              } ${
+                                isHighlighted
+                                  ? 'ring-2 sm:ring-4 ring-amber-400 ring-offset-1 animate-pulse'
+                                  : ''
+                              }`}
+                            >
+                              {loc.id}
+                            </div>
+
+                            {/* Floating Directional Name Label (Positioned relative to badge center) */}
+                            <div
+                              className={`absolute text-[7.5px] sm:text-[9px] md:text-[10.5px] font-bold py-0.5 px-1.5 rounded-lg border shadow-lg whitespace-nowrap pointer-events-none z-0 ${
+                                isGate
+                                  ? 'bg-slate-950/92 border-amber-400/90 text-amber-200'
+                                  : 'bg-slate-950/92 border-sky-400/90 text-sky-100'
+                              } ${isHighlighted ? 'ring-1.5 ring-amber-400 bg-slate-950' : ''} ${
+                                pos === 'L'
+                                  ? 'right-full mr-1 top-1/2 -translate-y-1/2'
+                                  : pos === 'T'
+                                  ? 'bottom-full mb-1 left-1/2 -translate-x-1/2'
+                                  : pos === 'B'
+                                  ? 'top-full mt-1 left-1/2 -translate-x-1/2'
+                                  : 'left-full ml-1 top-1/2 -translate-y-1/2'
+                              }`}
+                              style={{
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.6)'
+                              }}
+                            >
+                              <span>{loc.name}</span>
+                            </div>
                           </div>
                         </div>
                       );

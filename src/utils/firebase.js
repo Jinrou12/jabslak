@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue, set, remove, get } from 'firebase/database';
-import { INITIAL_TEMPLE_LOCATIONS } from '../data/templeLocations';
+import { INITIAL_TEMPLE_LOCATIONS, saveTempleLocations as saveTempleLocationsLocal } from '../data/templeLocations';
 import { INITIAL_TAG_DATA } from '../data/sampleData';
 
 // Firebase configuration (Can be updated with user's Firebase project keys or default demo keys)
@@ -106,6 +106,64 @@ export function subscribeToFirebaseTags(onDataReceived, onError) {
   );
 
   return unsubscribe;
+}
+
+/**
+ * Subscribe to real-time temple locations in Firebase Realtime Database
+ * Ensures PC and Phone are 100% synchronized in real time!
+ */
+export function subscribeToFirebaseTempleLocations(onDataReceived, onError) {
+  if (!db) {
+    if (onError) onError(new Error('Firebase DB is not initialized'));
+    return () => {};
+  }
+
+  const locsRef = ref(db, 'temple_locations');
+  
+  const unsubscribe = onValue(
+    locsRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        let locList = [];
+        if (Array.isArray(val)) {
+          locList = val.filter(Boolean);
+        } else if (typeof val === 'object') {
+          locList = Object.values(val);
+        }
+        if (locList.length > 0) {
+          saveTempleLocationsLocal(locList);
+          onDataReceived(locList);
+          return;
+        }
+      }
+      // If empty in cloud -> seed INITIAL_TEMPLE_LOCATIONS
+      saveTempleLocationsToFirebase(INITIAL_TEMPLE_LOCATIONS);
+      onDataReceived(INITIAL_TEMPLE_LOCATIONS);
+    },
+    (err) => {
+      console.error('Firebase temple locations subscription error:', err);
+      if (onError) onError(err);
+    }
+  );
+
+  return unsubscribe;
+}
+
+/**
+ * Save temple locations to Firebase Realtime DB and LocalStorage
+ */
+export async function saveTempleLocationsToFirebase(locations) {
+  saveTempleLocationsLocal(locations);
+  if (!db) return false;
+  try {
+    const locsRef = ref(db, 'temple_locations');
+    await set(locsRef, locations);
+    return true;
+  } catch (err) {
+    console.error('Error saving temple locations to Firebase:', err);
+    return false;
+  }
 }
 
 /**
