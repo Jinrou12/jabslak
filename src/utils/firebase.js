@@ -132,6 +132,16 @@ export function subscribeToFirebaseTempleLocations(onDataReceived, onError) {
           locList = Object.values(val);
         }
         if (locList.length > 0) {
+          // Auto-align if cloud had outdated shifted coordinates for 10 or 16
+          const item10 = locList.find((l) => l.id === '១០' || l.id === '10');
+          const item16 = locList.find((l) => l.id === '១៦' || l.id === '16');
+          if ((item10 && item10.x < 50) || (item16 && item16.x < 45)) {
+            console.log('Aligning cloud coordinates for 10 and 16 to authentic temple locations...');
+            saveTempleLocationsToFirebase(INITIAL_TEMPLE_LOCATIONS);
+            onDataReceived(INITIAL_TEMPLE_LOCATIONS);
+            return;
+          }
+
           saveTempleLocationsLocal(locList);
           onDataReceived(locList);
           return;
