@@ -15,11 +15,11 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
   });
 
   const handleShare = async () => {
-    const text = `🏷️ ស្លាកលេខ: #${khmerTagNo} (${tag.tagNumber})\n👤 ឈ្មោះ: ${tag.name}\n📍 ទីតាំង: ${tag.location}\n📞 ទូរស័ព្ទ: ${tag.phone || 'គ្មាន'}`;
+    const text = `🏷️ ស្លាកលេខ: ${khmerTagNo} (${tag.tagNumber})\n👤 ឈ្មោះ: ${tag.name}\n📍 ទីតាំង: ${tag.location}\n📞 ទូរស័ព្ទ: ${tag.phone || 'គ្មាន'}`;
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `ស្លាកលេខ #${khmerTagNo} - ${tag.name}`,
+          title: `ស្លាកលេខ ${khmerTagNo} - ${tag.name}`,
           text: text,
         });
       } catch (e) {
@@ -81,7 +81,7 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
               </div>
               <span className="text-[10px] font-bold tracking-widest uppercase opacity-70 relative z-10">ស្លាកលេខ</span>
               <span className="text-4xl font-black font-kantumruy relative z-10 leading-none mt-0.5">
-                #{khmerTagNo}
+                {khmerTagNo}
               </span>
               <span className="text-[11px] font-semibold opacity-60 font-sans-en relative z-10">
                 TAG {tag.tagNumber}

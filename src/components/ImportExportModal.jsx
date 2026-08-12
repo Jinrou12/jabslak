@@ -237,7 +237,7 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
                   onChange={(e) => setAutoSequence(e.target.checked)}
                   className="w-4 h-4 accent-emerald-500 rounded cursor-pointer"
                 />
-                <span>រត់លេខស្លាកស្វ័យប្រវត្តិ (#១, #២, #៣...) តាមលំដាប់ឈ្មោះក្នុងឯកសារ</span>
+                <span>រត់លេខស្លាកស្វ័យប្រវត្តិ (១, ២, ៣...) តាមលំដាប់ឈ្មោះក្នុងឯកសារ</span>
               </label>
             </div>
 

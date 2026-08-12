@@ -102,10 +102,10 @@ export default function App() {
     let updated;
     if (editingTag) {
       updated = tags.map((t) => (t.id === tagData.id ? tagData : t));
-      showToast(`បានកែប្រែព័ត៌មានស្លាកលេខ #${westernToKhmerDigits(tagData.tagNumber)} រួចរាល់!`);
+      showToast(`បានកែប្រែព័ត៌មានស្លាកលេខ ${westernToKhmerDigits(tagData.tagNumber)} រួចរាល់!`);
     } else {
       updated = [tagData, ...tags];
-      showToast(`បានបន្ថែមស្លាកលេខថ្មី #${westernToKhmerDigits(tagData.tagNumber)} (${tagData.name}) រួចរាល់!`);
+      showToast(`បានបន្ថែមស្លាកលេខថ្មី ${westernToKhmerDigits(tagData.tagNumber)} (${tagData.name}) រួចរាល់!`);
       try {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
       } catch (e) {}
@@ -125,7 +125,7 @@ export default function App() {
   };
 
   const handleDeleteTag = async (tagToDelete) => {
-    if (window.confirm(`តើអ្នកពិតជាចង់លុបស្លាកលេខ #${westernToKhmerDigits(tagToDelete.tagNumber)} (${tagToDelete.name}) មែនទេ?`)) {
+    if (window.confirm(`តើអ្នកពិតជាចង់លុបស្លាកលេខ ${westernToKhmerDigits(tagToDelete.tagNumber)} (${tagToDelete.name}) មែនទេ?`)) {
       const updated = tags.filter((t) => t.id !== tagToDelete.id);
       setTags(updated);
       saveTags(updated);
@@ -134,7 +134,7 @@ export default function App() {
       await deleteTagFromFirebase(tagToDelete.id);
 
       setSelectedTag(null);
-      showToast(`បានលុបស្លាកលេខ #${westernToKhmerDigits(tagToDelete.tagNumber)} រួចរាល់!`);
+      showToast(`បានលុបស្លាកលេខ ${westernToKhmerDigits(tagToDelete.tagNumber)} រួចរាល់!`);
     }
   };
 
@@ -308,7 +308,7 @@ export default function App() {
           onScanSuccess={(scannedTag) => {
             setIsQRScannerOpen(false);
             setSelectedTag(scannedTag);
-            showToast(`បានស្កែនឃើញស្លាកលេខ #${westernToKhmerDigits(scannedTag.tagNumber)}!`);
+            showToast(`បានស្កែនឃើញស្លាកលេខ ${westernToKhmerDigits(scannedTag.tagNumber)}!`);
           }}
         />
       )}

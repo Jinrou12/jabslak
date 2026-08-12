@@ -19,7 +19,7 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap }) {
         <div className="w-14 h-14 rounded-2xl badge-gold flex flex-col items-center justify-center shrink-0 text-slate-950 font-extrabold shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform border border-amber-300">
           <span className="text-[9px] leading-tight font-bold font-sans-en uppercase opacity-80">ស្លាកលេខ</span>
           <span className="text-lg md:text-xl font-black font-kantumruy leading-none mt-0.5">
-            #{khmerTagNo}
+            {khmerTagNo}
           </span>
         </div>
 

@@ -31,7 +31,7 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap }) {
                   {/* Tag Number */}
                   <td className="px-4 py-3 text-center">
                     <span className="inline-flex items-center justify-center bg-amber-500 text-slate-950 font-black px-2.5 py-1 rounded-xl text-xs shadow-md shadow-amber-500/20 font-sans-en">
-                      #{khmerTagNo}
+                      {khmerTagNo}
                     </span>
                   </td>
 
