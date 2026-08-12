@@ -1,8 +1,8 @@
 import React from 'react';
-import { MapPin, Phone, Eye, User, Hash } from 'lucide-react';
+import { MapPin, Phone, Eye, User, Hash, Map as MapIcon } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
-export default function TagTableView({ tags, onSelectTag }) {
+export default function TagTableView({ tags, onSelectTag, onViewOnMap }) {
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
       <div className="overflow-x-auto">
@@ -42,10 +42,20 @@ export default function TagTableView({ tags, onSelectTag }) {
 
                   {/* Location - High visibility */}
                   <td className="px-4 py-3">
-                    <div className="inline-flex items-center gap-1.5 bg-amber-500/15 border border-amber-500/30 text-amber-300 px-3 py-1 rounded-xl text-xs font-extrabold">
-                      <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                    <button
+                      onClick={(e) => {
+                        if (onViewOnMap) {
+                          e.stopPropagation();
+                          onViewOnMap(tag.baseLocation || tag.location);
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 border border-amber-500/30 text-amber-300 px-3 py-1 rounded-xl text-xs font-extrabold transition-all"
+                      title="ចុចដើម្បីមើលទីតាំងលើផែនទីវត្ត"
+                    >
+                      <MapPin className="w-3.5 h-3.5 shrink-0" />
                       <span>{tag.location}</span>
-                    </div>
+                      <MapIcon className="w-3 h-3 opacity-60 ml-1" />
+                    </button>
                   </td>
 
                   {/* Phone */}

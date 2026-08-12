@@ -1,9 +1,9 @@
 import React from 'react';
-import { X, MapPin, Phone, User, Edit3, Trash2, Share2, Printer, CheckCircle2, MessageCircle, QrCode, Sparkles, Tag, Navigation } from 'lucide-react';
+import { X, MapPin, Phone, User, Edit3, Trash2, Share2, Printer, CheckCircle2, MessageCircle, QrCode, Sparkles, Tag, Navigation, Map as MapIcon } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
-export default function TagDetailModal({ tag, onClose, onEdit, onDelete }) {
+export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewOnMap }) {
   if (!tag) return null;
 
   const khmerTagNo = westernToKhmerDigits(tag.tagNumber);
@@ -117,11 +117,17 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete }) {
 
           {/* Location Card */}
           <div
-            className="rounded-2xl p-4 flex items-start gap-3.5 group transition-all duration-200 hover:scale-[1.01]"
+            onClick={() => {
+              if (onViewOnMap) {
+                onViewOnMap(tag.baseLocation || tag.location);
+              }
+            }}
+            className="rounded-2xl p-4 flex items-start gap-3.5 group transition-all duration-200 hover:scale-[1.01] cursor-pointer"
             style={{
               background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.02) 100%)',
               border: '1px solid rgba(245,158,11,0.15)',
             }}
+            title="ចុចដើម្បីមើលទីតាំងលើផែនទីវត្ត"
           >
             <div className="p-3 rounded-xl shrink-0"
               style={{
@@ -131,7 +137,13 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete }) {
               <MapPin className="w-5 h-5 text-amber-400" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] text-amber-400/70 font-semibold tracking-wide uppercase">ទីតាំងស្លាកលេខ</div>
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-amber-400/70 font-semibold tracking-wide uppercase">ទីតាំងស្លាកលេខ</span>
+                <span className="text-[10px] text-amber-400 font-bold flex items-center gap-1 bg-amber-500/10 px-2 py-0.5 rounded-md">
+                  <MapIcon className="w-3 h-3" />
+                  <span>មើលលើផែនទី</span>
+                </span>
+              </div>
               <div className="text-[1.05rem] font-bold text-slate-100 font-kantumruy mt-0.5 leading-snug">
                 {tag.location}
               </div>

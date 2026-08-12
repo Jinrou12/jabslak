@@ -1,3 +1,5 @@
+import { INITIAL_TEMPLE_LOCATIONS } from './templeLocations';
+
 // Generate 1,000 realistic Cambodian Tag records for instant search testing
 const firstNames = [
   'សុខ', 'ចាន់', 'សៅ', 'គង់', 'ហ៊ុយ', 'វណ្ណៈ', 'រតនៈ', 'សុភ័ក្ត្រ', 'ពិសិដ្ឋ',
@@ -14,19 +16,8 @@ const titles = [
   'ឧបាសក', 'ឧបាសិកា', 'ញោម', 'ញោមស្រី', 'លោកតា', 'លោកយាយ', 'លោក', 'អ្នកស្រី'
 ];
 
-export const locationsList = [
-  'អាគារ A - ជាន់ទី ១',
-  'អាគារ A - ជាន់ទី ២',
-  'អាគារ B - ជាន់ទី ១',
-  'អាគារ B - ជាន់ទី ២',
-  'រោងទី ១ (ខាងមុខ)',
-  'រោងទី ២ (ខាងស្តាំ)',
-  'រោងទី ៣ (ខាងឆ្វេង)',
-  'អាគារបុណ្យធំ - តុ ០១-២០',
-  'អាគារបុណ្យធំ - តុ ២១-៤០',
-  'សាលាឆាន់ - ជួរ A',
-  'សាលាឆាន់ - ជួរ B'
-];
+// Use the 21 authentic temple locations as primary location list
+export const locationsList = INITIAL_TEMPLE_LOCATIONS.map((loc) => loc.name);
 
 export function generateSampleData(count = 1000) {
   const data = [];
@@ -37,8 +28,8 @@ export function generateSampleData(count = 1000) {
     const ln = lastNames[(i * 13) % lastNames.length];
     const fullName = `${title} ${fn} ${ln}`;
 
-    const locIndex = i % locationsList.length;
-    const locationName = locationsList[locIndex];
+    const locObj = INITIAL_TEMPLE_LOCATIONS[i % INITIAL_TEMPLE_LOCATIONS.length];
+    const locationName = locObj.name;
     const tableNo = (i % 25) + 1;
     const fullLocation = `${locationName} (តុ ${tableNo < 10 ? '០' + tableNo : tableNo})`;
 
@@ -64,6 +55,7 @@ export function generateSampleData(count = 1000) {
       name: fullName,
       location: fullLocation,
       baseLocation: locationName,
+      templeLocationId: locObj.id,
       phone: phone,
       notes: notes,
       status: i % 15 === 0 ? 'CHECKED_OUT' : 'ACTIVE',

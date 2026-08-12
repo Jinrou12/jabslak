@@ -1,8 +1,8 @@
 import React from 'react';
-import { MapPin, Phone, ChevronRight, User } from 'lucide-react';
+import { MapPin, Phone, ChevronRight, User, Map as MapIcon } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
-export default function TagCard({ tag, onSelectTag }) {
+export default function TagCard({ tag, onSelectTag, onViewOnMap }) {
   const khmerTagNo = westernToKhmerDigits(tag.tagNumber);
 
   return (
@@ -36,18 +36,36 @@ export default function TagCard({ tag, onSelectTag }) {
       </div>
 
       {/* Prominent & Highlighted Location Banner Box (ទីតាំងស្លាកលេខ) */}
-      <div className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-slate-900 border border-amber-500/40 rounded-xl p-2.5 flex items-center gap-2.5 shadow-sm group-hover:border-amber-400 transition-colors">
-        <div className="p-1.5 bg-amber-500 text-slate-950 rounded-lg shrink-0 shadow-md">
-          <MapPin className="w-4 h-4 stroke-[2.5]" />
+      <div
+        onClick={(e) => {
+          if (onViewOnMap) {
+            e.stopPropagation();
+            onViewOnMap(tag.baseLocation || tag.location);
+          }
+        }}
+        className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-slate-900 border border-amber-500/40 rounded-xl p-2.5 flex items-center justify-between gap-2.5 shadow-sm group-hover:border-amber-400 transition-all hover:scale-[1.01]"
+        title="ចុចដើម្បីមើលទីតាំងលើផែនទីវត្ត"
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="p-1.5 bg-amber-500 text-slate-950 rounded-lg shrink-0 shadow-md">
+            <MapPin className="w-4 h-4 stroke-[2.5]" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider block font-kantumruy leading-tight">
+              ទីតាំងស្លាកលេខ (LOCATION)
+            </span>
+            <span className="text-xs md:text-sm font-extrabold text-amber-200 truncate block font-kantumruy">
+              {tag.location}
+            </span>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <span className="text-[10px] text-amber-400 font-extrabold uppercase tracking-wider block font-kantumruy leading-tight">
-            ទីតាំងស្លាកលេខ (LOCATION)
-          </span>
-          <span className="text-xs md:text-sm font-extrabold text-amber-200 truncate block font-kantumruy">
-            {tag.location}
-          </span>
-        </div>
+
+        {onViewOnMap && (
+          <div className="flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 px-2 py-1 rounded-lg border border-amber-500/30 shrink-0 transition-all">
+            <MapIcon className="w-3 h-3" />
+            <span>ផែនទី</span>
+          </div>
+        )}
       </div>
 
       {/* Footer Row: Phone & Action Arrow */}

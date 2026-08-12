@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, QrCode, Plus, FileSpreadsheet, RotateCcw, Users, MapPin, Cloud, Smartphone } from 'lucide-react';
+import { Tag, QrCode, Plus, FileSpreadsheet, RotateCcw, Users, MapPin, Cloud, Smartphone, Map as MapIcon } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function Header({
@@ -12,6 +12,7 @@ export default function Header({
   onOpenLocationStats,
   onOpenCloudConfig,
   onOpenMobileConnect,
+  onOpenTempleMap,
   isCloudSyncing
 }) {
   return (
@@ -43,9 +44,22 @@ export default function Header({
           </div>
         </div>
 
-        {/* Quick Stats Badges */}
+        {/* Quick Stats & Function Badges */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
           
+          {/* Main Function: 🗺️ ផែនទី/ទីតាំង Button */}
+          <button
+            onClick={onOpenTempleMap}
+            className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500/25 via-amber-400/20 to-sky-500/25 border-2 border-amber-400/70 hover:border-amber-400 text-amber-300 hover:text-amber-200 rounded-xl px-3.5 py-1.5 text-xs md:text-sm font-bold transition-all shrink-0 active:scale-95 shadow-lg shadow-amber-500/15 group"
+            title="បើកមើលផែនទីវត្ត និងទីតាំងអន្តរកម្ម"
+          >
+            <MapIcon className="w-4 h-4 text-amber-400 group-hover:rotate-12 transition-transform" />
+            <span className="font-moul text-xs text-amber-400">🗺️ ផែនទី/ទីតាំង</span>
+            <span className="bg-amber-500 text-slate-950 font-sans-en text-[10px] font-black px-1.5 py-0.2 rounded-full">
+              ២១
+            </span>
+          </button>
+
           {/* Mobile Phone Access QR Button */}
           <button
             onClick={onOpenMobileConnect}
@@ -76,15 +90,12 @@ export default function Header({
             className="flex items-center gap-2 bg-slate-900/80 hover:bg-slate-800 border border-slate-700/60 rounded-xl px-3 py-1.5 text-xs text-slate-300 transition-all shrink-0 active:scale-95"
           >
             <MapPin className="w-3.5 h-3.5 text-amber-400" />
-            <span>ទីតាំងសរុប</span>
-            <span className="bg-amber-500/20 text-amber-400 font-bold px-2 py-0.5 rounded-lg text-xs">
-              ១១ ទីតាំង
-            </span>
+            <span>ស្ថិតិទីតាំង</span>
           </button>
 
           <div className="flex items-center gap-2 bg-slate-900/80 border border-slate-700/60 rounded-xl px-3 py-1.5 text-xs text-slate-300 shrink-0">
             <Users className="w-3.5 h-3.5 text-sky-400" />
-            <span>ទិន្នន័យសរុប</span>
+            <span>ទិន្នន័យ</span>
             <span className="bg-sky-500/20 text-sky-300 font-bold px-2 py-0.5 rounded-lg text-xs font-sans-en">
               {westernToKhmerDigits(filteredCount)} / {westernToKhmerDigits(totalCount)}
             </span>

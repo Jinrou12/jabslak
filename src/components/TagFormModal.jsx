@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Tag, MapPin, User, Phone, FileText, ChevronDown, Sparkles } from 'lucide-react';
+import { X, Save, Tag, MapPin, User, Phone, FileText, ChevronDown, Sparkles, Map as MapIcon } from 'lucide-react';
 import { locationsList } from '../data/sampleData';
 
-export default function TagFormModal({ initialData, onClose, onSave, nextAvailableNumber }) {
+export default function TagFormModal({ initialData, onClose, onSave, nextAvailableNumber, onOpenTempleMap }) {
   const isEditing = Boolean(initialData && initialData.id);
 
   const [formData, setFormData] = useState({
@@ -185,15 +185,23 @@ export default function TagFormModal({ initialData, onClose, onSave, nextAvailab
                 </div>
                 <span className="text-sm font-extrabold text-amber-400">ទីតាំងស្លាកលេខ (Location) *</span>
               </label>
-              <span className="text-[11px] text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 font-semibold">
-                សំខាន់បំផុត
-              </span>
+              
+              {onOpenTempleMap && (
+                <button
+                  type="button"
+                  onClick={onOpenTempleMap}
+                  className="text-[11px] text-amber-300 hover:text-white bg-amber-500/20 hover:bg-amber-500 px-2.5 py-1 rounded-xl border border-amber-500/40 font-bold flex items-center gap-1 transition-all"
+                >
+                  <MapIcon className="w-3.5 h-3.5" />
+                  <span>បើកមើលប្លង់វត្ត</span>
+                </button>
+              )}
             </div>
 
             {/* Quick Location Chips */}
             <div className="mb-3">
-              <span className="text-[11px] text-slate-400 mb-1.5 block font-medium">ជ្រើសរើសទីតាំងរហ័ស៖</span>
-              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto no-scrollbar pr-1">
+              <span className="text-[11px] text-slate-400 mb-1.5 block font-medium">ជ្រើសរើសទីតាំងរហ័សទាំង ២១ ៖</span>
+              <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto no-scrollbar pr-1">
                 {locationsList.map((loc) => {
                   const isSelected = formData.locationPreset === loc;
                   return (
@@ -217,7 +225,7 @@ export default function TagFormModal({ initialData, onClose, onSave, nextAvailab
             {/* Location Select + Table/Detail Input */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
               <div>
-                <label className="block text-[11px] text-slate-400 mb-1 font-medium">តំបន់ / អាគារ៖</label>
+                <label className="block text-[11px] text-slate-400 mb-1 font-medium">តំបន់ / អគារក្នុងវត្ត៖</label>
                 <div className="relative">
                   <select
                     value={formData.locationPreset}
@@ -248,68 +256,64 @@ export default function TagFormModal({ initialData, onClose, onSave, nextAvailab
 
             {/* Full preview text box */}
             <div className="mt-3 bg-slate-950/90 border border-slate-800 rounded-xl p-2.5 flex items-center justify-between">
-              <span className="text-[11px] text-slate-400 font-medium">ទីតាំងពេញលេញ៖</span>
-              <input
-                type="text"
-                value={formData.location}
-                onChange={(e) => handleCustomLocationChange(e.target.value)}
-                placeholder="វាយបញ្ចូលទីតាំងផ្ទាល់ខ្លួន..."
-                className="bg-transparent text-right font-bold text-amber-300 text-xs md:text-sm font-kantumruy focus:outline-none flex-1 ml-2"
-              />
+              <span className="text-[11px] text-slate-400">ទីតាំងពេញលេញ៖</span>
+              <span className="text-xs font-bold text-amber-300 font-kantumruy truncate max-w-[280px]">
+                {formData.location || 'មិនទាន់កំណត់'}
+              </span>
             </div>
 
             {errors.location && (
-              <p className="text-[11px] text-rose-400 mt-1.5 font-kantumruy">{errors.location}</p>
+              <p className="text-[11px] text-rose-400 mt-1 font-kantumruy">{errors.location}</p>
             )}
-
           </div>
 
-          {/* Phone Number */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1 font-kantumruy">
-              <Phone className="w-3.5 h-3.5 text-sky-400" />
-              <span>លេខទូរស័ព្ទ (Phone Number - ជម្រើស)</span>
-            </label>
-            <input
-              type="text"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              placeholder="ឧ. 012 345 678"
-              className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-4 py-2.5 text-slate-100 font-sans-en focus:outline-none transition-all"
-            />
-          </div>
+          {/* Row 3: Phone Number & Notes */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1 font-kantumruy">
+                <Phone className="w-3.5 h-3.5 text-sky-400" />
+                <span>លេខទូរស័ព្ទ (Phone)</span>
+              </label>
+              <input
+                type="text"
+                value={formData.phone}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="ឧ. 012 345 678"
+                className="w-full bg-slate-950 border border-slate-700 focus:border-sky-400 rounded-xl px-3.5 py-2.5 text-slate-100 font-sans-en text-sm focus:outline-none transition-all"
+              />
+            </div>
 
-          {/* Notes */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1 font-kantumruy">
-              <FileText className="w-3.5 h-3.5 text-slate-400" />
-              <span>កំណត់សម្គាល់ (Notes - ជម្រើស)</span>
-            </label>
-            <textarea
-              rows={2}
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="បន្ថែមព័ត៌មានផ្សេងៗ..."
-              className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-4 py-2 text-slate-100 text-xs md:text-sm font-kantumruy focus:outline-none transition-all resize-none"
-            />
+            <div>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1 font-kantumruy">
+                <FileText className="w-3.5 h-3.5 text-amber-400" />
+                <span>កំណត់សម្គាល់បន្ថែម</span>
+              </label>
+              <input
+                type="text"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                placeholder="ឧ. មកជាមួយកូន ២ នាក់..."
+                className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-3.5 py-2.5 text-slate-100 font-kantumruy text-sm focus:outline-none transition-all"
+              />
+            </div>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs md:text-sm font-medium transition-all"
+              className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs md:text-sm font-semibold transition-all"
             >
               បោះបង់
             </button>
-            
+
             <button
               type="submit"
-              className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 rounded-xl text-xs md:text-sm font-bold shadow-lg shadow-amber-500/25 transition-all flex items-center gap-1.5"
+              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs md:text-sm shadow-lg shadow-amber-500/25 flex items-center gap-2 transition-all active:scale-95"
             >
-              <Save className="w-4 h-4" />
-              <span>{isEditing ? 'រក្សាទុកការប្រែប្រួល' : 'រក្សាទុកស្លាកលេខថ្មី'}</span>
+              <Save className="w-4 h-4 stroke-[2.5]" />
+              <span>{isEditing ? 'រក្សាទុកការកែប្រែ' : 'បញ្ចូលស្លាកលេខ'}</span>
             </button>
           </div>
 

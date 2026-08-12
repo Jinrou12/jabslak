@@ -12,6 +12,7 @@ import ImportExportModal from './components/ImportExportModal';
 import LocationStatsModal from './components/LocationStatsModal';
 import FirebaseConfigModal from './components/FirebaseConfigModal';
 import MobileConnectModal from './components/MobileConnectModal';
+import TempleMapModal from './components/TempleMapModal';
 import { searchTags, westernToKhmerDigits } from './utils/khmerSearch';
 import { getSavedTags, saveTags, resetToSampleData } from './utils/storage';
 import {
@@ -38,6 +39,8 @@ export default function App() {
   const [isLocationStatsOpen, setIsLocationStatsOpen] = useState(false);
   const [isCloudConfigOpen, setIsCloudConfigOpen] = useState(false);
   const [isMobileConnectOpen, setIsMobileConnectOpen] = useState(false);
+  const [isTempleMapOpen, setIsTempleMapOpen] = useState(false);
+  const [templeMapTargetLoc, setTempleMapTargetLoc] = useState(null);
   
   // Toast notification
   const [toastMessage, setToastMessage] = useState(null);
@@ -87,6 +90,12 @@ export default function App() {
     const maxNum = Math.max(...tags.map((t) => Number(t.tagNumber) || 0));
     return maxNum + 1;
   }, [tags]);
+
+  // Handle open map focused on a location
+  const handleOpenMapWithLocation = (locName) => {
+    setTempleMapTargetLoc(locName);
+    setIsTempleMapOpen(true);
+  };
 
   // CRUD Operations with Firebase Sync
   const handleSaveTag = async (tagData) => {
@@ -177,6 +186,10 @@ export default function App() {
         onOpenLocationStats={() => setIsLocationStatsOpen(true)}
         onOpenCloudConfig={() => setIsCloudConfigOpen(true)}
         onOpenMobileConnect={() => setIsMobileConnectOpen(true)}
+        onOpenTempleMap={() => {
+          setTempleMapTargetLoc(null);
+          setIsTempleMapOpen(true);
+        }}
         isCloudSyncing={isCloudSyncing}
       />
 
@@ -202,6 +215,7 @@ export default function App() {
                   key={tag.id}
                   tag={tag}
                   onSelectTag={(t) => setSelectedTag(t)}
+                  onViewOnMap={handleOpenMapWithLocation}
                 />
               ))}
             </div>
@@ -210,6 +224,7 @@ export default function App() {
               <TagTableView
                 tags={filteredTags}
                 onSelectTag={(t) => setSelectedTag(t)}
+                onViewOnMap={handleOpenMapWithLocation}
               />
             </div>
           )
@@ -264,6 +279,10 @@ export default function App() {
             setIsFormOpen(true);
           }}
           onDelete={(t) => handleDeleteTag(t)}
+          onViewOnMap={(loc) => {
+            setSelectedTag(null);
+            handleOpenMapWithLocation(loc);
+          }}
         />
       )}
 
@@ -276,6 +295,9 @@ export default function App() {
           }}
           onSave={handleSaveTag}
           nextAvailableNumber={nextAvailableTagNumber}
+          onOpenTempleMap={() => {
+            setIsTempleMapOpen(true);
+          }}
         />
       )}
 
@@ -322,6 +344,31 @@ export default function App() {
       {isMobileConnectOpen && (
         <MobileConnectModal
           onClose={() => setIsMobileConnectOpen(false)}
+        />
+      )}
+
+      {/* 🗺️ Interactive Temple Map Modal */}
+      {isTempleMapOpen && (
+        <TempleMapModal
+          allTags={tags}
+          highlightLocationName={templeMapTargetLoc}
+          onClose={() => {
+            setIsTempleMapOpen(false);
+            setTempleMapTargetLoc(null);
+          }}
+          onFilterByLocation={(locName) => {
+            setSelectedLocation(locName);
+            showToast(`បានច្រោះបញ្ជីស្លាកលេខតាម៖ ${locName}`);
+          }}
+          onAddTagForLocation={(locName) => {
+            setEditingTag({
+              locationPreset: locName,
+              location: locName,
+              tagNumber: nextAvailableTagNumber
+            });
+            setIsTempleMapOpen(false);
+            setIsFormOpen(true);
+          }}
         />
       )}
 

@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ផែនទីវត្តអន្តរកម្ម - Temple Interactive Map</title>
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@400;700;900&family=Moul&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-family: 'Battambang', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(135deg, #1e1b4b, #312e81, #0f172a);
+            text-align: center;
+            border-bottom: 2px solid #f59e0b;
+            box-shadow: 0 4px 20px rgba(245, 158, 11, 0.2);
+        }
+
+        header h1 {
+            font-family: 'Moul', cursive;
+            color: #fbbf24;
+            font-size: 1.8rem;
+            text-shadow: 0 2px 8px rgba(251, 191, 36, 0.4);
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .header-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-header {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fbbf24;
+            border: 1px solid rgba(251, 191, 36, 0.4);
+            border-radius: 15px;
+            padding: 6px 18px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Battambang', sans-serif;
+            transition: all 0.2s ease;
+        }
+
+        .btn-header:hover {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+            background: #1e293b;
+            padding: 6px;
+            border-radius: 30px;
+            border: 1px solid #334155;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 20px;
+            background: transparent;
+            color: #94a3b8;
+            font-family: 'Battambang', sans-serif;
+            font-size: 0.92rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            background: #f59e0b;
+            color: #0f172a;
+            box-shadow: 0 2px 10px rgba(245, 158, 11, 0.4);
+        }
+
+        .search-container {
+            margin-bottom: 15px;
+            width: 90%;
+            max-width: 500px;
+        }
+
+        .search-container input {
+            width: 100%;
+            padding: 10px 18px;
+            border-radius: 20px;
+            border: 1px solid #475569;
+            background: #1e293b;
+            color: #fff;
+            font-family: 'Battambang', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        .search-container input:focus {
+            border-color: #f59e0b;
+        }
+
+        .content-area {
+            width: 95vw;
+            max-width: 1050px;
+            margin-bottom: 30px;
+        }
+
+        .view-panel {
+            display: none;
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 15px;
+            border: 1px solid #334155;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .view-panel.active {
+            display: block;
+        }
+
+        /* VIEWPORT WRAPPER FOR FIXED OVERLAY CONTROLS */
+        .map-viewport-wrapper {
+            position: relative;
+            width: 100%;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #cbd5e1;
+                /* MAP VIEWPORT - SCROLLABLE & PANNABLE UP, DOWN, LEFT, RIGHT */
+        .map-outer-viewport {
+            position: relative;
+            width: 100%;
+            max-height: 750px;
+            overflow: auto;
+            background: #ffffff;
+            padding: 65px 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: grab;
+            scroll-behavior: smooth;
+        }
+
+        .map-outer-viewport:active {
+            cursor: grabbing;
+        }
+
+        /* Custom Modern Scrollbars for White Canvas */
+        .map-outer-viewport::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .map-outer-viewport::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 6px;
+        }
+
+        .map-outer-viewport::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 6px;
+            border: 2px solid #f1f5f9;
+        }
+
+        .map-outer-viewport::-webkit-scrollbar-thumb:hover {
+            background: #f59e0b;
+        }
+
+        .map-container-box {
+            position: relative;
+            width: 100%;
+            transform-origin: center center;
+            transition: width 0.2s ease, min-width 0.2s ease;
+            background: #ffffff;
+        }
+
+        .map-container-box img {
+            width: 100%;
+            height: auto;
+            display: block;
+            pointer-events: none;
+            mix-blend-mode: multiply;
+        }
+
+        /* 8 DIRECTIONS WITH TRADITIONAL KHMER PALI NAMES & 3D EMBOSSED EFFECT */
+        .compass-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 50;
+            transition: opacity 0.3s ease;
+        }
+
+        .compass-dir {
+            position: absolute;
+            font-family: 'Moul', cursive;
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: #0f172a;
+            white-space: nowrap;
+            letter-spacing: 0.5px;
+            text-shadow: 
+                0px 1px 0px #cbd5e1,
+                0px 2px 0px #94a3b8,
+                0px 3px 0px #64748b,
+                0px 4px 0px #475569,
+                0px 8px 18px rgba(0, 0, 0, 0.35);
+        }
+
+        /* 4 MAIN CARDINAL DIRECTIONS */
+        .compass-dir.main-dir-cardinal {
+            font-size: 1.45rem;
+            color: #0369a1;
+            text-shadow: 
+                0px 1px 0px #e0f2fe,
+                0px 2px 0px #7dd3fc,
+                0px 3px 0px #0284c7,
+                0px 4px 0px #0369a1,
+                0px 8px 18px rgba(2, 132, 199, 0.35);
+        }
+
+        /* 4 INTERCARDINAL DIRECTIONS */
+        .compass-dir.sub-dir-corner {
+            font-size: 1.35rem;
+            color: #b45309;
+            text-shadow: 
+                0px 1px 0px #fef3c7,
+                0px 2px 0px #fcd34d,
+                0px 3px 0px #d97706,
+                0px 4px 0px #b45309,
+                0px 8px 18px rgba(217, 119, 6, 0.35);
+        }
+
+        /* PRECISE COMPASS ALIGNMENT DIRECTLY RELATIVE TO MAP BOX */
+        .dir-N  { top: -48px; left: 50%; transform: translateX(-50%); }
+        .dir-S  { bottom: -48px; left: 50%; transform: translateX(-50%); }
+        .dir-E  { top: 50%; right: -170px; transform: translateY(-50%); }
+        .dir-W  { top: 50%; left: -170px; transform: translateY(-50%); }
+
+        .dir-NE { top: -35px; right: -55px; }
+        .dir-SE { bottom: -35px; right: -55px; }
+        .dir-SW { bottom: -35px; left: -55px; }
+        .dir-NW { top: -35px; left: -55px; }.dir-NW { top: -35px; left: -50px; }
+
+        /* FLOATING ZOOM CONTROLS FIXED AT ONE PLACE OVER THE MAP BOARD */
+        .zoom-controls {
+            position: absolute;
+            bottom: 22px;
+            right: 22px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 300;
+            pointer-events: auto;
+        }
+
+        .zoom-btn {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: #0f172a;
+            border: 2px solid #f59e0b;
+            color: #fbbf24;
+            font-size: 1.25rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.4);
+            transition: all 0.2s ease;
+        }
+
+        .zoom-btn:hover {
+            background: #f59e0b;
+            color: #0f172a;
+            transform: scale(1.1);
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Dynamic Label Tag for Tab 1 */
+        .dynamic-tag {
+            position: absolute;
+            transform: translate(-14px, -50%);
+            display: flex;
+            align-items: center;
+            z-index: 10;
+            white-space: nowrap;
+            cursor: grab;
+            transition: transform 0.1s ease;
+        }
+
+        .dynamic-tag:active, .dynamic-tag.dragging {
+            cursor: grabbing;
+            transform: translate(-14px, -50%) scale(1.15);
+            z-index: 200;
+        }
+
+        .dynamic-tag-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Moul', cursive, sans-serif;
+            font-size: 11px;
+            font-weight: 900;
+            color: #000;
+            background: linear-gradient(135deg, #00e5ff, #00b0ff);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.8);
+            border: 2px solid #ffffff;
+            flex-shrink: 0;
+            z-index: 2;
+        }
+
+        .dynamic-tag.gate .dynamic-tag-badge {
+            background: linear-gradient(135deg, #ffd600, #ffab00);
+        }
+
+        .dynamic-tag-text {
+            color: #ffffff;
+            background: rgba(15, 23, 42, 0.95);
+            font-size: 0.82rem;
+            font-weight: 700;
+            padding: 4px 10px 6px 14px;
+            border-radius: 0 14px 14px 0;
+            border: 1.5px solid #00e5ff;
+            border-left: none;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.8);
+            margin-left: -12px;
+            z-index: 1;
+        }
+
+        .dynamic-tag.gate .dynamic-tag-text {
+            border-color: #ffd600;
+        }
+
+        /* Interactive Pin */
+        .pin {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            cursor: grab;
+            z-index: 10;
+            transition: transform 0.1s ease;
+        }
+
+        .pin:active, .pin.dragging {
+            cursor: grabbing;
+            transform: translate(-50%, -50%) scale(1.35);
+            z-index: 200;
+        }
+
+        .pin-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Moul', cursive, sans-serif;
+            font-size: 11px;
+            font-weight: 900;
+            color: #000;
+            background: linear-gradient(135deg, #00e5ff, #00b0ff);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.8);
+            border: 2px solid #ffffff;
+            transition: box-shadow 0.2s ease;
+        }
+
+        .pin.gate .pin-badge {
+            background: linear-gradient(135deg, #ffd600, #ffab00);
+        }
+
+        .pin:hover .pin-badge, .pin.highlighted .pin-badge {
+            transform: scale(1.3);
+            box-shadow: 0 0 18px rgba(255,255,255,0.9);
+            z-index: 100;
+        }
+
+        .pin-tooltip {
+            position: absolute;
+            white-space: nowrap;
+            background: rgba(15, 23, 42, 0.96);
+            color: #ffffff;
+            font-family: 'Battambang', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            padding: 5px 12px 9px 12px;
+            border-radius: 8px;
+            border: 1.5px solid #00e5ff;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.8);
+            pointer-events: none;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            z-index: 99;
+        }
+
+        .pin.gate .pin-tooltip {
+            border-color: #ffd600;
+        }
+
+        .pin-tooltip.pos-R { left: 35px; top: 50%; transform: translateY(-50%) scale(0.9); }
+        .pin-tooltip.pos-L { right: 35px; top: 50%; transform: translateY(-50%) scale(0.9); }
+        .pin-tooltip.pos-A { bottom: 35px; left: 50%; transform: translateX(-50%) scale(0.9); }
+        .pin-tooltip.pos-B { top: 35px; left: 50%; transform: translateX(-50%) scale(0.9); }
+
+        .pin:hover .pin-tooltip, .pin.highlighted .pin-tooltip {
+            opacity: 1;
+            transform: translateY(-50%) scale(1);
+        }
+
+        .pin-tooltip.pos-A, .pin:hover .pin-tooltip.pos-A { transform: translateX(-50%) scale(1); }
+        .pin-tooltip.pos-B, .pin:hover .pin-tooltip.pos-B { transform: translateX(-50%) scale(1); }
+
+        /* Location Grid / Legend */
+        .legend-section {
+            margin-top: 25px;
+            background: #1e293b;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid #334155;
+        }
+
+        .legend-title-container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #334155;
+        }
+
+        .legend-title {
+            font-family: 'Moul', cursive;
+            color: #fbbf24;
+            font-size: 1.1rem;
+        }
+
+        /* GROUP CATEGORY FILTER BUTTONS BAR */
+        .category-filter-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .cat-filter-btn {
+            background: #0f172a;
+            color: #94a3b8;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 5px 14px;
+            font-family: 'Battambang', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .cat-filter-btn:hover {
+            border-color: #f59e0b;
+            color: #fbbf24;
+        }
+
+        .cat-filter-btn.active {
+            background: #0284c7;
+            color: #ffffff;
+            border-color: #38bdf8;
+            box-shadow: 0 3px 10px rgba(2, 132, 199, 0.4);
+        }
+
+        .btn-add-category {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1.5px dashed #f59e0b;
+            border-radius: 20px;
+            padding: 6px 16px;
+            font-family: 'Battambang', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 900;
+            cursor: pointer;
+            margin-left: auto;
+            transition: all 0.2s ease;
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.2);
+        }
+
+        .btn-add-category:hover {
+            background: #f59e0b;
+            color: #0f172a;
+            transform: scale(1.05);
+        }
+
+        /* ACCORDION GROUP SECTIONS FOR COMPACT LIST VIEW */
+        .accordion-group {
+            background: #0f172a;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .accordion-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(90deg, #1e293b, #0f172a);
+            padding: 12px 18px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #fbbf24;
+            border-bottom: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .accordion-header:hover {
+            background: #1e1b4b;
+            color: #ffffff;
+        }
+
+        .accordion-group.open .accordion-header {
+            border-bottom-color: #334155;
+        }
+
+        .accordion-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .group-count-badge {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            border-radius: 12px;
+            padding: 2px 10px;
+            font-size: 0.78rem;
+            font-weight: bold;
+        }
+
+        .accordion-arrow {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            transition: transform 0.3s ease;
+        }
+
+        .accordion-group.open .accordion-arrow {
+            transform: rotate(180deg);
+            color: #fbbf24;
+        }
+
+        .accordion-content {
+            display: none;
+            padding: 12px;
+        }
+
+        .accordion-group.open .accordion-content {
+            display: block;
+        }
+
+        /* EYE ICON TOGGLE BUTTON */
+        .btn-eye-toggle {
+            background: rgba(15, 23, 42, 0.8);
+            color: #38bdf8;
+            border: 1.5px solid #0284c7;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-family: 'Battambang', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+        }
+
+        .btn-eye-toggle:hover {
+            background: #0284c7;
+            color: #ffffff;
+            transform: scale(1.04);
+        }
+
+        .btn-eye-toggle.hidden-state {
+            color: #ef4444;
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        .btn-eye-toggle.hidden-state:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 10px;
+        }
+
+        .legend-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0f172a;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #334155;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .legend-card-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .legend-card:hover {
+            border-color: #f59e0b;
+            transform: translateY(-2px);
+            background: #1e1b4b;
+        }
+
+        .badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Moul', cursive;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: #000;
+            flex-shrink: 0;
+        }
+
+        .badge.building { background: #00e5ff; }
+        .badge.gate { background: #ffd600; }
+
+        .card-name {
+            font-size: 0.88rem;
+            color: #e2e8f0;
+        }
+
+        .action-btns {
+            display: flex;
+            gap: 6px;
+        }
+
+        .btn-edit {
+            background: rgba(245, 158, 11, 0.2);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.4);
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-edit:hover {
+            background: rgba(245, 158, 11, 0.5);
+            color: #fff;
+        }
+
+        .btn-delete {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 6px;
+            padding: 2px 8px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-delete:hover {
+            background: rgba(239, 68, 68, 0.5);
+            color: #fff;
+        }
+
+        /* MODAL STYLING */
+        .modal-backdrop {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal-backdrop.show {
+            display: flex;
+        }
+
+        .modal-card {
+            background: #1e293b;
+            border: 2px solid #f59e0b;
+            border-radius: 16px;
+            width: 90%;
+            max-width: 460px;
+            padding: 24px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.7);
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+
+        .modal-header h3 {
+            font-family: 'Moul', cursive;
+            color: #fbbf24;
+            font-size: 1.1rem;
+        }
+
+        .modal-close {
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 1.4rem;
+            cursor: pointer;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #cbd5e1;
+            margin-bottom: 6px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid #475569;
+            background: #0f172a;
+            color: #fff;
+            font-family: 'Battambang', sans-serif;
+            font-size: 0.9rem;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            border-color: #f59e0b;
+        }
+
+        .form-group input.error-border {
+            border-color: #ef4444 !important;
+            background: rgba(239, 68, 68, 0.1) !important;
+            animation: shake 0.3s ease-in-out;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-6px); }
+            75% { transform: translateX(6px); }
+        }
+
+        .error-message {
+            display: none;
+            color: #ef4444;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-top: 6px;
+            background: rgba(239, 68, 68, 0.15);
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .modal-actions-right {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-save {
+            background: #f59e0b;
+            color: #0f172a;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 20px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Battambang', sans-serif;
+            transition: background 0.2s;
+        }
+
+        .btn-save:hover {
+            background: #d97706;
+        }
+
+        .btn-cancel {
+            background: #334155;
+            color: #cbd5e1;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 18px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Battambang', sans-serif;
+        }
+
+        .btn-modal-delete {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            border-radius: 10px;
+            padding: 10px 16px;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'Battambang', sans-serif;
+            display: none;
+        }
+
+        .btn-modal-delete.show {
+            display: block;
+        }
+
+        .location-checkbox-list {
+            max-height: 180px;
+            overflow-y: auto;
+            border: 1px solid #475569;
+            background: #0f172a;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .location-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.88rem;
+            color: #cbd5e1;
+            cursor: pointer;
+        }
+
+        .location-checkbox-item input {
+            width: auto;
+        }
+
+        .instruction-box {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid #f59e0b;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 0.88rem;
+            color: #fbbf24;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .compass-badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>ផែនទីវត្ត - Temple Map</h1>
+    <p>គ្រប់គ្រងទីតាំង និង ចំណុចទាំងអស់លើផែនទី</p>
+    <div class="header-actions">
+        <button class="btn-header" onclick="resetAllLocations()">🔄 Reset ទីតាំងដើម</button>
+        <button class="btn-header" onclick="exportUnifiedLocations()">📥 នាំចេញ File (.json)</button>
+        <button class="btn-header" onclick="document.getElementById('importFileInput').click()">📤 នាំចូល File (.json)</button>
+        <input type="file" id="importFileInput" style="display:none" accept=".json" onchange="importUnifiedLocations(event)">
+    </div>
+</header>
+
+<!-- THE 3 TAB BUTTONS (ផ្ទាំងទី១, ផ្ទាំងទី២, ផ្ទាំងទី៣) -->
+<div class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('labeled')">🖼️ ផ្ទាំងទី១ ៖ រូបភាពមានលេខ និង ឈ្មោះ</button>
+    <button class="tab-btn" onclick="switchTab('interactive')">📍 ផ្ទាំងទី២ ៖ ផែនទីអន្តរកម្ម (Hover)</button>
+    <button class="tab-btn" onclick="switchTab('tagger')">🏷️ ផ្ទាំងទី៣ ៖ លេខស្លាក (បន្ថែម & កែប្រែ)</button>
+</div>
+
+<div class="search-container">
+    <input type="text" id="searchInput" placeholder="🔍 ស្វែងរកឈ្មោះទីតាំង..." oninput="filterLocations()">
+</div>
+
+<div class="content-area">
+    <!-- Panel 1: Master Labeled View -->
+    <div id="panelLabeled" class="view-panel active">
+        <div class="instruction-box">
+            <span>🧭 <b>ផ្ទាំងទី១ ៖</b> ពង្រីក & Scroll សេរី ប្រើប៊ូតុង <b>[+] [-]</b> ខាងស្តាំ ឬ ចុចអូស Mouse មើលលើ ក្រោម ឆ្វេង ស្ដាំ! (ទីតាំងអូសរំកិលដាច់ដោយឡែក)</span>
+        </div>
+        <div class="map-viewport-wrapper">
+            <div class="map-outer-viewport" id="viewportTab1">
+                <div class="map-container-box" id="mapContainer1">
+                    <img src="map_new_latest.jpg" alt="ផែនទីវត្តដើម">
+                    <!-- 8 TRADITIONAL PALI COMPASS DIRECTIONS -->
+                    <div class="compass-overlay" id="compassTab1">
+                        <div class="compass-dir main-dir-cardinal dir-N">ឧត្តរ (ជើង)</div>
+                        <div class="compass-dir main-dir-cardinal dir-S">ទក្សិណ (ត្បូង)</div>
+                        <div class="compass-dir main-dir-cardinal dir-E">បូព៌ (កើត)</div>
+                        <div class="compass-dir main-dir-cardinal dir-W">បស្ចឹម (លិច)</div>
+                        <div class="compass-dir sub-dir-corner dir-NE">ឦសាន</div>
+                        <div class="compass-dir sub-dir-corner dir-SE">អាគ្នេយ៍</div>
+                        <div class="compass-dir sub-dir-corner dir-SW">និរតី</div>
+                        <div class="compass-dir sub-dir-corner dir-NW">ពាយ័ព្យ</div>
+                    </div>
+                    <div id="labeledTagsContainer"></div>
+                </div>
+            </div>
+            <!-- FIXED ZOOM CONTROLS AT ONE PLACE ON THE BOARD -->
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomMap(1, 0.25)" title="ពង្រីក">+</button>
+                <button class="zoom-btn" onclick="zoomMap(1, -0.25)" title="បង្រួម">-</button>
+                <button class="zoom-btn" onclick="resetZoom(1)" title="Reset">🔍</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 2: Master Interactive View -->
+    <div id="panelInteractive" class="view-panel">
+        <div class="instruction-box">
+            <span>🧭 <b>ផ្ទាំងទី២ ៖</b> Hover លើចំណុចដើម្បីមើលឈ្មោះទីតាំង ប្រើប៊ូតុង <b>[+] [-]</b> ខាងស្តាំ ពង្រីក/បង្រួម! (ទីតាំងអូសរំកិលដាច់ដោយឡែក)</span>
+        </div>
+        <div class="map-viewport-wrapper">
+            <div class="map-outer-viewport" id="viewportTab2">
+                <div class="map-container-box" id="mapContainer2">
+                    <img src="map_new_latest.jpg" alt="ផែនទីវត្តដើម">
+                    <!-- 8 TRADITIONAL PALI COMPASS DIRECTIONS -->
+                    <div class="compass-overlay" id="compassTab2">
+                        <div class="compass-dir main-dir-cardinal dir-N">ឧត្តរ (ជើង)</div>
+                        <div class="compass-dir main-dir-cardinal dir-S">ទក្សិណ (ត្បូង)</div>
+                        <div class="compass-dir main-dir-cardinal dir-E">បូព៌ (កើត)</div>
+                        <div class="compass-dir main-dir-cardinal dir-W">បស្ចឹម (លិច)</div>
+                        <div class="compass-dir sub-dir-corner dir-NE">ឦសាន</div>
+                        <div class="compass-dir sub-dir-corner dir-SE">អាគ្នេយ៍</div>
+                        <div class="compass-dir sub-dir-corner dir-SW">និរតី</div>
+                        <div class="compass-dir sub-dir-corner dir-NW">ពាយ័ព្យ</div>
+                    </div>
+                    <div id="pinsContainer"></div>
+                </div>
+            </div>
+            <!-- FIXED ZOOM CONTROLS AT ONE PLACE ON THE BOARD -->
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomMap(2, 0.25)" title="ពង្រីក">+</button>
+                <button class="zoom-btn" onclick="zoomMap(2, -0.25)" title="បង្រួម">-</button>
+                <button class="zoom-btn" onclick="resetZoom(2)" title="Reset">🔍</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Panel 3: Standalone Tagger View -->
+    <div id="panelTagger" class="view-panel">
+        <div class="instruction-box">
+            <span>🧭 <b>ផ្ទាំងទី៣ ៖</b> កែប្រែ & បន្ថែមទីតាំង (ចុចលើចំណុចដើម្បីកែ ឬ ចុចលើផ្ទៃផែនទីដើម្បីបន្ថែម)! (ទីតាំងអូសរំកិលដាច់ដោយឡែក)</span>
+        </div>
+        <div class="map-viewport-wrapper">
+            <div class="map-outer-viewport" id="viewportTab3">
+                <div class="map-container-box" id="mapContainer3" onclick="handleTaggerMapClick(event)">
+                    <img src="map_new_latest.jpg" alt="ផែនទីវត្តដើមសម្រាប់បន្ថែមស្លាក" id="taggerMapImg">
+                    <!-- 8 TRADITIONAL PALI COMPASS DIRECTIONS -->
+                    <div class="compass-overlay" id="compassTab3">
+                        <div class="compass-dir main-dir-cardinal dir-N">ឧត្តរ (ជើង)</div>
+                        <div class="compass-dir main-dir-cardinal dir-S">ទក្សិណ (ត្បូង)</div>
+                        <div class="compass-dir main-dir-cardinal dir-E">បូព៌ (កើត)</div>
+                        <div class="compass-dir main-dir-cardinal dir-W">បស្ចឹម (លិច)</div>
+                        <div class="compass-dir sub-dir-corner dir-NE">ឦសាន</div>
+                        <div class="compass-dir sub-dir-corner dir-SE">អាគ្នេយ៍</div>
+                        <div class="compass-dir sub-dir-corner dir-SW">និរតី</div>
+                        <div class="compass-dir sub-dir-corner dir-NW">ពាយ័ព្យ</div>
+                    </div>
+                    <div id="taggerPinsContainer"></div>
+                </div>
+            </div>
+            <!-- FIXED ZOOM CONTROLS AT ONE PLACE ON THE BOARD -->
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomMap(3, 0.25)" title="ពង្រីក">+</button>
+                <button class="zoom-btn" onclick="zoomMap(3, -0.25)" title="បង្រួម">-</button>
+                <button class="zoom-btn" onclick="resetZoom(3)" title="Reset">🔍</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Location List / Legend with CUSTOM GROUP ACCORDION SECTIONS -->
+    <div class="legend-section">
+        <div class="legend-title-container">
+            <div class="legend-title" id="legendTitle">បញ្ជីឈ្មោះទីតាំង</div>
+            <!-- EYE ICON TOGGLE BUTTON -->
+            <button class="btn-eye-toggle" id="btnEyeToggle" onclick="toggleAllPinsVisibility()" title="ចុចលាក់/បង្ហាញចំណុចទាំងអស់លើផែនទី">
+                <span id="eyeIcon">👁️</span> <span id="eyeText">បង្ហាញចំណុចទាំងអស់</span>
+            </button>
+        </div>
+
+        <!-- CATEGORY FILTER BUTTONS BAR & DEDICATED CREATE CUSTOM CATEGORY GROUP BUTTON -->
+        <div class="category-filter-bar" id="categoryFilterBar"></div>
+
+        <!-- ACCORDION CONTAINER FOR GROUPED LISTS -->
+        <div id="accordionContainer"></div>
+    </div>
+</div>
+
+<!-- MODAL POPUP FOR ADDING/EDITING LOCATIONS WITH CUSTOM GROUP SELECTION -->
+<div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="modalTitle">📍 បន្ថែម / កែប្រែទីតាំង</h3>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="inputTagID">លេខ ឬ អក្សរស្លាក ៖</label>
+                <input type="text" id="inputTagID" placeholder="ឧទាហរណ៍ ៖ ១៧, ១៨, F..." oninput="validateTagID()">
+                <div class="error-message" id="errorMessage">
+                    ⚠️ លេខ/អក្សរស្លាកនេះមានរួចហើយ! សូមបញ្ចូលលេខផ្សេង។
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="inputTagName">ឈ្មោះទីតាំង ៖</label>
+                <input type="text" id="inputTagName" placeholder="ឧទាហរណ៍ ៖ កុដិថ្មី, អាហារដ្ឋាន..." oninput="clearErrors()">
+            </div>
+
+            <div class="form-group">
+                <label for="selectTagCategory">📁 ក្រុមបញ្ជីឈ្មោះ (Group សម្រាប់បញ្ជី) ៖</label>
+                <select id="selectTagCategory" onchange="handleCategorySelectChange(this.value)"></select>
+                <input type="text" id="inputCustomCategory" placeholder="វាយឈ្មោះ Group ថ្មី (ឧ. កុដិព្រះសង្ឃ, អាហារដ្ឋាន, ឧទ្យាន...)" style="display:none; margin-top:8px;">
+            </div>
+
+            <div class="form-group">
+                <label for="selectTagType">ប្រភេទពណ៌ស្លាក ៖</label>
+                <select id="selectTagType">
+                    <option value="building">អគារ / កុដិ / ទីតាំង (ពណ៌ខៀវ)</option>
+                    <option value="gate">ក្លោងទ្វារ (ពណ៌លឿង)</option>
+                </select>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-modal-delete" id="btnModalDelete" onclick="deleteEditingLocation()">លុបទីតាំង</button>
+            <div class="modal-actions-right">
+                <button class="btn-cancel" onclick="closeModal()">បោះបង់</button>
+                <button class="btn-save" onclick="saveTag()">រក្សាទុក</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL POPUP FOR CREATING A NEW CUSTOM CATEGORY GROUP (➕ បង្កើត GROUP ថ្មីដោយខ្លួនឯង) -->
+<div class="modal-backdrop" id="modalCreateCustomCategory">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>📂 បង្កើត ក្រុម/Group ទីតាំងថ្មីដោយខ្លួនឯង</h3>
+            <button class="modal-close" onclick="closeCreateCustomCategoryModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="inputCategoryGroupName">ឈ្មោះ Group ទីតាំងថ្មី ៖</label>
+                <input type="text" id="inputCategoryGroupName" placeholder="ឧទាហរណ៍ ៖ កុដិព្រះសង្ឃ, សាលាឆាន់, អាហារដ្ឋាន, ឧទ្យាន...">
+            </div>
+
+            <div class="form-group">
+                <label>ជ្រើសរើសទីតាំងដាក់ចូលក្នុង Group នេះ ៖</label>
+                <div class="location-checkbox-list" id="categoryLocationChecklist"></div>
+            </div>
+        </div>
+        <div class="modal-actions" style="justify-content: flex-end;">
+            <button class="btn-cancel" onclick="closeCreateCustomCategoryModal()">បោះបង់</button>
+            <button class="btn-save" onclick="saveCustomCategoryGroup()">រក្សាទុក Group ថ្មី</button>
+        </div>
+    </div>
+</div>
+
+<!-- LOAD FILE1.JS DATA FILE -->
+<script src="file1.js"></script>
+
+<script>
+    const STORAGE_KEY = 'TEMPLE_MAP_LOCATIONS_PERSIST';
+
+    function loadLocations() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            try { 
+                const parsed = JSON.parse(saved);
+                parsed.forEach(loc => {
+                    if (loc.x1 === undefined) loc.x1 = loc.x;
+                    if (loc.y1 === undefined) loc.y1 = loc.y;
+                    if (loc.x2 === undefined) loc.x2 = loc.x;
+                    if (loc.y2 === undefined) loc.y2 = loc.y;
+                    if (loc.x3 === undefined) loc.x3 = loc.x;
+                    if (loc.y3 === undefined) loc.y3 = loc.y;
+                });
+                return parsed;
+            } catch (e) {}
+        }
+
+        const base = JSON.parse(JSON.stringify(FILE1_TEMPLE_LOCATIONS));
+        base.forEach(loc => {
+            loc.x1 = loc.x; loc.y1 = loc.y;
+            loc.x2 = loc.x; loc.y2 = loc.y;
+            loc.x3 = loc.x; loc.y3 = loc.y;
+        });
+        return base;
+    }
+
+    function saveLocations() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(TEMPLE_LOCATIONS));
+    }
+
+    let TEMPLE_LOCATIONS = loadLocations();
+    let selectedCategoryFilter = 'all';
+    let openGroupAccordions = {};
+
+    /* CUSTOM CATEGORY CREATION DEDICATED FOR LOCATION LIST */
+    function openCreateCustomCategoryModal() {
+        document.getElementById('inputCategoryGroupName').value = '';
+        const listContainer = document.getElementById('categoryLocationChecklist');
+        listContainer.innerHTML = '';
+
+        TEMPLE_LOCATIONS.forEach(loc => {
+            const label = document.createElement('label');
+            label.className = 'location-checkbox-item';
+            label.innerHTML = `
+                <input type="checkbox" value="${loc.id}">
+                <span><b>[${loc.id}]</b> ${loc.name}</span>
+            `;
+            listContainer.appendChild(label);
+        });
+
+        document.getElementById('modalCreateCustomCategory').classList.add('show');
+        setTimeout(() => document.getElementById('inputCategoryGroupName').focus(), 100);
+    }
+
+    function closeCreateCustomCategoryModal() {
+        document.getElementById('modalCreateCustomCategory').classList.remove('show');
+    }
+
+    function saveCustomCategoryGroup() {
+        const groupNameInput = document.getElementById('inputCategoryGroupName');
+        const customCatName = groupNameInput.value.trim();
+
+        if (!customCatName) {
+            groupNameInput.focus();
+            return;
+        }
+
+        const checkboxes = document.querySelectorAll('#categoryLocationChecklist input[type="checkbox"]:checked');
+        const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+
+        if (selectedIds.length === 0) {
+            alert('សូមជ្រើសរើសយ៉ាងហោចណាស់ 1 ទីតាំងដើម្បីដាក់ចូលក្នុង Group នេះ!');
+            return;
+        }
+
+        TEMPLE_LOCATIONS.forEach(loc => {
+            if (selectedIds.includes(loc.id)) {
+                loc.category = customCatName;
+            }
+        });
+
+        saveLocations();
+        renderAllViews();
+        closeCreateCustomCategoryModal();
+
+        alert(`🎉 បានបង្កើត Group ទីតាំង "${customCatName}" និង បានដាក់ ${selectedIds.length} ទីតាំងចូល ជោគជ័យ!`);
+    }
+
+    let pendingCoords = { x: 0, y: 0 };
+    let editingID = null;
+    let activeTab = 'labeled';
+    let isDraggingPin = false;
+    let isPinsVisible = true;
+
+    const zoomState = { 1: 1.0, 2: 1.0, 3: 1.0 };
+
+    function renderAllViews() {
+        renderLabeledTags();
+        renderInteractivePins();
+        renderTaggerPins();
+        renderLegend();
+    }
+
+    function toggleAllPinsVisibility() {
+        isPinsVisible = !isPinsVisible;
+        const eyeBtn = document.getElementById('btnEyeToggle');
+        const eyeIcon = document.getElementById('eyeIcon');
+        const eyeText = document.getElementById('eyeText');
+
+        const containers = [
+            document.getElementById('labeledTagsContainer'),
+            document.getElementById('pinsContainer'),
+            document.getElementById('taggerPinsContainer')
+        ];
+
+        containers.forEach(container => {
+            if (container) {
+                container.style.display = isPinsVisible ? 'block' : 'none';
+            }
+        });
+
+        if (isPinsVisible) {
+            eyeIcon.textContent = '👁️';
+            eyeText.textContent = 'បង្ហាញចំណុចទាំងអស់';
+            eyeBtn.classList.remove('hidden-state');
+        } else {
+            eyeIcon.textContent = '🙈';
+            eyeText.textContent = 'លាក់ចំណុចទាំងអស់';
+            eyeBtn.classList.add('hidden-state');
+        }
+    }
+
+    function zoomMap(tabNum, delta) {
+        let currentScale = zoomState[tabNum] + delta;
+        currentScale = Math.max(0.6, Math.min(3.5, parseFloat(currentScale.toFixed(2))));
+        zoomState[tabNum] = currentScale;
+
+        const mapContainer = document.getElementById(`mapContainer${tabNum}`);
+        const viewport = document.getElementById(`viewportTab${tabNum}`);
+
+        if (mapContainer) {
+            mapContainer.style.width = `${currentScale * 100}%`;
+            mapContainer.style.minWidth = `${currentScale * 100}%`;
+        }
+
+        if (viewport && mapContainer) {
+            viewport.scrollLeft = (mapContainer.scrollWidth - viewport.clientWidth) / 2;
+            viewport.scrollTop = (mapContainer.scrollHeight - viewport.clientHeight) / 2;
+        }
+    }
+
+    function resetZoom(tabNum) {
+        zoomState[tabNum] = 1.0;
+        const mapContainer = document.getElementById(`mapContainer${tabNum}`);
+        const viewport = document.getElementById(`viewportTab${tabNum}`);
+
+        if (mapContainer) {
+            mapContainer.style.width = '100%';
+            mapContainer.style.minWidth = '100%';
+        }
+        if (viewport) {
+            viewport.scrollLeft = 0;
+            viewport.scrollTop = 0;
+        }
+    }
+
+    function switchTab(tab) {
+        activeTab = tab;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+
+        if (tab === 'labeled') {
+            document.querySelectorAll('.tab-btn')[0].classList.add('active');
+            document.getElementById('panelLabeled').classList.add('active');
+        } else if (tab === 'interactive') {
+            document.querySelectorAll('.tab-btn')[1].classList.add('active');
+            document.getElementById('panelInteractive').classList.add('active');
+        } else if (tab === 'tagger') {
+            document.querySelectorAll('.tab-btn')[2].classList.add('active');
+            document.getElementById('panelTagger').classList.add('active');
+        }
+        renderLegend();
+    }
+
+    // ENABLE MOUSE DRAG PANNING ON ALL VIEWPORTS (អូស MOUSE មើលលើ ក្រោម ឆ្វេង ស្ដាំ)
+    function setupViewportPanning(viewportId) {
+        const viewport = document.getElementById(viewportId);
+        if (!viewport) return;
+
+        let isDown = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        viewport.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.pin') || e.target.closest('.dynamic-tag') || isDraggingPin) return;
+            isDown = true;
+            startX = e.pageX - viewport.offsetLeft;
+            startY = e.pageY - viewport.offsetTop;
+            scrollLeft = viewport.scrollLeft;
+            scrollTop = viewport.scrollTop;
+        });
+
+        viewport.addEventListener('mouseleave', () => { isDown = false; });
+        viewport.addEventListener('mouseup', () => { isDown = false; });
+
+        viewport.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - viewport.offsetLeft;
+            const y = e.pageY - viewport.offsetTop;
+            const walkX = (x - startX) * 1.5;
+            const walkY = (y - startY) * 1.5;
+            viewport.scrollLeft = scrollLeft - walkX;
+            viewport.scrollTop = scrollTop - walkY;
+        });
+
+        // Touch swipe panning for Mobile/Tablet
+        let touchX, touchY;
+        viewport.addEventListener('touchstart', (e) => {
+            if (e.target.closest('.pin') || e.target.closest('.dynamic-tag')) return;
+            touchX = e.touches[0].pageX;
+            touchY = e.touches[0].pageY;
+            scrollLeft = viewport.scrollLeft;
+            scrollTop = viewport.scrollTop;
+        }, { passive: true });
+
+        viewport.addEventListener('touchmove', (e) => {
+            if (!touchX || !touchY) return;
+            const dx = e.touches[0].pageX - touchX;
+            const dy = e.touches[0].pageY - touchY;
+            viewport.scrollLeft = scrollLeft - dx;
+            viewport.scrollTop = scrollTop - dy;
+        }, { passive: true });
+    }
+
+    /* INDEPENDENT DRAGGABLE FUNCTION FOR SPECIFIC TAB KEY (tabKey: '1', '2', or '3') */
+    function makeDraggableForTab(element, locationObj, tabKey) {
+        let startX, startY;
+        let hasMoved = false;
+
+        const xProp = `x${tabKey}`;
+        const yProp = `y${tabKey}`;
+
+        const onStart = (e) => {
+            e.stopPropagation();
+            hasMoved = false;
+            isDraggingPin = false;
+
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+            startX = clientX;
+            startY = clientY;
+
+            element.classList.add('dragging');
+
+            const onMove = (moveEvt) => {
+                const moveX = moveEvt.touches ? moveEvt.touches[0].clientX : moveEvt.clientX;
+                const moveY = moveEvt.touches ? moveEvt.touches[0].clientY : moveEvt.clientY;
+
+                const dx = moveX - startX;
+                const dy = moveY - startY;
+
+                if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+                    hasMoved = true;
+                    isDraggingPin = true;
+                }
+
+                if (hasMoved) {
+                    const container = element.closest('.map-container-box');
+                    const rect = container.getBoundingClientRect();
+
+                    let newPctX = ((moveX - rect.left) / rect.width) * 100;
+                    let newPctY = ((moveY - rect.top) / rect.height) * 100;
+
+                    newPctX = Math.max(0.5, Math.min(99.5, newPctX));
+                    newPctY = Math.max(0.5, Math.min(99.5, newPctY));
+
+                    element.style.left = `${newPctX}%`;
+                    element.style.top = `${newPctY}%`;
+
+                    locationObj[xProp] = parseFloat(newPctX.toFixed(2));
+                    locationObj[yProp] = parseFloat(newPctY.toFixed(2));
+                }
+            };
+
+            const onEnd = () => {
+                element.classList.remove('dragging');
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+
+                if (hasMoved) {
+                    saveLocations();
+                    setTimeout(() => { isDraggingPin = false; }, 50);
+                }
+            };
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onEnd);
+        };
+
+        element.addEventListener('mousedown', onStart);
+        element.addEventListener('touchstart', onStart, { passive: false });
+    }
+
+    function renderLabeledTags() {
+        const container = document.getElementById('labeledTagsContainer');
+        container.innerHTML = '';
+
+        TEMPLE_LOCATIONS.forEach(loc => {
+            const tag = document.createElement('div');
+            tag.className = `dynamic-tag ${loc.type}`;
+
+            const posX = loc.x1 !== undefined ? loc.x1 : loc.x;
+            const posY = loc.y1 !== undefined ? loc.y1 : loc.y;
+
+            tag.style.left = `${posX}%`;
+            tag.style.top = `${posY}%`;
+
+            tag.innerHTML = `
+                <div class="dynamic-tag-badge">${loc.id}</div>
+                <div class="dynamic-tag-text">${loc.name}</div>
+            `;
+
+            makeDraggableForTab(tag, loc, '1');
+            container.appendChild(tag);
+        });
+    }
+
+    function renderInteractivePins() {
+        const container = document.getElementById('pinsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        TEMPLE_LOCATIONS.forEach(loc => {
+            const pin = document.createElement('div');
+            pin.className = `pin ${loc.type}`;
+
+            const posX = loc.x2 !== undefined ? loc.x2 : loc.x;
+            const posY = loc.y2 !== undefined ? loc.y2 : loc.y;
+
+            pin.style.left = `${posX}%`;
+            pin.style.top = `${posY}%`;
+            pin.setAttribute('data-id', loc.id);
+
+            pin.innerHTML = `
+                <div class="pin-badge">${loc.id}</div>
+                <div class="pin-tooltip pos-${loc.pos || 'R'}">${loc.name}</div>
+            `;
+
+            makeDraggableForTab(pin, loc, '2');
+            container.appendChild(pin);
+        });
+    }
+
+    function renderTaggerPins() {
+        const container = document.getElementById('taggerPinsContainer');
+        if (!container) return;
+        container.innerHTML = '';
+
+        TEMPLE_LOCATIONS.forEach(loc => {
+            const pin = document.createElement('div');
+            pin.className = `pin ${loc.type}`;
+
+            const posX = loc.x3 !== undefined ? loc.x3 : loc.x;
+            const posY = loc.y3 !== undefined ? loc.y3 : loc.y;
+
+            pin.style.left = `${posX}%`;
+            pin.style.top = `${posY}%`;
+            pin.setAttribute('data-id', loc.id);
+
+            pin.onclick = (e) => {
+                if (isDraggingPin) return;
+                e.stopPropagation();
+                openEditModal(loc.id);
+            };
+
+            pin.innerHTML = `
+                <div class="pin-badge">${loc.id}</div>
+                <div class="pin-tooltip pos-${loc.pos || 'R'}">
+                    ${loc.name} <span class="tooltip-hint">(ចុចដើម្បីកែ)</span>
+                </div>
+            `;
+
+            makeDraggableForTab(pin, loc, '3');
+            container.appendChild(pin);
+        });
+    }
+
+    function handleTaggerMapClick(event) {
+        if (isDraggingPin) return;
+        const img = document.getElementById('taggerMapImg');
+        const rect = img.getBoundingClientRect();
+
+        const xPct = ((event.clientX - rect.left) / rect.width) * 100;
+        const yPct = ((event.clientY - rect.top) / rect.height) * 100;
+
+        pendingCoords = { x: xPct.toFixed(2), y: yPct.toFixed(2) };
+        openAddModal();
+    }
+
+    function populateCategoryOptions(selectedCategory) {
+        const select = document.getElementById('selectTagCategory');
+        select.innerHTML = '';
+
+        const categories = new Set();
+        categories.add('អគារ និង កុដិ');
+        categories.add('ក្លោងទ្វារ');
+
+        TEMPLE_LOCATIONS.forEach(loc => {
+            if (loc.category) categories.add(loc.category);
+        });
+
+        categories.forEach(cat => {
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            if (cat === selectedCategory) opt.selected = true;
+            select.appendChild(opt);
+        });
+
+        const newOpt = document.createElement('option');
+        newOpt.value = '__new_custom__';
+        newOpt.textContent = '➕ បង្កើត Group ថ្មីដោយខ្លួនឯង...';
+        select.appendChild(newOpt);
+
+        handleCategorySelectChange(select.value);
+    }
+
+    function handleCategorySelectChange(val) {
+        const customInput = document.getElementById('inputCustomCategory');
+        if (val === '__new_custom__') {
+            customInput.style.display = 'block';
+            customInput.focus();
+        } else {
+            customInput.style.display = 'none';
+        }
+    }
+
+    function openAddModal() {
+        editingID = null;
+        document.getElementById('modalTitle').textContent = `📍 បន្ថែមស្លាកទីតាំង`;
+        document.getElementById('inputTagID').value = '';
+        document.getElementById('inputTagName').value = '';
+        document.getElementById('inputCustomCategory').value = '';
+        document.getElementById('btnModalDelete').classList.remove('show');
+        populateCategoryOptions('អគារ និង កុដិ');
+        clearErrors();
+        document.getElementById('modalBackdrop').classList.add('show');
+        setTimeout(() => document.getElementById('inputTagID').focus(), 100);
+    }
+
+    function openEditModal(id) {
+        const loc = TEMPLE_LOCATIONS.find(l => l.id === id);
+        if (!loc) return;
+
+        editingID = id;
+        document.getElementById('modalTitle').textContent = `✏️ កែប្រែទីតាំងលេខ ${loc.id}`;
+        document.getElementById('inputTagID').value = loc.id;
+        document.getElementById('inputTagName').value = loc.name;
+        document.getElementById('selectTagType').value = loc.type;
+        document.getElementById('btnModalDelete').classList.add('show');
+
+        const curCat = loc.category || (loc.type === 'gate' ? 'ក្លោងទ្វារ' : 'អគារ និង កុដិ');
+        populateCategoryOptions(curCat);
+
+        clearErrors();
+        document.getElementById('modalBackdrop').classList.add('show');
+        setTimeout(() => document.getElementById('inputTagName').focus(), 100);
+    }
+
+    function closeModal() {
+        document.getElementById('modalBackdrop').classList.remove('show');
+        clearErrors();
+    }
+
+    function clearErrors() {
+        const input = document.getElementById('inputTagID');
+        const msg = document.getElementById('errorMessage');
+        input.classList.remove('error-border');
+        msg.classList.remove('show');
+    }
+
+    function validateTagID() {
+        const input = document.getElementById('inputTagID');
+        const msg = document.getElementById('errorMessage');
+        const val = input.value.trim();
+
+        if (!val) {
+            clearErrors();
+            return false;
+        }
+
+        if (editingID && val.toLowerCase() === editingID.toLowerCase()) {
+            clearErrors();
+            return true;
+        }
+
+        const exists = TEMPLE_LOCATIONS.some(loc => loc.id.toLowerCase() === val.toLowerCase());
+
+        if (exists) {
+            input.classList.add('error-border');
+            msg.classList.add('show');
+            return false;
+        } else {
+            clearErrors();
+            return true;
+        }
+    }
+
+    function saveTag() {
+        const idInput = document.getElementById('inputTagID');
+        const nameInput = document.getElementById('inputTagName');
+        const typeSelect = document.getElementById('selectTagType');
+        const categorySelectModal = document.getElementById('selectTagCategory');
+        const customCategoryInput = document.getElementById('inputCustomCategory');
+
+        const tagID = idInput.value.trim();
+        const tagName = nameInput.value.trim();
+        const tagType = typeSelect.value;
+
+        let categoryGroup = categorySelectModal.value;
+        if (categoryGroup === '__new_custom__') {
+            categoryGroup = customCategoryInput.value.trim() || 'ក្រុមថ្មី';
+        }
+
+        if (!tagID) {
+            idInput.classList.add('error-border');
+            idInput.focus();
+            return;
+        }
+
+        if (!validateTagID()) {
+            idInput.focus();
+            return;
+        }
+
+        if (!tagName) {
+            nameInput.focus();
+            return;
+        }
+
+        if (editingID) {
+            const loc = TEMPLE_LOCATIONS.find(l => l.id === editingID);
+            if (loc) {
+                loc.id = tagID;
+                loc.name = tagName;
+                loc.type = tagType;
+                loc.category = categoryGroup;
+            }
+        } else {
+            const newPctX = parseFloat(pendingCoords.x) || 50;
+            const newPctY = parseFloat(pendingCoords.y) || 50;
+
+            const newLoc = {
+                id: tagID,
+                name: tagName,
+                category: categoryGroup,
+                x: newPctX,
+                y: newPctY,
+                x1: newPctX, y1: newPctY,
+                x2: newPctX, y2: newPctY,
+                x3: newPctX, y3: newPctY,
+                type: tagType,
+                pos: "R"
+            };
+            TEMPLE_LOCATIONS.push(newLoc);
+        }
+
+        saveLocations();
+        renderAllViews();
+        closeModal();
+    }
+
+    function deleteEditingLocation() {
+        if (editingID) {
+            deleteLocation(editingID);
+            closeModal();
+        }
+    }
+
+    function deleteLocation(id, event) {
+        if (event) event.stopPropagation();
+        TEMPLE_LOCATIONS = TEMPLE_LOCATIONS.filter(loc => loc.id !== id);
+        saveLocations();
+        renderAllViews();
+    }
+
+    function resetAllLocations() {
+        if (confirm(`តើអ្នកពិតជាចង់ Reset ទៅជា ទីតាំងដើម វិញមែនទេ?`)) {
+            TEMPLE_LOCATIONS = JSON.parse(JSON.stringify(FILE1_TEMPLE_LOCATIONS));
+            TEMPLE_LOCATIONS.forEach(loc => {
+                loc.x1 = loc.x; loc.y1 = loc.y;
+                loc.x2 = loc.x; loc.y2 = loc.y;
+                loc.x3 = loc.x; loc.y3 = loc.y;
+            });
+            saveLocations();
+            renderAllViews();
+        }
+    }
+
+    function exportUnifiedLocations() {
+        const exportObj = {
+            locations: TEMPLE_LOCATIONS
+        };
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportObj, null, 2));
+        const dlAnchorElem = document.createElement('a');
+        dlAnchorElem.setAttribute("href", dataStr);
+        dlAnchorElem.setAttribute("download", `temple_locations.json`);
+        dlAnchorElem.click();
+    }
+
+    function importUnifiedLocations(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const imported = JSON.parse(e.target.result);
+                if (Array.isArray(imported)) {
+                    TEMPLE_LOCATIONS = imported;
+                } else if (imported && Array.isArray(imported.locations)) {
+                    TEMPLE_LOCATIONS = imported.locations;
+                }
+                TEMPLE_LOCATIONS.forEach(loc => {
+                    if (loc.x1 === undefined) loc.x1 = loc.x;
+                    if (loc.y1 === undefined) loc.y1 = loc.y;
+                    if (loc.x2 === undefined) loc.x2 = loc.x;
+                    if (loc.y2 === undefined) loc.y2 = loc.y;
+                    if (loc.x3 === undefined) loc.x3 = loc.x;
+                    if (loc.y3 === undefined) loc.y3 = loc.y;
+                });
+                saveLocations();
+                renderAllViews();
+                alert('នាំចូលទិន្នន័យជោគជ័យ!');
+            } catch (err) {
+                alert('File មិនត្រឹមត្រូវ!');
+            }
+        };
+        reader.readAsText(file);
+    }
+
+    function setCategoryFilter(cat) {
+        selectedCategoryFilter = cat;
+        renderLegend();
+    }
+
+    function toggleAccordionGroup(groupKey) {
+        openGroupAccordions[groupKey] = !openGroupAccordions[groupKey];
+        renderLegend();
+    }
+
+    function renderLegend() {
+        const accordionContainer = document.getElementById('accordionContainer');
+        const filterBar = document.getElementById('categoryFilterBar');
+        accordionContainer.innerHTML = '';
+        filterBar.innerHTML = '';
+
+        // Group TEMPLE_LOCATIONS dynamically by category
+        const groupedMap = {};
+
+        TEMPLE_LOCATIONS.forEach(loc => {
+            const catName = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+            if (!groupedMap[catName]) {
+                groupedMap[catName] = [];
+            }
+            groupedMap[catName].push(loc);
+        });
+
+        // Filter Bar Buttons Generation
+        const allBtn = document.createElement('button');
+        allBtn.className = `cat-filter-btn ${selectedCategoryFilter === 'all' ? 'active' : ''}`;
+        allBtn.textContent = '🌐 បង្ហាញទាំងអស់';
+        allBtn.onclick = () => setCategoryFilter('all');
+        filterBar.appendChild(allBtn);
+
+        Object.keys(groupedMap).forEach(catName => {
+            const btn = document.createElement('button');
+            btn.className = `cat-filter-btn ${selectedCategoryFilter === catName ? 'active' : ''}`;
+            btn.textContent = `${catName} (${groupedMap[catName].length})`;
+            btn.onclick = () => setCategoryFilter(catName);
+            filterBar.appendChild(btn);
+        });
+
+        const addGroupBtn = document.createElement('button');
+        addGroupBtn.className = 'btn-add-category';
+        addGroupBtn.textContent = '➕ បង្កើត Group ទីតាំងថ្មីដោយខ្លួនឯង';
+        addGroupBtn.onclick = openCreateCustomCategoryModal;
+        filterBar.appendChild(addGroupBtn);
+
+        // Render Accordion Sections
+        Object.keys(groupedMap).forEach(catName => {
+            if (selectedCategoryFilter !== 'all' && selectedCategoryFilter !== catName) {
+                return;
+            }
+
+            const items = groupedMap[catName];
+            if (items.length === 0) return;
+
+            const groupDiv = document.createElement('div');
+            const isOpen = openGroupAccordions[catName] !== false;
+            groupDiv.className = `accordion-group ${isOpen ? 'open' : ''}`;
+
+            const headerHtml = `
+                <div class="accordion-header" onclick="toggleAccordionGroup('${catName}')">
+                    <div class="accordion-header-left">
+                        <span>📁 ${catName}</span>
+                        <span class="group-count-badge">${items.length} ទីតាំង</span>
+                    </div>
+                    <span class="accordion-arrow">▼</span>
+                </div>
+            `;
+
+            let cardsHtml = '<div class="accordion-content"><div class="legend-grid">';
+            items.forEach(loc => {
+                let cardContent = '';
+                if (activeTab === 'tagger') {
+                    cardContent = `
+                        <div class="legend-card" onclick="openEditModal('${loc.id}')">
+                            <div class="legend-card-left">
+                                <div class="badge ${loc.type}">${loc.id}</div>
+                                <div class="card-name">${loc.name}</div>
+                            </div>
+                            <div class="action-btns">
+                                <button class="btn-edit" onclick="event.stopPropagation(); openEditModal('${loc.id}')">កែ</button>
+                                <button class="btn-delete" onclick="deleteLocation('${loc.id}', event)">លុប</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    cardContent = `
+                        <div class="legend-card" onclick="highlightLocation('${loc.id}')">
+                            <div class="legend-card-left">
+                                <div class="badge ${loc.type}">${loc.id}</div>
+                                <div class="card-name">${loc.name}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+                cardsHtml += cardContent;
+            });
+            cardsHtml += '</div></div>';
+
+            groupDiv.innerHTML = headerHtml + cardsHtml;
+            accordionContainer.appendChild(groupDiv);
+        });
+
+        document.getElementById('legendTitle').textContent = `បញ្ជីឈ្មោះទីតាំងទាំង ${TEMPLE_LOCATIONS.length}`;
+    }
+
+    function filterLocations() {
+        const q = document.getElementById('searchInput').value.trim().toLowerCase();
+        
+        document.querySelectorAll('.legend-card').forEach(card => {
+            const txt = card.textContent.toLowerCase();
+            card.style.display = txt.includes(q) ? 'flex' : 'none';
+        });
+
+        const activeContainerId = (activeTab === 'tagger') ? '#taggerPinsContainer' : '#pinsContainer';
+
+        document.querySelectorAll(`${activeContainerId} .pin`).forEach(pin => {
+            const id = pin.getAttribute('data-id');
+            const loc = TEMPLE_LOCATIONS.find(l => l.id === id);
+            if (loc) {
+                const match = loc.name.toLowerCase().includes(q) || loc.id.toLowerCase().includes(q);
+                pin.style.display = match ? 'block' : 'none';
+            }
+        });
+    }
+
+    // Initialize Viewport Panning & Scrolling for Viewports
+    setupViewportPanning('viewportTab1');
+    setupViewportPanning('viewportTab2');
+    setupViewportPanning('viewportTab3');
+
+    // Initialize Views
+    renderAllViews();
+</script>
+
+</body>
+</html>

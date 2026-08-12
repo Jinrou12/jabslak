@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <title>Temple Map Generator - Perfectly Aligned</title>
+    <link href="https://fonts.googleapis.com/css2?family=Battambang:wght@700;900&family=Moul&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 1024px;
+            height: 944px;
+            overflow: hidden;
+            background: #000;
+            font-family: 'Battambang', 'Khmer OS Battambang', sans-serif;
+        }
+
+        .map-wrapper {
+            position: relative;
+            width: 1024px;
+            height: 944px;
+        }
+
+        .map-wrapper img {
+            width: 1024px;
+            height: 944px;
+            display: block;
+        }
+
+        .label-tag {
+            position: absolute;
+            transform: translate(-14px, -50%);
+            display: flex;
+            align-items: center;
+            z-index: 10;
+            white-space: nowrap;
+        }
+
+        .tag-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Moul', cursive, sans-serif;
+            font-size: 11px;
+            font-weight: 900;
+            color: #000;
+            background: linear-gradient(135deg, #00e5ff, #00b0ff);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.8);
+            border: 2px solid #ffffff;
+            flex-shrink: 0;
+            z-index: 2;
+        }
+
+        .label-tag.gate .tag-badge {
+            background: linear-gradient(135deg, #ffd600, #ffab00);
+        }
+
+        .tag-text {
+            color: #ffffff;
+            background: rgba(15, 23, 42, 0.95);
+            font-family: 'Battambang', 'Khmer OS Battambang', sans-serif;
+            font-size: 13.5px;
+            font-weight: 700;
+            padding: 4px 12px 6px 14px;
+            border-radius: 0 14px 14px 0;
+            border: 1.5px solid #00e5ff;
+            border-left: none;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.8);
+            margin-left: -12px;
+            z-index: 1;
+            text-shadow: 0 1px 3px #000;
+        }
+
+        .label-tag.gate .tag-text {
+            border-color: #ffd600;
+        }
+    </style>
+</head>
+<body>
+
+<div class="map-wrapper">
+    <img src="map_new_latest.jpg" alt="Map">
+
+    <script>
+        const SCALE_X = 1024.0 / 966.0;
+        const SCALE_Y = 944.0 / 966.0;
+
+        const LOCS = [
+            { id: "១",  name: "ធម្មសាលាសភា",                  x: 156, y: 428, type: "building" },
+            { id: "២",  name: "មហាកុដិ",                       x: 182, y: 520, type: "building" },
+            { id: "៣",  name: "កុដិសាឡុម",                     x: 142, y: 673, type: "building" },
+            { id: "៤",  name: "កុដិតូច",                       x: 43,  y: 342, type: "building" },
+            { id: "៥",  name: "កុដិថ្មី",                      x: 157, y: 259, type: "building" },
+            { id: "៦",  name: "កុដិគ្រូធំ",                   x: 235, y: 259, type: "building" },
+            { id: "៧",  name: "ព្រះវិហារ",                     x: 362, y: 524, type: "building" },
+            { id: "៨",  name: "ដើមពោធិព្រឹក្ស",               x: 348, y: 636, type: "building" },
+            { id: "៩",  name: "បណ្ណាល័យ",                     x: 568, y: 523, type: "building" },
+            { id: "១០", name: "ពុទ្ឌកបឋមសិក្សាកម្រងហ៊ុនណេង", x: 565, y: 430, type: "building" },
+            { id: "១១", name: "កុដិយាយតា",                    x: 421, y: 258, type: "building" },
+            { id: "១២", name: "ប៉ុស្តវិទ្យុ",                 x: 523, y: 209, type: "building" },
+            { id: "១៣", name: "អាងទឹក",                       x: 640, y: 283, type: "building" },
+            { id: "១៤", name: "អាងទឹកវិទ្យុ",                x: 603, y: 183, type: "building" },
+            { id: "១៥", name: "ព្រះផ្ទំ",                      x: 627, y: 351, type: "building" },
+            { id: "១៦", name: "ចេតីយឧកញ៉ា ចាយ ស៊ាងអ៊ី",              x: 514, y: 759, type: "building" },
+            { id: "A",  name: "ក្លោងទ្វារទី១",               x: 740, y: 61,  type: "gate" },
+            { id: "B",  name: "ក្លោងទ្វារទី២",               x: 287, y: 186, type: "gate" },
+            { id: "C",  name: "ក្លោងទ្វារទី៣",               x: 907, y: 536, type: "gate" },
+            { id: "D",  name: "ក្លោងទ្វារទី៤",               x: 706, y: 683, type: "gate" },
+            { id: "E",  name: "ក្លោងទ្វារទី៥",               x: 41,  y: 452, type: "gate" }
+        ];
+
+        const wrapper = document.querySelector('.map-wrapper');
+
+        LOCS.forEach(loc => {
+            const cx = Math.round(loc.x * SCALE_X);
+            const cy = Math.round(loc.y * SCALE_Y);
+
+            const tag = document.createElement('div');
+            tag.className = `label-tag ${loc.type}`;
+            tag.style.left = `${cx}px`;
+            tag.style.top = `${cy}px`;
+
+            tag.innerHTML = `
+                <div class="tag-badge">${loc.id}</div>
+                <div class="tag-text">${loc.name}</div>
+            `;
+            wrapper.appendChild(tag);
+        });
+    </script>
+</div>
+
+</body>
+</html>
