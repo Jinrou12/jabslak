@@ -43,6 +43,35 @@ import {
 } from '../utils/firebase';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
+const PIN_COLOR_GRADIENTS = [
+  'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60',       // 1: Cyan Sky
+  'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60', // 2: Emerald Green
+  'bg-gradient-to-br from-purple-300 via-purple-400 to-indigo-500 text-slate-950 border-white ring-1 ring-purple-400/60', // 3: Purple Violet
+  'bg-gradient-to-br from-rose-300 via-rose-400 to-pink-500 text-slate-950 border-white ring-1 ring-rose-400/60',       // 4: Rose Pink
+  'bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 text-slate-950 border-white ring-1 ring-amber-400/60',   // 5: Amber Orange
+  'bg-gradient-to-br from-fuchsia-300 via-fuchsia-400 to-pink-600 text-slate-950 border-white ring-1 ring-fuchsia-400/60', // 6: Fuchsia Magenta
+  'bg-gradient-to-br from-lime-300 via-lime-400 to-emerald-500 text-slate-950 border-white ring-1 ring-lime-400/60',     // 7: Lime Green
+  'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white border-white ring-1 ring-indigo-400/60',     // 8: Indigo Blue
+  'bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 text-slate-950 border-white ring-1 ring-yellow-400/60', // 9: Bright Gold
+  'bg-gradient-to-br from-teal-300 via-teal-400 to-cyan-600 text-slate-950 border-white ring-1 ring-teal-400/60',       // 10: Teal Cyan
+  'bg-gradient-to-br from-orange-300 via-orange-400 to-rose-500 text-slate-950 border-white ring-1 ring-orange-400/60',  // 11: Bright Orange
+  'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950 border-white ring-1 ring-violet-400/60',   // 12: Deep Violet
+];
+
+export function getPinBadgeColorClass(loc, idx = 0) {
+  if (!loc) return PIN_COLOR_GRADIENTS[0];
+  if (loc.type === 'gate') {
+    return 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 border-white ring-1 ring-amber-400/60';
+  }
+  let charSum = 0;
+  const str = String(loc.id || idx);
+  for (let i = 0; i < str.length; i++) {
+    charSum += str.charCodeAt(i);
+  }
+  const colorIdx = (charSum + idx) % PIN_COLOR_GRADIENTS.length;
+  return PIN_COLOR_GRADIENTS[colorIdx];
+}
+
 export default function TempleMapModal({
   onClose,
   allTags = [],
@@ -841,7 +870,7 @@ export default function TempleMapModal({
                 {/* ════════ MAP PIN MARKERS & MATHEMATICALLY LOCKED BADGES ════════ */}
                 {isPinsVisible && (
                   <div className="absolute inset-0 z-20 pointer-events-none">
-                    {currentLocations.map((loc) => {
+                    {currentLocations.map((loc, locIdx) => {
                       const isHighlighted =
                         selectedLocation?.id === loc.id ||
                         hoveredLocation?.id === loc.id ||
@@ -882,11 +911,10 @@ export default function TempleMapModal({
                           >
                             {/* Exact Mathematical Pin Badge Center (Rendered in ALL Tabs) */}
                             <div
-                              className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center font-moul text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-950 border border-white sm:border-2 shadow-md shrink-0 z-10 ${
-                                isGate
-                                  ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 ring-1 ring-amber-400/50'
-                                  : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 ring-1 ring-sky-400/50'
-                              } ${
+                              className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center font-moul text-[8px] sm:text-[9px] md:text-[10px] font-black border sm:border-2 shadow-md shrink-0 z-10 ${getPinBadgeColorClass(
+                                loc,
+                                locIdx
+                              )} ${
                                 isHighlighted
                                   ? 'ring-2 sm:ring-4 ring-amber-400 ring-offset-1 animate-pulse'
                                   : ''
@@ -975,9 +1003,9 @@ export default function TempleMapModal({
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0">
                     <div
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-moul font-bold text-slate-950 text-[10px] sm:text-[11px] shadow-md shrink-0 ${
-                        selectedLocation.type === 'gate' ? 'badge-gold' : 'bg-sky-400 text-slate-950'
-                      }`}
+                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-moul font-bold text-[10px] sm:text-[11px] shadow-md shrink-0 ${getPinBadgeColorClass(
+                        selectedLocation
+                      )}`}
                     >
                       {selectedLocation.id}
                     </div>
@@ -1246,7 +1274,7 @@ export default function TempleMapModal({
                     {/* Accordion Content Grid */}
                     {isOpen && (
                       <div className="p-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
-                        {filteredItems.map((loc) => {
+                        {filteredItems.map((loc, locIdx) => {
                           const isGate = loc.type === 'gate';
                           const tagCount = tagCountsByLocation[loc.id] || 0;
                           const isSel = selectedLocation?.id === loc.id;
@@ -1266,9 +1294,10 @@ export default function TempleMapModal({
                             >
                               <div className="flex items-center gap-2 min-w-0">
                                 <div
-                                  className={`w-6 h-6 rounded-lg flex items-center justify-center font-moul text-[10px] font-bold text-slate-950 shrink-0 ${
-                                    isGate ? 'badge-gold' : 'bg-sky-400'
-                                  }`}
+                                  className={`w-6 h-6 rounded-lg flex items-center justify-center font-moul text-[10px] font-bold shrink-0 ${getPinBadgeColorClass(
+                                    loc,
+                                    locIdx
+                                  )}`}
                                 >
                                   {loc.id}
                                 </div>
