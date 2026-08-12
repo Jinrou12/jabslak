@@ -20,13 +20,13 @@ const customDbUrl = (typeof localStorage !== 'undefined' ? localStorage.getItem(
 const customApiKey = typeof localStorage !== 'undefined' ? localStorage.getItem('FB_API_KEY') : null;
 const customProjectId = typeof localStorage !== 'undefined' ? localStorage.getItem('FB_PROJECT_ID') : null;
 
-// Firebase configuration (Can be updated with user's Firebase project keys or default demo keys)
+// Firebase configuration
 const firebaseConfig = {
   apiKey: customApiKey || import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDemoApiKeyForKhmerTagSystem2026",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "khmer-tag-system.firebaseapp.com",
-  databaseURL: customDbUrl || import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://khmer-tag-system-default-rtdb.firebaseio.com",
-  projectId: customProjectId || import.meta.env.VITE_FIREBASE_PROJECT_ID || "khmer-tag-system",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "khmer-tag-system.appspot.com",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "jabslak.firebaseapp.com",
+  databaseURL: customDbUrl || import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://jabslak-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: customProjectId || import.meta.env.VITE_FIREBASE_PROJECT_ID || "jabslak",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "jabslak.appspot.com",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789012",
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789012:web:demo123456789"
 };
