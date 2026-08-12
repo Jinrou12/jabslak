@@ -293,12 +293,17 @@ export async function seedFirebaseData(initialData, force = false) {
   try {
     const tagsRef = ref(db, 'tags');
     if (force) {
+      if (!initialData || initialData.length === 0) {
+        await remove(tagsRef);
+        console.log('Successfully cleared all tags from Firebase Realtime Database!');
+        return true;
+      }
       const dataMap = {};
       initialData.forEach((t) => {
         dataMap[t.id] = t;
       });
       await set(tagsRef, dataMap);
-      console.log('Successfully updated 1,000 authentic tags to Firebase Realtime Database!');
+      console.log('Successfully updated tags to Firebase Realtime Database!');
       return true;
     }
     const snapshot = await get(tagsRef);

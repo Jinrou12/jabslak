@@ -151,12 +151,12 @@ export default function App() {
     }
   };
 
-  const handleResetData = () => {
+  const handleResetData = async () => {
     if (window.confirm('តើអ្នកពិតជាចង់លុបទិន្នន័យទាំងអស់ (ទាំងចាស់ ទាំងថ្មី) ចោលទាំងស្រុងមែនទេ?')) {
       setTags([]);
       saveTags([]);
+      await seedFirebaseData([], true);
       pushTagsToCloud([]);
-      seedFirebaseData([], true);
       showToast('បានលុបទិន្នន័យទាំងអស់ចោលទាំងស្រុងរួចរាល់!');
     }
   };
