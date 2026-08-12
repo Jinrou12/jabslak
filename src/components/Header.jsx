@@ -40,7 +40,7 @@ export default function Header({
                 <span className="inline-block w-1 h-1 rounded-full bg-slate-600 shrink-0"></span>
                 <span className="text-emerald-400 flex items-center gap-1 shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  ២០ នាក់
+                  {westernToKhmerDigits(totalCount)} នាក់
                 </span>
               </p>
             </div>
