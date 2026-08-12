@@ -148,14 +148,14 @@ export default function App() {
   };
 
   const handleImportData = (importedTags) => {
-    const combined = [...importedTags, ...tags];
-    setTags(combined);
-    saveTags(combined);
+    // Replace old tags completely with newly imported tags
+    setTags(importedTags);
+    saveTags(importedTags);
     
-    // Sync all imported items to Firebase
-    importedTags.forEach((t) => saveTagToFirebase(t));
+    // Overwrite Firebase Realtime Database with newly imported tags (auto-delete old cloud data)
+    seedFirebaseData(importedTags, true);
 
-    showToast(`បានបញ្ចូលទិន្នន័យថ្មីចំនួន ${importedTags.length} ស្លាកលេខ!`);
+    showToast(`បានលុបទិន្នន័យចាស់ និងជំនួសដោយទិន្នន័យថ្មីចំនួន ${westernToKhmerDigits(importedTags.length)} ស្លាកលេខ!`);
     try {
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     } catch (e) {}

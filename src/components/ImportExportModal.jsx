@@ -158,7 +158,7 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
           const formattedTags = jsonData.map((row, idx) => parseRowToTag(row, idx));
 
           onImportData(formattedTags);
-          setImportStatus(`បាននាំចូលទិន្នន័យ ${formattedTags.length} ស្លាកលេខ ដោយជោគជ័យ (រត់លេខតាមលំដាប់ឈ្មោះ)!`);
+          setImportStatus(`បានលុបទិន្នន័យចាស់ និងនាំចូលទិន្នន័យ ${formattedTags.length} ស្លាកលេខថ្មី ដោយជោគជ័យ!`);
         } catch (err) {
           setImportStatus('មានបញ្ហាក្នុងការអានឯកសារ Excel');
         }
@@ -172,7 +172,7 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
           const formattedTags = results.data.map((row, idx) => parseRowToTag(row, idx));
 
           onImportData(formattedTags);
-          setImportStatus(`បាននាំចូលទិន្នន័យ CSV ចំនួន ${formattedTags.length} ដោយជោគជ័យ (រត់លេខតាមលំដាប់ឈ្មោះ)!`);
+          setImportStatus(`បានលុបទិន្នន័យចាស់ និងនាំចូលទិន្នន័យ CSV ចំនួន ${formattedTags.length} ថ្មី ដោយជោគជ័យ!`);
         }
       });
     } else {
