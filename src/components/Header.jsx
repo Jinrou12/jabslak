@@ -72,24 +72,26 @@ export default function Header({
 
           {/* User Profile Badge & Authentication Controls */}
           <div className="flex items-center gap-1.5 shrink-0 font-kantumruy">
-            {/* Current Active User Badge */}
-            <div
-              className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-bold border ${
-                isOwner
-                  ? 'bg-amber-950/80 border-amber-500/50 text-amber-300 shadow-md shadow-amber-500/10'
-                  : isAdmin
-                  ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
-                  : isAssistant
-                  ? 'bg-sky-950/80 border-sky-500/50 text-sky-300'
-                  : 'bg-slate-900 border-slate-700 text-slate-400'
-              }`}
-            >
-              {getRoleIcon()}
-              <span className="truncate max-w-[90px] sm:max-w-[140px] font-sans-en">
-                {currentUser?.email || currentUser?.name || 'Guest'}
-              </span>
-              <span className="text-[10px] opacity-75 font-sans-en">({getRoleText()})</span>
-            </div>
+            {/* Current Active User Badge (Only for non-guest) */}
+            {!isGuest && (
+              <div
+                className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold border ${
+                  isOwner
+                    ? 'bg-amber-950/80 border-amber-500/50 text-amber-300 shadow-md shadow-amber-500/10'
+                    : isAdmin
+                    ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
+                    : 'bg-sky-950/80 border-sky-500/50 text-sky-300'
+                }`}
+              >
+                {getRoleIcon()}
+                <span className="font-bold">{getRoleText()}</span>
+                {currentUser?.email && (
+                  <span className="text-[10px] opacity-75 font-sans-en hidden md:inline truncate max-w-[120px]">
+                    ({currentUser.email})
+                  </span>
+                )}
+              </div>
+            )}
 
             {/* 🔑 Email Login Button */}
             <button
