@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, LogIn, Crown, Shield, UserCheck, Eye, Key, AlertCircle } from 'lucide-react';
+import { X, Mail, LogIn, Key, AlertCircle } from 'lucide-react';
 import { GUEST_USER } from '../utils/storage';
 
 export default function LoginModal({
@@ -32,7 +32,7 @@ export default function LoginModal({
     if (matchedUser) {
       const requiredPin = matchedUser.pin || '123';
       if (trimmedPass !== requiredPin) {
-        setErrorMessage('ពាក្យសម្ងាត់ (Password / PIN) មិនត្រឹមត្រូវឡើយ! (Password ដើម គឺ 123)');
+        setErrorMessage('ពាក្យសម្ងាត់ (Password / PIN) មិនត្រឹមត្រូវឡើយ!');
         return;
       }
       onLoginUser(matchedUser);
@@ -47,12 +47,6 @@ export default function LoginModal({
       onLoginUser(guestObj);
       onClose();
     }
-  };
-
-  const handleFillQuick = (email, pass) => {
-    setEmailInput(email);
-    setPasswordInput(pass);
-    setErrorMessage('');
   };
 
   return (
@@ -96,7 +90,7 @@ export default function LoginModal({
                 required
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
-                placeholder="ឧ. thonvisal12@gmail.com..."
+                placeholder="User@gmail.com"
                 className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none font-sans-en"
               />
             </div>
@@ -134,51 +128,6 @@ export default function LoginModal({
             <span>{errorMessage}</span>
           </div>
         )}
-
-        {/* Preset Account Quick Fill Buttons */}
-        <div className="mt-5 pt-4 border-t border-slate-800 space-y-2">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-            💡 ចុចរើសគណនីសាកល្បង (Quick Test) ៖
-          </span>
-
-          <div className="space-y-1.5 text-xs font-sans-en">
-            <button
-              type="button"
-              onClick={() => handleFillQuick('thonvisal12@gmail.com', '123')}
-              className="w-full p-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 rounded-xl text-left flex items-center justify-between text-amber-300 transition-all"
-            >
-              <div className="flex items-center gap-2">
-                <Crown className="w-4 h-4 text-amber-400" />
-                <span className="font-bold">thonvisal12@gmail.com</span>
-              </div>
-              <span className="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded-full font-bold">👑 Owner (Pass: 123)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleFillQuick('admin@gmail.com', '123')}
-              className="w-full p-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-left flex items-center justify-between text-emerald-300 transition-all"
-            >
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-emerald-400" />
-                <span className="font-bold">admin@gmail.com</span>
-              </div>
-              <span className="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-full font-bold">🛡️ Admin (Pass: 123)</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleFillQuick('assistant@gmail.com', '123')}
-              className="w-full p-2 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/30 rounded-xl text-left flex items-center justify-between text-sky-300 transition-all"
-            >
-              <div className="flex items-center gap-2">
-                <UserCheck className="w-4 h-4 text-sky-400" />
-                <span className="font-bold">assistant@gmail.com</span>
-              </div>
-              <span className="text-[10px] bg-sky-500/20 px-2 py-0.5 rounded-full font-bold">📋 Assistant (Pass: 123)</span>
-            </button>
-          </div>
-        </div>
 
       </div>
     </div>
