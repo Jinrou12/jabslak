@@ -24,9 +24,7 @@ import {
   Sparkles,
   Layers,
   Map as MapIcon,
-  Move,
-  Tag,
-  Hash
+  Move
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
@@ -46,7 +44,6 @@ export default function TempleMapModal({
 }) {
   const [locations, setLocations] = useState(getSavedTempleLocations());
   const [activeTab, setActiveTab] = useState('labeled'); // 'labeled' | 'interactive' | 'tagger'
-  const [showNameLabels, setShowNameLabels] = useState(false); // Default to clean numbered badges on mobile to prevent clutter
   const [zoomScale, setZoomScale] = useState(1.0);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -62,6 +59,7 @@ export default function TempleMapModal({
     id: '',
     name: '',
     type: 'building',
+    pos: 'R',
     category: '🏢 ក្រុមអគារ និង កុដិ'
   });
   const [formError, setFormError] = useState('');
@@ -205,6 +203,7 @@ export default function TempleMapModal({
       id: String(locations.length + 1),
       name: '',
       type: 'building',
+      pos: 'R',
       category: '🏢 ក្រុមអគារ និង កុដិ'
     });
     setFormError('');
@@ -282,6 +281,7 @@ export default function TempleMapModal({
       id: loc.id,
       name: loc.name,
       type: loc.type || 'building',
+      pos: loc.pos || 'R',
       category: loc.category || '🏢 ក្រុមអគារ និង កុដិ'
     });
     setFormError('');
@@ -299,6 +299,7 @@ export default function TempleMapModal({
       id: String(locations.length + 1),
       name: '',
       type: 'building',
+      pos: 'R',
       category: '🏢 ក្រុមអគារ និង កុដិ'
     });
     setFormError('');
@@ -337,6 +338,7 @@ export default function TempleMapModal({
               id: id,
               name: name,
               type: modalForm.type,
+              pos: modalForm.pos || 'R',
               category: modalForm.category
             }
           : l
@@ -347,6 +349,7 @@ export default function TempleMapModal({
           id: id,
           name: name,
           type: modalForm.type,
+          pos: modalForm.pos || 'R',
           category: modalForm.category
         });
       }
@@ -357,7 +360,7 @@ export default function TempleMapModal({
         x: editingLoc?.x || 50,
         y: editingLoc?.y || 50,
         type: modalForm.type,
-        pos: 'R',
+        pos: modalForm.pos || 'R',
         category: modalForm.category
       };
       updated = [...locations, newPoint];
@@ -547,7 +550,7 @@ export default function TempleMapModal({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🖼️ ប្លង់ផែនទី</span>
+              <span>🖼️ ប្លង់មានឈ្មោះ</span>
             </button>
 
             <button
@@ -573,22 +576,12 @@ export default function TempleMapModal({
             </button>
           </div>
 
-          {/* Clean Pins vs Full Labels Toggle & Eye Toggle */}
+          {/* Eye Toggle & Zoom Indicator */}
           <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 text-xs">
-            
-            {/* Label Display Toggle Button (Switch between Clean Badge & Full Name) */}
-            <button
-              onClick={() => setShowNameLabels(!showNameLabels)}
-              className={`flex items-center gap-1 px-2.5 py-1 rounded-xl border text-xs font-bold transition-all active:scale-95 ${
-                showNameLabels
-                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
-                  : 'bg-slate-900 border-slate-700 text-slate-300 hover:text-amber-400'
-              }`}
-              title="បិទ/បើក ការបង្ហាញឈ្មោះវែងលើ Pin"
-            >
-              {showNameLabels ? <Tag className="w-3.5 h-3.5" /> : <Hash className="w-3.5 h-3.5" />}
-              <span>{showNameLabels ? '🏷️ ឈ្មោះពេញ' : '🔢 ស្លាកលេខស្អាត'}</span>
-            </button>
+            <div className="flex items-center gap-1 text-[11px] text-slate-400">
+              <Move className="w-3 h-3 text-amber-400" />
+              <span>{zoomScale > 1.0 ? 'អូស Pan ផែនទី' : 'ចុច + ដើម្បី Zoom'}</span>
+            </div>
 
             <button
               onClick={() => setIsPinsVisible(!isPinsVisible)}
@@ -663,7 +656,7 @@ export default function TempleMapModal({
                   ))}
                 </div>
 
-                {/* ════════ MAP PIN MARKERS & BADGES ════════ */}
+                {/* ════════ MAP PIN MARKERS & SMART DIRECTIONAL LABELS ════════ */}
                 {isPinsVisible && (
                   <div className="absolute inset-0 z-20">
                     {locations.map((loc) => {
@@ -674,9 +667,29 @@ export default function TempleMapModal({
                           loc.name.toLowerCase().includes(highlightLocationName.toLowerCase()));
 
                       const isGate = loc.type === 'gate';
-                      const tagCount = tagCountsByLocation[loc.id] || 0;
                       const isCurrentlyDragging = draggingPinId === loc.id;
                       const canDragThisPin = activeTab === 'interactive' || activeTab === 'tagger';
+                      
+                      // Smart Directional Placement to Prevent Any Overlap:
+                      const pos = loc.pos || (loc.x > 75 ? 'L' : 'R');
+                      
+                      let containerFlex = 'flex-row items-center -translate-y-1/2';
+                      let labelMargin = '-ml-1.5 pl-2.5 pr-1.5';
+                      let transformStyle = 'translate(-8px, -50%)';
+
+                      if (pos === 'L') {
+                        containerFlex = 'flex-row-reverse items-center -translate-y-1/2 -translate-x-full';
+                        labelMargin = '-mr-1.5 pr-2.5 pl-1.5';
+                        transformStyle = 'translate(8px, -50%)';
+                      } else if (pos === 'T') {
+                        containerFlex = 'flex-col-reverse items-center -translate-x-1/2 -translate-y-full';
+                        labelMargin = '-mb-1 pb-1.5 pt-1 px-1.5';
+                        transformStyle = 'translate(-50%, 8px)';
+                      } else if (pos === 'B') {
+                        containerFlex = 'flex-col items-center -translate-x-1/2';
+                        labelMargin = '-mt-1 pt-1.5 pb-1 px-1.5';
+                        transformStyle = 'translate(-50%, -8px)';
+                      }
 
                       return (
                         <div
@@ -690,21 +703,22 @@ export default function TempleMapModal({
                           }}
                           onMouseEnter={() => setHoveredLocation(loc)}
                           onMouseLeave={() => setHoveredLocation(null)}
-                          className={`map-pin-element absolute flex items-center -translate-x-1/2 -translate-y-1/2 transition-transform duration-100 z-20 ${
-                            canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-125' : 'cursor-pointer hover:scale-120'
-                          } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-40' : ''}`}
+                          className={`map-pin-element absolute flex ${containerFlex} transition-transform duration-100 z-20 ${
+                            canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-115' : 'cursor-pointer hover:scale-110'
+                          } ${isHighlighted || isCurrentlyDragging ? 'scale-125 z-40' : ''}`}
                           style={{
                             left: `${loc.x}%`,
                             top: `${loc.y}%`,
+                            transform: transformStyle,
                             touchAction: 'none'
                           }}
                         >
-                          {/* Round Crisp Number Badge (Clean, Never Cluttered) */}
+                          {/* Round Crisp Number Badge */}
                           <div
-                            className={`w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 rounded-full flex items-center justify-center font-moul text-[9px] sm:text-[10px] md:text-[11px] font-black text-slate-950 border border-white sm:border-2 shadow-lg shrink-0 ${
+                            className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center font-moul text-[8px] sm:text-[9px] md:text-[10px] font-black text-slate-950 border border-white sm:border-2 shadow-md shrink-0 z-10 ${
                               isGate
-                                ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 ring-1 sm:ring-2 ring-amber-400/50'
-                                : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 ring-1 sm:ring-2 ring-sky-400/50'
+                                ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 ring-1 ring-amber-400/50'
+                                : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 ring-1 ring-sky-400/50'
                             } ${
                               isHighlighted
                                 ? 'ring-2 sm:ring-4 ring-amber-400 ring-offset-1 animate-pulse'
@@ -714,33 +728,19 @@ export default function TempleMapModal({
                             {loc.id}
                           </div>
 
-                          {/* Optional Label Pill (Shown on Desktop or when Toggle is Active) */}
-                          {showNameLabels && (
-                            <div
-                              className={`text-[9px] sm:text-[10px] md:text-xs font-bold px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-r-xl border shadow-xl -ml-1 pl-2 flex items-center gap-1 text-white whitespace-nowrap pointer-events-none ${
-                                isGate
-                                  ? 'bg-slate-950/90 border-amber-400/80 text-amber-200'
-                                  : 'bg-slate-950/90 border-sky-400/80 text-sky-100'
-                              } ${isHighlighted ? 'ring-2 ring-amber-400' : ''}`}
-                            >
-                              <span>{loc.name}</span>
-                            </div>
-                          )}
-
-                          {/* Hover Tooltip (When not showing full labels) */}
-                          {!showNameLabels && (
-                            <div
-                              className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1 bg-slate-950/95 text-white font-bold text-[10px] sm:text-xs px-2 py-0.5 rounded-lg border shadow-2xl pointer-events-none whitespace-nowrap transition-all duration-150 z-50 ${
-                                isGate ? 'border-amber-400 text-amber-200' : 'border-sky-400 text-sky-100'
-                              } ${
-                                isHighlighted || hoveredLocation?.id === loc.id
-                                  ? 'opacity-100 scale-100'
-                                  : 'opacity-0 scale-90 pointer-events-none'
-                              }`}
-                            >
-                              <span className="font-moul text-amber-400">[{loc.id}]</span> {loc.name}
-                            </div>
-                          )}
+                          {/* Smart, Compact, Non-Overlapping Name Pill */}
+                          <div
+                            className={`text-[7.5px] sm:text-[9px] md:text-[10.5px] font-bold py-0.5 rounded-lg border shadow-lg flex items-center gap-1 text-white whitespace-nowrap z-0 ${labelMargin} ${
+                              isGate
+                                ? 'bg-slate-950/92 border-amber-400/90 text-amber-200'
+                                : 'bg-slate-950/92 border-sky-400/90 text-sky-100'
+                            } ${isHighlighted ? 'ring-1.5 ring-amber-400 bg-slate-950' : ''}`}
+                            style={{
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.6)'
+                            }}
+                          >
+                            <span>{loc.name}</span>
+                          </div>
                         </div>
                       );
                     })}
@@ -776,7 +776,7 @@ export default function TempleMapModal({
               </button>
             </div>
 
-            {/* Selected Location Banner Popover (Crystal Clear Floating Card) */}
+            {/* Selected Location Banner Popover */}
             {selectedLocation && (
               <div className="absolute top-3 left-3 max-w-[280px] sm:max-w-sm bg-slate-950/95 border border-amber-500/60 rounded-2xl p-2.5 sm:p-3 shadow-2xl backdrop-blur-md z-40 animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-start justify-between gap-2">
@@ -1092,6 +1092,24 @@ export default function TempleMapModal({
                     placeholder="ឧ. កុដិថ្មី, អាហារដ្ឋាន..."
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    ទិសដៅស្លាកឈ្មោះ (Label Direction) ៖
+                  </label>
+                  <select
+                    value={modalForm.pos || 'R'}
+                    onChange={(e) =>
+                      setModalForm((prev) => ({ ...prev, pos: e.target.value }))
+                    }
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
+                  >
+                    <option value="R">➡️ ខាងស្តាំ (Right)</option>
+                    <option value="L">⬅️ ខាងឆ្វេង (Left)</option>
+                    <option value="T">⬆️ ខាងលើ (Top)</option>
+                    <option value="B">⬇️ ខាងក្រោម (Bottom)</option>
+                  </select>
                 </div>
 
                 <div>
