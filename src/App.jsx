@@ -61,7 +61,7 @@ export default function App() {
 
     // 2. Subscribe to Zero-Config Cloud Sync (Auto-Sync PC & Mobile)
     const unsubscribeCloud = subscribeToCloudTags((cloudTags) => {
-      if (cloudTags && cloudTags.length > 0) {
+      if (Array.isArray(cloudTags)) {
         setTags(cloudTags);
         saveTags(cloudTags);
         setIsCloudSyncing(true);
@@ -71,12 +71,10 @@ export default function App() {
     // 3. Subscribe to Firebase Realtime Database (if configured)
     const unsubscribeFirebase = subscribeToFirebaseTags(
       (fbTags) => {
-        if (fbTags && fbTags.length > 0) {
+        if (Array.isArray(fbTags)) {
           setTags(fbTags);
           saveTags(fbTags);
           setIsCloudSyncing(true);
-        } else {
-          seedFirebaseData(localTags);
         }
       },
       (err) => {
