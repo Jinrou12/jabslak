@@ -698,7 +698,7 @@ export default function TempleMapModal({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>📍 ផ្ទាំងទី២ ៖ អន្តរកម្ម (លេខ & ABCDE)</span>
+              <span>📍 ផ្ទាំងទី២ ៖ អន្តរកម្ម</span>
             </button>
 
             <button
@@ -709,7 +709,7 @@ export default function TempleMapModal({
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🏷️ ផ្ទាំងទី៣ ៖ ដៅស្លាកលេខលើ Map (Admin & Owner)</span>
+              <span>🏷️ ផ្ទាំងទី៣ ៖ ដៅស្លាកលេខលើ Map</span>
             </button>
           </div>
 
