@@ -73,7 +73,7 @@ export function subscribeToCloudTags(onDataReceived) {
   const checkCloud = async () => {
     if (!isSubscribed) return;
     const data = await fetchTagsFromCloud();
-    if (data && data.updatedAt > localLastUpdated) {
+    if (data && data.tags && data.tags.length > 0 && data.updatedAt !== localLastUpdated) {
       localLastUpdated = data.updatedAt;
       onDataReceived(data.tags);
     }
