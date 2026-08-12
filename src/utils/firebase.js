@@ -3,12 +3,29 @@ import { getDatabase, ref, onValue, set, remove, get } from 'firebase/database';
 import { INITIAL_TEMPLE_LOCATIONS, saveTempleLocations as saveTempleLocationsLocal, saveTab3Locations as saveTab3LocationsLocal } from '../data/templeLocations';
 import { INITIAL_TAG_DATA } from '../data/sampleData';
 
+// Dynamically read custom Firebase Database credentials from localStorage or URL parameter
+let urlDbParam = '';
+try {
+  if (typeof window !== 'undefined' && window.location) {
+    const params = new URLSearchParams(window.location.search);
+    const dbParam = params.get('db');
+    if (dbParam) {
+      urlDbParam = decodeURIComponent(dbParam);
+      localStorage.setItem('FB_DB_URL', urlDbParam);
+    }
+  }
+} catch (e) {}
+
+const customDbUrl = (typeof localStorage !== 'undefined' ? localStorage.getItem('FB_DB_URL') : null) || urlDbParam;
+const customApiKey = typeof localStorage !== 'undefined' ? localStorage.getItem('FB_API_KEY') : null;
+const customProjectId = typeof localStorage !== 'undefined' ? localStorage.getItem('FB_PROJECT_ID') : null;
+
 // Firebase configuration (Can be updated with user's Firebase project keys or default demo keys)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDemoApiKeyForKhmerTagSystem2026",
+  apiKey: customApiKey || import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDemoApiKeyForKhmerTagSystem2026",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "khmer-tag-system.firebaseapp.com",
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://khmer-tag-system-default-rtdb.firebaseio.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "khmer-tag-system",
+  databaseURL: customDbUrl || import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://khmer-tag-system-default-rtdb.firebaseio.com",
+  projectId: customProjectId || import.meta.env.VITE_FIREBASE_PROJECT_ID || "khmer-tag-system",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "khmer-tag-system.appspot.com",
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789012",
   appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789012:web:demo123456789"
@@ -19,9 +36,16 @@ let db = null;
 let isConnected = false;
 
 try {
-  app = initializeApp(firebaseConfig);
-  db = getDatabase(app);
-  isConnected = true;
+  if (firebaseConfig.databaseURL && !firebaseConfig.databaseURL.includes('default-rtdb.firebaseio.com')) {
+    app = initializeApp(firebaseConfig);
+    db = getDatabase(app);
+    isConnected = true;
+  } else {
+    // Attempt init with fallback
+    app = initializeApp(firebaseConfig);
+    db = getDatabase(app);
+    isConnected = true;
+  }
 } catch (err) {
   console.warn('Firebase init warning (running in offline mode):', err);
 }
