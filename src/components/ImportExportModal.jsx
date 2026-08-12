@@ -52,14 +52,16 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
       if (!str) return true;
       const s = String(str).trim().toLowerCase();
       return (
-        s.includes('គោតមនាម') ||
-        s.includes('បញ្ជីឈ្មោះ') ||
-        s.includes('សម្រាប់ប្រើប្រាស់') ||
+        s.includes('គោត') ||
+        s.includes('គោត្ត') ||
+        s.includes('បញ្ជី') ||
+        s.includes('សម្រាប់') ||
         s.includes('សរុប') ||
         s.includes('total') ||
         s.includes('summary') ||
         s.includes('លេខរៀង') ||
-        s.includes('ស្លាកលេខយានយន្ត') ||
+        s.includes('ស្លាកលេខ') ||
+        s.includes('លេខទូរស័ព្ទ') ||
         s === 'ឈ្មោះ' ||
         s === 'name' ||
         s === 'ល.រ' ||
