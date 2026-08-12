@@ -44,98 +44,80 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
 
   const [autoSequence, setAutoSequence] = useState(true);
 
-  // Smart 2D Row Parser: Automatically detects table header row (skipping banner titles) & parses records
-  const parse2DRowsToTags = (rawRows) => {
+  // Smart Khmer Excel & CSV parser: Accurately extracts Person Name, Phone Number, Vehicle Tag & Tag Numbers
+  const parseKhmerRowsToTags = (rawRows) => {
     if (!Array.isArray(rawRows) || rawRows.length === 0) return [];
 
-    const headerKeywords = [
-      'ឈ្មោះ', 'គោតមនាម', ' name', 'fullname', 'ស្លាក', 'tag', 'ទូរស័ព្ទ', 'phone', 'ល.រ', 'លរ', 'លេខរៀង'
+    const ignoreList = [
+      'ល.រ', 'លរ', 'លេខរៀង', 'គោតមនាម', 'នាម', 'គោតមនាម និងនាម', 'ឈ្មោះ', 'ឈ្មោះ (name)',
+      'ភេទ', 'ស្លាកលេខ', 'ស្លាកលេខយានយន្ត', 'លេខទូរស័ព្ទ', 'បញ្ជីឈ្មោះ', 'សម្រាប់ប្រើប្រាស់',
+      'កំណត់សម្គាល់', 'ទីតាំង', 'no', 'id', 'name', 'phone', 'location', 'gender'
     ];
 
-    let headerRowIdx = -1;
-    let nameColIdx = -1;
-    let tagColIdx = -1;
-    let phoneColIdx = -1;
-    let locColIdx = -1;
-    let notesColIdx = -1;
-
-    // 1. Find the actual table header row in the first 15 rows
-    for (let i = 0; i < Math.min(15, rawRows.length); i++) {
-      const row = rawRows[i];
-      if (!Array.isArray(row)) continue;
-
-      const rowStr = row.map((cell) => String(cell || '').toLowerCase()).join(' ');
-      const matchCount = headerKeywords.filter((kw) => rowStr.includes(kw.toLowerCase())).length;
-
-      if (matchCount >= 1) {
-        headerRowIdx = i;
-        row.forEach((cell, colIdx) => {
-          const cellStr = String(cell || '').trim();
-          const lower = cellStr.toLowerCase();
-
-          if (lower.includes('ឈ្មោះ') || lower.includes('គោតមនាម') || lower.includes('name')) {
-            if (nameColIdx === -1) nameColIdx = colIdx;
-          } else if (lower.includes('ស្លាក') || lower.includes('tag')) {
-            if (tagColIdx === -1) tagColIdx = colIdx;
-          } else if (lower.includes('ទូរស័ព្ទ') || lower.includes('phone') || lower.includes('tel')) {
-            if (phoneColIdx === -1) phoneColIdx = colIdx;
-          } else if (lower.includes('ទីតាំង') || lower.includes('កុដិ') || lower.includes('location') || lower.includes('address')) {
-            if (locColIdx === -1) locColIdx = colIdx;
-          } else if (lower.includes('សម្គាល់') || lower.includes('note') || lower.includes('remark')) {
-            if (notesColIdx === -1) notesColIdx = colIdx;
-          }
-        });
-        break;
-      }
-    }
-
-    const startRow = headerRowIdx >= 0 ? headerRowIdx + 1 : 0;
     const validTags = [];
     let seqNumber = 1;
 
-    for (let i = startRow; i < rawRows.length; i++) {
+    for (let i = 0; i < rawRows.length; i++) {
       const row = rawRows[i];
       if (!Array.isArray(row) || row.length === 0) continue;
 
-      let nameVal = nameColIdx >= 0 ? String(row[nameColIdx] || '').trim() : '';
-      let phoneVal = phoneColIdx >= 0 ? String(row[phoneColIdx] || '').trim() : '';
-      let tagNumVal = tagColIdx >= 0 ? String(row[tagColIdx] || '').trim() : '';
-      let locVal = locColIdx >= 0 ? String(row[locColIdx] || '').trim() : '';
-      let notesVal = notesColIdx >= 0 ? String(row[notesColIdx] || '').trim() : '';
+      // Convert row cells to trimmed strings
+      const cells = row.map((cell) => String(cell || '').trim()).filter(Boolean);
+      if (cells.length === 0) continue;
 
-      // Fallback column discovery if header index missed
-      if (!nameVal) {
-        for (let c = 0; c < row.length; c++) {
-          const val = String(row[c] || '').trim();
-          if (val && isNaN(Number(val)) && !val.toLowerCase().includes('ស្លាក') && !val.toLowerCase().includes('phone') && !val.toLowerCase().includes('ទូរស័ព្ទ')) {
-            nameVal = val;
-            break;
+      let nameVal = '';
+      let phoneVal = '';
+      let vehicleTagVal = '';
+      let locVal = '';
+      let notesVal = '';
+
+      // Scan all cells in the current row
+      for (const cell of cells) {
+        const lower = cell.toLowerCase();
+
+        // Skip exact header matches or title banners
+        if (ignoreList.some((ig) => lower === ig || lower.includes('បញ្ជីឈ្មោះ') || lower.includes('សម្រាប់ប្រើប្រាស់'))) {
+          continue;
+        }
+
+        // Check if phone number (8 to 11 digits)
+        const digitsOnly = cell.replace(/[^0-9]/g, '');
+        if (digitsOnly.length >= 8 && digitsOnly.length <= 11 && (cell.startsWith('0') || cell.startsWith('+') || cell.startsWith('855') || cell.includes(' '))) {
+          if (!phoneVal) phoneVal = cell;
+          continue;
+        }
+
+        // Check if vehicle tag (contains pattern like 1EY-2579, 1GH-9279, 2A-3615 or province names)
+        if (/\d[A-Z]{1,2}[-\s]?\d{3,4}/i.test(cell) || lower.includes('ភ្នំពេញ') || lower.includes('កណ្ដាល') || lower.includes('សៀមរាប') || lower.includes('បាត់ដំបង')) {
+          if (!vehicleTagVal) vehicleTagVal = cell;
+          continue;
+        }
+
+        // Check if location (contains កុដិ, អាគារ, ធម្មសាលា, វត្ត, តុ)
+        if (lower.includes('កុដិ') || lower.includes('អាគារ') || lower.includes('ធម្មសាលា') || lower.includes('វត្ត')) {
+          if (!locVal) locVal = cell;
+          continue;
+        }
+
+        // Check if person name: Contains Khmer characters, not purely numbers, not gender (ប្រុស/ស្រី)
+        if (/[\u1780-\u17FF]/.test(cell) && isNaN(Number(cell))) {
+          if (cell !== 'ប្រុស' && cell !== 'ស្រី' && cell !== 'male' && cell !== 'female') {
+            if (!nameVal) {
+              nameVal = cell;
+            }
           }
         }
       }
 
-      // Filter out empty rows, title banner rows, and header labels
-      if (!nameVal || 
-          nameVal.includes('បញ្ជីឈ្មោះ') || 
-          nameVal.includes('គោតមនាម និងនាម') || 
-          nameVal === 'ឈ្មោះ' || 
-          nameVal === 'Name' || 
-          nameVal.includes('សម្រាប់ប្រើប្រាស់')) {
+      // Skip row if no valid person name was found or if name matches header label
+      if (!nameVal || ignoreList.some((ig) => nameVal.toLowerCase() === ig)) {
         continue;
       }
 
-      // Tag Number Assignment
-      let tagNum = null;
-      if (!autoSequence && tagNumVal) {
-        const parsed = parseInt(tagNumVal.replace(/[^0-9]/g, ''), 10);
-        if (!isNaN(parsed) && parsed > 0) {
-          tagNum = parsed;
-        }
-      }
-      if (!tagNum) {
-        tagNum = seqNumber++;
-      } else {
-        seqNumber = tagNum + 1;
+      const tagNum = seqNumber++;
+
+      if (vehicleTagVal) {
+        notesVal = `ស្លាកលេខរថយន្ត ៖ ${vehicleTagVal}`;
       }
 
       validTags.push({
@@ -169,7 +151,7 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
           const ws = wb.Sheets[wsname];
           const raw2DRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-          const formattedTags = parse2DRowsToTags(raw2DRows);
+          const formattedTags = parseKhmerRowsToTags(raw2DRows);
 
           if (formattedTags.length === 0) {
             setImportStatus('មិនអាចរកឃើញទិន្នន័យឈ្មោះក្នុងឯកសារនេះទេ');
@@ -188,7 +170,7 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
         header: false,
         skipEmptyLines: true,
         complete: (results) => {
-          const formattedTags = parse2DRowsToTags(results.data);
+          const formattedTags = parseKhmerRowsToTags(results.data);
 
           if (formattedTags.length === 0) {
             setImportStatus('មិនអាចរកឃើញទិន្នន័យឈ្មោះក្នុងឯកសារ CSV នេះទេ');
