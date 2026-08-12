@@ -470,6 +470,7 @@ export default function App() {
       {isTempleMapOpen && (
         <TempleMapModal
           allTags={tags}
+          currentUser={currentUser}
           highlightLocationName={templeMapTargetLoc}
           onClose={() => {
             setIsTempleMapOpen(false);

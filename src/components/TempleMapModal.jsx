@@ -45,10 +45,13 @@ import { westernToKhmerDigits } from '../utils/khmerSearch';
 export default function TempleMapModal({
   onClose,
   allTags = [],
+  currentUser,
   highlightLocationName = null,
   onFilterByLocation,
   onAddTagForLocation
 }) {
+  const canCustomizeMap = currentUser?.role === 'owner' || currentUser?.role === 'admin';
+
   // Tab 1 & Tab 2 share this state
   const [locations, setLocations] = useState(getSavedTempleLocations());
   // Tab 3 has its own INDEPENDENT state
@@ -233,6 +236,7 @@ export default function TempleMapModal({
 
   // Map Click in Tab 2 or Tab 3 (Add new pin)
   const handleMapClick = (e) => {
+    if (!canCustomizeMap) return;
     if ((activeTab !== 'tagger' && activeTab !== 'interactive') || draggingPinId || pinMovedFlagRef.current) return;
     const rect = mapContainerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -266,6 +270,7 @@ export default function TempleMapModal({
 
   // Ultra-Precise Pin Dragging (Synchronizes to Cloud on End)
   const handlePinDragStart = (e, loc) => {
+    if (!canCustomizeMap) return;
     if (activeTab !== 'tagger' && activeTab !== 'interactive') return;
 
     e.stopPropagation();
@@ -601,40 +606,44 @@ export default function TempleMapModal({
             </div>
           </div>
 
-          {/* Quick Header Actions */}
+          {/* Quick Header Actions (Customize Map - Owner & Admin Only) */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={handleOpenAddModal}
-              className="p-1.5 sm:px-2.5 sm:py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl border border-emerald-400/50 shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1"
-              title="បន្ថែមទីតាំងថ្មីលើផែនទី"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">បន្ថែមទីតាំង</span>
-            </button>
+            {canCustomizeMap && (
+              <>
+                <button
+                  onClick={handleOpenAddModal}
+                  className="p-1.5 sm:px-2.5 sm:py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl border border-emerald-400/50 shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1"
+                  title="បន្ថែមទីតាំងថ្មីលើផែនទី"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">បន្ថែមទីតាំង</span>
+                </button>
 
-            <button
-              onClick={handleResetLocations}
-              className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 transition-all active:scale-95 flex items-center gap-1"
-              title="កំណត់ទីតាំងដើមឡើងវិញ"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden md:inline">Reset ដើម</span>
-            </button>
+                <button
+                  onClick={handleResetLocations}
+                  className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 transition-all active:scale-95 flex items-center gap-1"
+                  title="កំណត់ទីតាំងដើមឡើងវិញ"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden md:inline">Reset ដើម</span>
+                </button>
 
-            <button
-              onClick={handleExportJSON}
-              className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 transition-all active:scale-95 flex items-center gap-1"
-              title="ទាញយក File JSON នៃទីតាំង"
-            >
-              <Download className="w-3.5 h-3.5 text-sky-400" />
-              <span className="hidden md:inline">នាំចេញ</span>
-            </button>
+                <button
+                  onClick={handleExportJSON}
+                  className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 transition-all active:scale-95 flex items-center gap-1"
+                  title="ទាញយក File JSON នៃទីតាំង"
+                >
+                  <Download className="w-3.5 h-3.5 text-sky-400" />
+                  <span className="hidden md:inline">នាំចេញ</span>
+                </button>
 
-            <label className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 cursor-pointer transition-all active:scale-95 flex items-center gap-1">
-              <Upload className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden md:inline">នាំចូល</span>
-              <input type="file" accept=".json" onChange={handleImportJSON} className="hidden" />
-            </label>
+                <label className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 cursor-pointer transition-all active:scale-95 flex items-center gap-1">
+                  <Upload className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="hidden md:inline">នាំចូល</span>
+                  <input type="file" accept=".json" onChange={handleImportJSON} className="hidden" />
+                </label>
+              </>
+            )}
 
             <button
               onClick={onClose}
@@ -1022,16 +1031,18 @@ export default function TempleMapModal({
                 </button>
               ))}
 
-              <button
-                onClick={() => {
-                  setNewCategoryName('');
-                  setSelectedLocationIdsForGroup([]);
-                  setIsCategoryModalOpen(true);
-                }}
-                className="px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 bg-amber-500/10 border border-dashed border-amber-500/50 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition-all ml-auto"
-              >
-                ➕ Group ថ្មី
-              </button>
+              {canCustomizeMap && (
+                <button
+                  onClick={() => {
+                    setNewCategoryName('');
+                    setSelectedLocationIdsForGroup([]);
+                    setIsCategoryModalOpen(true);
+                  }}
+                  className="px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 bg-amber-500/10 border border-dashed border-amber-500/50 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition-all ml-auto"
+                >
+                  ➕ Group ថ្មី
+                </button>
+              )}
             </div>
 
             {/* Accordion Group Cards */}
@@ -1116,29 +1127,31 @@ export default function TempleMapModal({
                                 </div>
                               </div>
 
-                              {/* Edit & Delete Action Buttons */}
-                              <div className="flex items-center gap-1 shrink-0">
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleOpenEditModal(loc);
-                                  }}
-                                  className="p-1 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-md transition-colors"
-                                  title="កែប្រែទីតាំងនេះ"
-                                >
-                                  <Edit2 className="w-3.5 h-3.5" />
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDeleteLocation(loc.id);
-                                  }}
-                                  className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-md transition-colors"
-                                  title="លុបទីតាំងនេះ"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
+                              {/* Edit & Delete Action Buttons (Owner & Admin Only) */}
+                              {canCustomizeMap && (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleOpenEditModal(loc);
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-md transition-colors"
+                                    title="កែប្រែទីតាំងនេះ"
+                                  >
+                                    <Edit2 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeleteLocation(loc.id);
+                                    }}
+                                    className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-md transition-colors"
+                                    title="លុបទីតាំងនេះ"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           );
                         })}
