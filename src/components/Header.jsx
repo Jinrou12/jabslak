@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, QrCode, Plus, FileSpreadsheet, RotateCcw, Users, MapPin, Cloud, Smartphone, Map as MapIcon } from 'lucide-react';
+import { Tag, Plus, FileSpreadsheet, RotateCcw, Users, MapPin, Cloud, Map as MapIcon } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function Header({
@@ -49,15 +49,6 @@ export default function Header({
           {/* Quick Connect & Cloud Badges */}
           <div className="flex items-center gap-1.5 shrink-0">
             <button
-              onClick={onOpenMobileConnect}
-              className="flex items-center gap-1 bg-gradient-to-r from-amber-500/20 to-amber-600/20 border border-amber-500/50 text-amber-300 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all active:scale-95 shadow-sm"
-              title="បង្ហាញ QR Code សម្រាប់ទូរស័ព្ទស្កែនបើក"
-            >
-              <Smartphone className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">📱 ភ្ជាប់ទូរស័ព្ទ</span>
-            </button>
-
-            <button
               onClick={onOpenCloudConfig}
               className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-semibold transition-all active:scale-95 border ${
                 isCloudSyncing
@@ -96,15 +87,6 @@ export default function Header({
           >
             <Plus className="w-4 h-4 stroke-[3]" />
             <span className="whitespace-nowrap">បន្ថែមថ្មី</span>
-          </button>
-
-          {/* Scan QR */}
-          <button
-            onClick={onOpenQRScanner}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-medium px-3 py-2 rounded-xl text-xs sm:text-sm shadow-lg shadow-emerald-900/30 transition-all active:scale-95 shrink-0"
-          >
-            <QrCode className="w-4 h-4" />
-            <span className="whitespace-nowrap">ស្កែន QR</span>
           </button>
 
           {/* Import / Export */}
