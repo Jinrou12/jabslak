@@ -23,7 +23,8 @@ import {
   ExternalLink,
   Sparkles,
   Layers,
-  Map as MapIcon
+  Map as MapIcon,
+  Move
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
@@ -74,6 +75,20 @@ export default function TempleMapModal({
   const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
   const [draggingPinId, setDraggingPinId] = useState(null);
 
+  // Auto-center map on mount
+  useEffect(() => {
+    if (viewportRef.current && mapContainerRef.current) {
+      setTimeout(() => {
+        const vp = viewportRef.current;
+        const mc = mapContainerRef.current;
+        if (vp && mc) {
+          vp.scrollLeft = (mc.scrollWidth - vp.clientWidth) / 2;
+          vp.scrollTop = (mc.scrollHeight - vp.clientHeight) / 2;
+        }
+      }, 100);
+    }
+  }, []);
+
   // Focus on highlighted location if passed from parent
   useEffect(() => {
     if (highlightLocationName) {
@@ -118,16 +133,18 @@ export default function TempleMapModal({
   // Zoom handlers
   const handleZoom = (delta) => {
     setZoomScale((prev) => {
-      const next = Math.max(0.7, Math.min(3.0, parseFloat((prev + delta).toFixed(2))));
+      const next = Math.max(0.7, Math.min(2.5, parseFloat((prev + delta).toFixed(2))));
       return next;
     });
   };
 
   const handleResetZoom = () => {
     setZoomScale(1.0);
-    if (viewportRef.current) {
-      viewportRef.current.scrollLeft = 0;
-      viewportRef.current.scrollTop = 0;
+    if (viewportRef.current && mapContainerRef.current) {
+      const vp = viewportRef.current;
+      const mc = mapContainerRef.current;
+      vp.scrollLeft = (mc.scrollWidth - vp.clientWidth) / 2;
+      vp.scrollTop = (mc.scrollHeight - vp.clientHeight) / 2;
     }
   };
 
@@ -405,133 +422,132 @@ export default function TempleMapModal({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-6xl max-h-[96vh] bg-slate-900 border border-amber-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100 font-kantumruy"
+        className="w-full max-w-5xl max-h-[96vh] sm:max-h-[92vh] bg-slate-900 border border-amber-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100 font-kantumruy"
         onClick={(e) => e.stopPropagation()}
         style={{
           boxShadow: '0 0 80px rgba(245,158,11,0.12), 0 25px 50px -12px rgba(0,0,0,0.8)'
         }}
       >
         {/* ═══════════════ MODAL HEADER ═══════════════ */}
-        <div className="px-5 py-4 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl badge-gold flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-amber-500/20 shrink-0">
-              <MapIcon className="w-5 h-5 stroke-[2.5]" />
+        <div className="px-4 sm:px-5 py-3 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl badge-gold flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-amber-500/20 shrink-0">
+              <MapIcon className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg md:text-xl font-bold font-moul text-amber-400">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h2 className="text-sm sm:text-base md:text-lg font-bold font-moul text-amber-400 truncate">
                   ផែនទីវត្ត និង ទីតាំង
                 </h2>
-                <span className="bg-amber-500/20 text-amber-300 text-xs font-bold px-2.5 py-0.5 rounded-full border border-amber-500/30">
+                <span className="bg-amber-500/20 text-amber-300 text-[10px] sm:text-xs font-bold px-2 py-0.2 rounded-full border border-amber-500/30 shrink-0">
                   {westernToKhmerDigits(locations.length)} ទីតាំង
                 </span>
               </div>
-              <p className="text-xs text-slate-400">
+              <p className="text-[10px] sm:text-xs text-slate-400 truncate hidden sm:block">
                 ប្លង់វត្តអន្តរកម្ម ទិសទាំង ៨ និងការគ្រប់គ្រងទីតាំងស្លាកលេខ
               </p>
             </div>
           </div>
 
           {/* Quick Header Actions */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 shrink-0">
             <button
               onClick={handleResetLocations}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 transition-all active:scale-95"
+              className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 transition-all active:scale-95 flex items-center gap-1"
               title="កំណត់ទីតាំងដើមឡើងវិញ"
             >
               <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">Reset ដើម</span>
+              <span className="hidden md:inline">Reset ដើម</span>
             </button>
 
             <button
               onClick={handleExportJSON}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 transition-all active:scale-95"
+              className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 transition-all active:scale-95 flex items-center gap-1"
               title="ទាញយក File JSON នៃទីតាំង"
             >
               <Download className="w-3.5 h-3.5 text-sky-400" />
-              <span className="hidden sm:inline">នាំចេញ</span>
+              <span className="hidden md:inline">នាំចេញ</span>
             </button>
 
-            <label className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 cursor-pointer transition-all active:scale-95">
+            <label className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 cursor-pointer transition-all active:scale-95 flex items-center gap-1">
               <Upload className="w-3.5 h-3.5 text-emerald-400" />
-              <span className="hidden sm:inline">នាំចូល</span>
+              <span className="hidden md:inline">នាំចូល</span>
               <input type="file" accept=".json" onChange={handleImportJSON} className="hidden" />
             </label>
 
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full transition-all ml-1"
+              className="p-1.5 sm:p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full transition-all ml-0.5"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>
 
         {/* ═══════════════ TAB CONTROLS & SUB-NAV ═══════════════ */}
-        <div className="px-5 py-2.5 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="px-3 sm:px-5 py-2 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 shrink-0">
           {/* Tab buttons */}
-          <div className="flex items-center bg-slate-900 p-1 rounded-2xl border border-slate-800">
+          <div className="flex items-center bg-slate-900 p-0.5 sm:p-1 rounded-2xl border border-slate-800 w-full sm:w-auto justify-between sm:justify-start">
             <button
               onClick={() => setActiveTab('labeled')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all ${
                 activeTab === 'labeled'
                   ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🖼️ ផ្ទាំងទី១ ៖ មានស្លាកឈ្មោះ</span>
+              <span>🖼️ ស្លាកឈ្មោះ</span>
             </button>
 
             <button
               onClick={() => setActiveTab('interactive')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all ${
                 activeTab === 'interactive'
                   ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>📍 ផ្ទាំងទី២ ៖ ផែនទីអន្តរកម្ម</span>
+              <span>📍 អន្តរកម្ម</span>
             </button>
 
             <button
               onClick={() => setActiveTab('tagger')}
-              className={`px-3.5 py-1.5 rounded-xl text-xs md:text-sm font-bold flex items-center gap-2 transition-all ${
+              className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all ${
                 activeTab === 'tagger'
                   ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🏷️ ផ្ទាំងទី៣ ៖ គ្រប់គ្រងទីតាំង</span>
+              <span>🏷️ កែប្រែទីតាំង</span>
             </button>
           </div>
 
-          {/* Eye Toggle & Instruction Hint */}
-          <div className="flex items-center gap-2 text-xs">
+          {/* Eye Toggle & Hint */}
+          <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 text-xs">
+            <div className="flex items-center gap-1 text-[11px] text-slate-400">
+              <Move className="w-3 h-3 text-amber-400" />
+              <span>អូស ឬ Pan មើលលើផែនទី</span>
+            </div>
+
             <button
               onClick={() => setIsPinsVisible(!isPinsVisible)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border font-semibold transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1 rounded-xl border text-xs font-semibold transition-all ${
                 isPinsVisible
                   ? 'bg-sky-500/15 border-sky-500/40 text-sky-300 hover:bg-sky-500/25'
                   : 'bg-rose-500/15 border-rose-500/40 text-rose-300 hover:bg-rose-500/25'
               }`}
             >
-              {isPinsVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              <span>{isPinsVisible ? 'បង្ហាញចំណុច' : 'លាក់ចំណុច'}</span>
+              {isPinsVisible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+              <span>{isPinsVisible ? 'បង្ហាញ' : 'លាក់'}</span>
             </button>
-
-            {activeTab === 'tagger' && (
-              <span className="text-amber-400 bg-amber-500/10 px-2.5 py-1 rounded-lg border border-amber-500/20 hidden md:inline">
-                ✨ ចុចលើផ្ទៃផែនទីដើម្បីបន្ថែមទីតាំងថ្មី ឬអូសផ្លាស់ប្តូរទីតាំង
-              </span>
-            )}
           </div>
         </div>
 
         {/* ═══════════════ MAIN CONTENT BODY (MAP & LEGEND) ═══════════════ */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-2.5 sm:p-4 space-y-3">
           
           {/* MAP CANVAS CONTAINER */}
-          <div className="relative rounded-2xl border-2 border-slate-700 bg-white overflow-hidden shadow-inner group">
+          <div className="relative rounded-2xl border-2 border-slate-700 bg-white overflow-hidden shadow-inner">
             
             {/* Scrollable / Pannable Viewport */}
             <div
@@ -541,22 +557,22 @@ export default function TempleMapModal({
               onMouseUp={handleMouseUp}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
-              className={`relative w-full max-h-[580px] overflow-auto select-none ${
+              className={`relative w-full max-h-[380px] sm:max-h-[460px] md:max-h-[520px] overflow-auto select-none ${
                 isPanning ? 'cursor-grabbing' : 'cursor-grab'
               }`}
               style={{
-                padding: '65px 180px',
+                padding: '40px 100px',
                 scrollBehavior: 'smooth'
               }}
             >
-              {/* Scalable Map Container Box */}
+              {/* Scalable Map Container Box with Minimum Clean Resolution */}
               <div
                 ref={mapContainerRef}
                 onClick={handleMapClick}
-                className="relative mx-auto transition-all duration-200 origin-center"
+                className="relative mx-auto transition-all duration-150 origin-center"
                 style={{
                   width: `${zoomScale * 100}%`,
-                  minWidth: `${zoomScale * 100}%`
+                  minWidth: `${Math.max(680, zoomScale * 680)}px`
                 }}
               >
                 {/* Clean Base Temple Map Image */}
@@ -572,10 +588,10 @@ export default function TempleMapModal({
                   {TEMPLE_PALI_DIRECTIONS.map((dir) => (
                     <div
                       key={dir.key}
-                      className={`absolute font-moul font-black text-xs md:text-sm whitespace-nowrap drop-shadow-md ${dir.positionClass} ${
+                      className={`absolute font-moul font-black text-[11px] sm:text-xs md:text-sm whitespace-nowrap drop-shadow-md ${dir.positionClass} ${
                         dir.type === 'cardinal'
-                          ? 'text-sky-700 tracking-wider'
-                          : 'text-amber-700'
+                          ? 'text-sky-800 tracking-wider'
+                          : 'text-amber-800'
                       }`}
                       style={{
                         textShadow:
@@ -617,12 +633,12 @@ export default function TempleMapModal({
                             style={{
                               left: `${loc.x}%`,
                               top: `${loc.y}%`,
-                              transform: 'translate(-14px, -50%)'
+                              transform: 'translate(-12px, -50%)'
                             }}
                           >
                             {/* Round Badge Number */}
                             <div
-                              className={`w-7 h-7 rounded-full flex items-center justify-center font-moul text-[11px] font-black text-slate-950 border-2 border-white shadow-lg shrink-0 z-10 ${
+                              className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-moul text-[10px] sm:text-[11px] font-black text-slate-950 border-2 border-white shadow-lg shrink-0 z-10 ${
                                 isGate
                                   ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 ring-2 ring-amber-400/50'
                                   : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 ring-2 ring-sky-400/50'
@@ -633,15 +649,15 @@ export default function TempleMapModal({
 
                             {/* Name Pill Tag */}
                             <div
-                              className={`text-[12px] font-bold px-2.5 py-1 rounded-r-xl border shadow-xl -ml-2.5 pl-4 flex items-center gap-1.5 text-white ${
+                              className={`text-[11px] sm:text-xs font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-r-xl border shadow-xl -ml-2 pl-3 sm:pl-3.5 flex items-center gap-1 text-white ${
                                 isGate
-                                  ? 'bg-slate-950/95 border-amber-400/90 text-amber-200'
-                                  : 'bg-slate-950/95 border-sky-400/90 text-sky-100'
+                                  ? 'bg-slate-950/95 border-amber-400 text-amber-200'
+                                  : 'bg-slate-950/95 border-sky-400 text-sky-100'
                               } ${isHighlighted ? 'ring-2 ring-amber-400' : ''}`}
                             >
-                              <span>{loc.name}</span>
+                              <span className="whitespace-nowrap">{loc.name}</span>
                               {tagCount > 0 && (
-                                <span className="bg-amber-500 text-slate-950 font-sans-en text-[10px] font-black px-1.5 py-0.2 rounded-full ml-0.5">
+                                <span className="bg-amber-500 text-slate-950 font-sans-en text-[9px] sm:text-[10px] font-black px-1.5 py-0.2 rounded-full ml-0.5">
                                   {tagCount}
                                 </span>
                               )}
@@ -671,7 +687,7 @@ export default function TempleMapModal({
                           >
                             {/* Pin Badge */}
                             <div
-                              className={`w-7 h-7 rounded-full flex items-center justify-center font-moul text-[11px] font-black text-slate-950 border-2 border-white shadow-xl ${
+                              className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center font-moul text-[10px] sm:text-[11px] font-black text-slate-950 border-2 border-white shadow-xl ${
                                 isGate
                                   ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500'
                                   : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500'
@@ -684,9 +700,9 @@ export default function TempleMapModal({
                               {loc.id}
                             </div>
 
-                            {/* Floating Tooltip On Hover / Select */}
+                            {/* Floating Tooltip */}
                             <div
-                              className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-950/95 text-white font-bold text-xs px-3 py-1.5 rounded-xl border shadow-2xl pointer-events-none whitespace-nowrap transition-all duration-150 z-40 ${
+                              className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-950/95 text-white font-bold text-xs px-2.5 py-1 rounded-xl border shadow-2xl pointer-events-none whitespace-nowrap transition-all duration-150 z-40 ${
                                 isGate ? 'border-amber-400 text-amber-200' : 'border-sky-400 text-sky-100'
                               } ${
                                 isHighlighted || hoveredLocation?.id === loc.id
@@ -708,7 +724,7 @@ export default function TempleMapModal({
                         );
                       }
 
-                      // TAB 3: TAGGER / MANAGE PIN (Draggable & Click-to-edit)
+                      // TAB 3: TAGGER / MANAGE PIN
                       if (activeTab === 'tagger') {
                         return (
                           <div
@@ -737,7 +753,7 @@ export default function TempleMapModal({
                             title="ចុចដើម្បីកែប្រែ ឬអូសដើម្បីផ្លាស់ប្តូរទីតាំង"
                           >
                             <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center font-moul text-xs font-black text-slate-950 border-2 border-white shadow-xl ${
+                              className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center font-moul text-[11px] sm:text-xs font-black text-slate-950 border-2 border-white shadow-xl ${
                                 isGate
                                   ? 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500'
                                   : 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500'
@@ -757,49 +773,49 @@ export default function TempleMapModal({
             </div>
 
             {/* ════════ FLOATING ZOOM CONTROLS ════════ */}
-            <div className="zoom-toolbar absolute bottom-4 right-4 flex flex-col gap-2 z-30">
+            <div className="zoom-toolbar absolute bottom-3 right-3 flex flex-col gap-1.5 z-30">
               <button
                 onClick={() => handleZoom(0.25)}
-                className="w-10 h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95"
                 title="ពង្រីក (Zoom In)"
               >
-                <ZoomIn className="w-5 h-5" />
+                <ZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
               <button
                 onClick={() => handleZoom(-0.25)}
-                className="w-10 h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95"
                 title="បង្រួម (Zoom Out)"
               >
-                <ZoomOut className="w-5 h-5" />
+                <ZoomOut className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
               <button
                 onClick={handleResetZoom}
-                className="w-10 h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95"
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95"
                 title="កំណត់ដើម (Reset Scale)"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
             </div>
 
-            {/* Selected Location Banner Popover (In Tab 2) */}
+            {/* Selected Location Banner Popover */}
             {selectedLocation && (
-              <div className="absolute top-4 left-4 max-w-sm bg-slate-950/95 border border-amber-500/60 rounded-2xl p-3.5 shadow-2xl backdrop-blur-md z-30 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute top-3 left-3 max-w-[280px] sm:max-w-sm bg-slate-950/95 border border-amber-500/60 rounded-2xl p-3 shadow-2xl backdrop-blur-md z-30 animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2">
                     <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center font-moul font-bold text-slate-950 text-xs shadow-md ${
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center font-moul font-bold text-slate-950 text-[11px] shadow-md ${
                         selectedLocation.type === 'gate' ? 'badge-gold' : 'bg-sky-400 text-slate-950'
                       }`}
                     >
                       {selectedLocation.id}
                     </div>
-                    <div>
-                      <div className="text-xs text-amber-400 font-bold font-moul">
+                    <div className="min-w-0">
+                      <div className="text-xs text-amber-400 font-bold font-moul truncate">
                         {selectedLocation.name}
                       </div>
-                      <div className="text-[11px] text-slate-400">
+                      <div className="text-[10px] text-slate-400 truncate">
                         {selectedLocation.category || '🏢 ក្រុមអគារ និង កុដិ'}
                       </div>
                     </div>
@@ -808,13 +824,13 @@ export default function TempleMapModal({
                     onClick={() => setSelectedLocation(null)}
                     className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
                   >
-                    <X className="w-4 h-4" />
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
 
-                <div className="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
-                  <div className="text-xs text-slate-300">
-                    ស្លាកលេខស្នាក់នៅ ៖{' '}
+                <div className="mt-2 pt-2 border-t border-slate-800 flex items-center justify-between gap-2">
+                  <div className="text-[11px] text-slate-300">
+                    ស្លាកលេខ ៖{' '}
                     <span className="text-amber-400 font-bold font-sans-en">
                       {tagCountsByLocation[selectedLocation.id] || 0} នាក់
                     </span>
@@ -826,10 +842,10 @@ export default function TempleMapModal({
                         onFilterByLocation(selectedLocation.name);
                         onClose();
                       }}
-                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-lg transition-all flex items-center gap-1 shadow-sm"
+                      className="px-2.5 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 text-[11px] font-bold rounded-lg transition-all flex items-center gap-1 shadow-sm"
                     >
                       <Search className="w-3 h-3" />
-                      <span>មើលបញ្ជីស្លាក</span>
+                      <span>មើលស្លាកលេខ</span>
                     </button>
                   )}
                 </div>
@@ -838,35 +854,35 @@ export default function TempleMapModal({
           </div>
 
           {/* ════════ LOCATION LIST / LEGEND ACCORDION SECTION ════════ */}
-          <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 space-y-3">
+          <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-3 sm:p-4 space-y-2.5">
             
             {/* Legend Section Header */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b border-slate-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-amber-400" />
-                <h3 className="font-moul text-sm text-amber-400">
+                <h3 className="font-moul text-xs sm:text-sm text-amber-400">
                   បញ្ជីឈ្មោះទីតាំងទាំង {westernToKhmerDigits(locations.length)}
                 </h3>
               </div>
 
               {/* Search input in legend */}
-              <div className="relative w-full sm:w-64">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <div className="relative w-full sm:w-60">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="ស្វែងរកទីតាំង..."
-                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-kantumruy"
+                  className="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-kantumruy"
                 />
               </div>
             </div>
 
-            {/* Category Filter Chips & Create Custom Group Button */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {/* Category Filter Chips */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
               <button
                 onClick={() => setSelectedCategory('all')}
-                className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
+                className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
                   selectedCategory === 'all'
                     ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                     : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
@@ -879,7 +895,7 @@ export default function TempleMapModal({
                 <button
                   key={catName}
                   onClick={() => setSelectedCategory(catName)}
-                  className={`px-3 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
+                  className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
                     selectedCategory === catName
                       ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                       : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
@@ -895,14 +911,14 @@ export default function TempleMapModal({
                   setSelectedLocationIdsForGroup([]);
                   setIsCategoryModalOpen(true);
                 }}
-                className="px-3 py-1 rounded-xl text-xs font-bold shrink-0 bg-amber-500/10 border border-dashed border-amber-500/50 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition-all ml-auto"
+                className="px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 bg-amber-500/10 border border-dashed border-amber-500/50 text-amber-300 hover:bg-amber-500 hover:text-slate-950 transition-all ml-auto"
               >
-                ➕ បង្កើត Group ថ្មី
+                ➕ Group ថ្មី
               </button>
             </div>
 
             {/* Accordion Group Cards */}
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {Object.entries(categoryGroups).map(([catName, items]) => {
                 if (selectedCategory !== 'all' && selectedCategory !== catName) return null;
 
@@ -923,16 +939,16 @@ export default function TempleMapModal({
                       onClick={() =>
                         setOpenAccordions((prev) => ({ ...prev, [catName]: !isOpen }))
                       }
-                      className="px-4 py-2.5 bg-gradient-to-r from-slate-900 to-slate-950 cursor-pointer flex items-center justify-between gap-2 hover:bg-slate-800/80 transition-colors"
+                      className="px-3.5 py-2 bg-gradient-to-r from-slate-900 to-slate-950 cursor-pointer flex items-center justify-between gap-2 hover:bg-slate-800/80 transition-colors"
                     >
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-xs text-amber-400">{catName}</span>
-                        <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                          {filteredItems.length} ទីតាំង
+                        <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.2 rounded-full">
+                          {filteredItems.length}
                         </span>
                       </div>
                       <ChevronDown
-                        className={`w-4 h-4 text-slate-400 transition-transform ${
+                        className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
                           isOpen ? 'rotate-180 text-amber-400' : ''
                         }`}
                       />
@@ -940,7 +956,7 @@ export default function TempleMapModal({
 
                     {/* Accordion Content Grid */}
                     {isOpen && (
-                      <div className="p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      <div className="p-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                         {filteredItems.map((loc) => {
                           const isGate = loc.type === 'gate';
                           const tagCount = tagCountsByLocation[loc.id] || 0;
@@ -953,7 +969,7 @@ export default function TempleMapModal({
                                 setSelectedLocation(loc);
                                 setHoveredLocation(loc);
                               }}
-                              className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
+                              className={`p-2 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
                                 isSel
                                   ? 'bg-amber-500/15 border-amber-500/60 shadow-md shadow-amber-500/10'
                                   : 'bg-slate-950/60 border-slate-800/80 hover:border-slate-700 hover:bg-slate-800/50'
@@ -961,7 +977,7 @@ export default function TempleMapModal({
                             >
                               <div className="flex items-center gap-2 min-w-0">
                                 <div
-                                  className={`w-7 h-7 rounded-lg flex items-center justify-center font-moul text-[11px] font-bold text-slate-950 shrink-0 ${
+                                  className={`w-6 h-6 rounded-lg flex items-center justify-center font-moul text-[10px] font-bold text-slate-950 shrink-0 ${
                                     isGate ? 'badge-gold' : 'bg-sky-400'
                                   }`}
                                 >
@@ -974,10 +990,10 @@ export default function TempleMapModal({
                                   <div className="text-[10px] text-slate-400">
                                     {tagCount > 0 ? (
                                       <span className="text-amber-400 font-bold font-sans-en">
-                                        {westernToKhmerDigits(tagCount)} ស្លាកលេខ
+                                        {westernToKhmerDigits(tagCount)} ស្លាក
                                       </span>
                                     ) : (
-                                      'គ្មានស្លាកលេខ'
+                                      'គ្មាន'
                                     )}
                                   </div>
                                 </div>
@@ -1031,7 +1047,7 @@ export default function TempleMapModal({
         {/* ═══════════════ MODAL: ADD / EDIT LOCATION ═══════════════ */}
         {isEditModalOpen && (
           <div
-            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in"
+            className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in"
             onClick={() => setIsEditModalOpen(false)}
           >
             <div
@@ -1056,7 +1072,7 @@ export default function TempleMapModal({
                 </div>
               )}
 
-              <div className="space-y-3.5">
+              <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">
                     លេខ ឬ អក្សរស្លាក ៖
@@ -1069,7 +1085,7 @@ export default function TempleMapModal({
                       setFormError('');
                     }}
                     placeholder="ឧ. ១៧, ១៨, F, G..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
@@ -1085,7 +1101,7 @@ export default function TempleMapModal({
                       setFormError('');
                     }}
                     placeholder="ឧ. កុដិថ្មី, អាហារដ្ឋាន..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
@@ -1100,7 +1116,7 @@ export default function TempleMapModal({
                       setModalForm((prev) => ({ ...prev, category: e.target.value }))
                     }
                     placeholder="ឧ. 🏢 ក្រុមអគារ និង កុដិ, ⛩️ ក្រុមខ្លោងទ្វារវត្ត..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
@@ -1113,7 +1129,7 @@ export default function TempleMapModal({
                     onChange={(e) =>
                       setModalForm((prev) => ({ ...prev, type: e.target.value }))
                     }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
                   >
                     <option value="building">🏢 អគារ / កុដិ / ទីតាំង (ពណ៌ខៀវ Cyan)</option>
                     <option value="gate">⛩️ ក្លោងទ្វារវត្ត (ពណ៌លឿង Gold)</option>
@@ -1121,11 +1137,11 @@ export default function TempleMapModal({
                 </div>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+              <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
                 {!editingLoc?.isNew ? (
                   <button
                     onClick={() => handleDeleteLocation(editingLoc.id)}
-                    className="px-3.5 py-2 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold rounded-xl transition-all"
+                    className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold rounded-xl transition-all"
                   >
                     លុបទីតាំង
                   </button>
@@ -1136,13 +1152,13 @@ export default function TempleMapModal({
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setIsEditModalOpen(false)}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all"
+                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all"
                   >
                     បោះបង់
                   </button>
                   <button
                     onClick={handleSaveLocationForm}
-                    className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all active:scale-95"
+                    className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all active:scale-95"
                   >
                     រក្សាទុក
                   </button>
@@ -1155,7 +1171,7 @@ export default function TempleMapModal({
         {/* ═══════════════ MODAL: CREATE CUSTOM GROUP ═══════════════ */}
         {isCategoryModalOpen && (
           <div
-            className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in"
+            className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in"
             onClick={() => setIsCategoryModalOpen(false)}
           >
             <div
@@ -1174,7 +1190,7 @@ export default function TempleMapModal({
                 </button>
               </div>
 
-              <div className="space-y-3.5">
+              <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">
                     ឈ្មោះ Group ថ្មី ៖
@@ -1183,8 +1199,8 @@ export default function TempleMapModal({
                     type="text"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="ឧ. កុដិព្រះសង្ឃ, សាលាឆាន់, អាហារដ្ឋាន..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
+                    placeholder="ឧ. កុដិព្រះសង្ឃ, សាលាឆាន់..."
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
@@ -1192,13 +1208,13 @@ export default function TempleMapModal({
                   <label className="block text-xs font-bold text-slate-300 mb-1">
                     ជ្រើសរើសទីតាំងដាក់ចូលក្នុង Group នេះ ៖
                   </label>
-                  <div className="max-h-48 overflow-y-auto space-y-1.5 bg-slate-950 border border-slate-800 rounded-xl p-2.5">
+                  <div className="max-h-40 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-xl p-2">
                     {locations.map((loc) => {
                       const isChecked = selectedLocationIdsForGroup.includes(loc.id);
                       return (
                         <label
                           key={loc.id}
-                          className="flex items-center gap-2.5 text-xs text-slate-300 hover:text-white cursor-pointer p-1.5 rounded-lg hover:bg-slate-900"
+                          className="flex items-center gap-2 text-xs text-slate-300 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-slate-900"
                         >
                           <input
                             type="checkbox"
@@ -1223,16 +1239,16 @@ export default function TempleMapModal({
                 </div>
               </div>
 
-              <div className="mt-5 pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+              <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
                 <button
                   onClick={() => setIsCategoryModalOpen(false)}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all"
+                  className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all"
                 >
                   បោះបង់
                 </button>
                 <button
                   onClick={handleSaveCustomCategory}
-                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all active:scale-95"
+                  className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all active:scale-95"
                 >
                   រក្សាទុក Group
                 </button>
