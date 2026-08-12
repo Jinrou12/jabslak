@@ -44,98 +44,112 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
 
   const [autoSequence, setAutoSequence] = useState(true);
 
-  // Helper parser function to map Excel/CSV row data to tag object
-  const parseRowToTag = (row, idx) => {
-    // 1. Tag Number Parsing
-    let tagNum = null;
-    if (!autoSequence) {
-      const tagKeys = [
-        'លេខស្លាក (Tag Number)', 'លេខស្លាក', 'ស្លាកលេខ', 'Tag Number', 
-        'tagNumber', 'Tag', 'tag', 'No', 'no', 'លេខរៀង', 'ID', 'id'
-      ];
-      for (const k of tagKeys) {
-        if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
-          const parsed = parseInt(String(row[k]).replace(/[^0-9]/g, ''), 10);
-          if (!isNaN(parsed) && parsed > 0) {
-            tagNum = parsed;
+  // Smart 2D Row Parser: Automatically detects table header row (skipping banner titles) & parses records
+  const parse2DRowsToTags = (rawRows) => {
+    if (!Array.isArray(rawRows) || rawRows.length === 0) return [];
+
+    const headerKeywords = [
+      'ឈ្មោះ', 'គោតមនាម', ' name', 'fullname', 'ស្លាក', 'tag', 'ទូរស័ព្ទ', 'phone', 'ល.រ', 'លរ', 'លេខរៀង'
+    ];
+
+    let headerRowIdx = -1;
+    let nameColIdx = -1;
+    let tagColIdx = -1;
+    let phoneColIdx = -1;
+    let locColIdx = -1;
+    let notesColIdx = -1;
+
+    // 1. Find the actual table header row in the first 15 rows
+    for (let i = 0; i < Math.min(15, rawRows.length); i++) {
+      const row = rawRows[i];
+      if (!Array.isArray(row)) continue;
+
+      const rowStr = row.map((cell) => String(cell || '').toLowerCase()).join(' ');
+      const matchCount = headerKeywords.filter((kw) => rowStr.includes(kw.toLowerCase())).length;
+
+      if (matchCount >= 1) {
+        headerRowIdx = i;
+        row.forEach((cell, colIdx) => {
+          const cellStr = String(cell || '').trim();
+          const lower = cellStr.toLowerCase();
+
+          if (lower.includes('ឈ្មោះ') || lower.includes('គោតមនាម') || lower.includes('name')) {
+            if (nameColIdx === -1) nameColIdx = colIdx;
+          } else if (lower.includes('ស្លាក') || lower.includes('tag')) {
+            if (tagColIdx === -1) tagColIdx = colIdx;
+          } else if (lower.includes('ទូរស័ព្ទ') || lower.includes('phone') || lower.includes('tel')) {
+            if (phoneColIdx === -1) phoneColIdx = colIdx;
+          } else if (lower.includes('ទីតាំង') || lower.includes('កុដិ') || lower.includes('location') || lower.includes('address')) {
+            if (locColIdx === -1) locColIdx = colIdx;
+          } else if (lower.includes('សម្គាល់') || lower.includes('note') || lower.includes('remark')) {
+            if (notesColIdx === -1) notesColIdx = colIdx;
+          }
+        });
+        break;
+      }
+    }
+
+    const startRow = headerRowIdx >= 0 ? headerRowIdx + 1 : 0;
+    const validTags = [];
+    let seqNumber = 1;
+
+    for (let i = startRow; i < rawRows.length; i++) {
+      const row = rawRows[i];
+      if (!Array.isArray(row) || row.length === 0) continue;
+
+      let nameVal = nameColIdx >= 0 ? String(row[nameColIdx] || '').trim() : '';
+      let phoneVal = phoneColIdx >= 0 ? String(row[phoneColIdx] || '').trim() : '';
+      let tagNumVal = tagColIdx >= 0 ? String(row[tagColIdx] || '').trim() : '';
+      let locVal = locColIdx >= 0 ? String(row[locColIdx] || '').trim() : '';
+      let notesVal = notesColIdx >= 0 ? String(row[notesColIdx] || '').trim() : '';
+
+      // Fallback column discovery if header index missed
+      if (!nameVal) {
+        for (let c = 0; c < row.length; c++) {
+          const val = String(row[c] || '').trim();
+          if (val && isNaN(Number(val)) && !val.toLowerCase().includes('ស្លាក') && !val.toLowerCase().includes('phone') && !val.toLowerCase().includes('ទូរស័ព្ទ')) {
+            nameVal = val;
             break;
           }
         }
       }
-    }
-    // If autoSequence is true or no valid tag number in row, sequence 1, 2, 3... based on file row order
-    if (!tagNum) {
-      tagNum = idx + 1;
-    }
 
-    // 2. Name Parsing
-    const nameKeys = [
-      'ឈ្មោះ (Name)', 'ឈ្មោះ', 'ឈ្មោះមនុស្ស', 'ឈ្មោះម្ចាស់', 'ឈ្មោះអ្នកស្នាក់នៅ', 
-      'Name', 'name', 'Full Name', 'fullname'
-    ];
-    let nameVal = '';
-    for (const k of nameKeys) {
-      if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
-        nameVal = String(row[k]).trim();
-        break;
+      // Filter out empty rows, title banner rows, and header labels
+      if (!nameVal || 
+          nameVal.includes('បញ្ជីឈ្មោះ') || 
+          nameVal.includes('គោតមនាម និងនាម') || 
+          nameVal === 'ឈ្មោះ' || 
+          nameVal === 'Name' || 
+          nameVal.includes('សម្រាប់ប្រើប្រាស់')) {
+        continue;
       }
-    }
-    // Fallback name search if headers differ
-    if (!nameVal) {
-      for (const key of Object.keys(row)) {
-        const val = String(row[key] || '').trim();
-        if (val && !key.includes('ស្លាក') && !key.includes('tag') && !key.includes('phone') && !key.includes('ទូរស័ព្ទ')) {
-          nameVal = val;
-          break;
+
+      // Tag Number Assignment
+      let tagNum = null;
+      if (!autoSequence && tagNumVal) {
+        const parsed = parseInt(tagNumVal.replace(/[^0-9]/g, ''), 10);
+        if (!isNaN(parsed) && parsed > 0) {
+          tagNum = parsed;
         }
       }
-    }
-
-    // 3. Location Parsing
-    const locKeys = [
-      'ទីតាំង (Location)', 'ទីតាំង', 'កុដិ', 'អាគារ', 'Location', 'location', 'Address', 'address'
-    ];
-    let locVal = '';
-    for (const k of locKeys) {
-      if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
-        locVal = String(row[k]).trim();
-        break;
+      if (!tagNum) {
+        tagNum = seqNumber++;
+      } else {
+        seqNumber = tagNum + 1;
       }
+
+      validTags.push({
+        id: `imported-${Date.now()}-${validTags.length}-${Math.random().toString(36).substring(2, 6)}`,
+        tagNumber: tagNum,
+        name: nameVal,
+        location: locVal || 'ទីតាំងមិនទាន់កំណត់',
+        phone: phoneVal,
+        notes: notesVal,
+        updatedAt: new Date().toISOString()
+      });
     }
 
-    // 4. Phone Parsing
-    const phoneKeys = [
-      'លេខទូរស័ព្ទ (Phone)', 'លេខទូរស័ព្ទ', 'ទូរស័ព្ទ', 'Phone', 'phone', 'Tel', 'tel', 'Mobile', 'mobile'
-    ];
-    let phoneVal = '';
-    for (const k of phoneKeys) {
-      if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
-        phoneVal = String(row[k]).trim();
-        break;
-      }
-    }
-
-    // 5. Notes Parsing
-    const notesKeys = [
-      'កំណត់សម្គាល់ (Notes)', 'កំណត់សម្គាល់', 'សម្គាល់', 'Notes', 'notes', 'Remark', 'remark'
-    ];
-    let notesVal = '';
-    for (const k of notesKeys) {
-      if (row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
-        notesVal = String(row[k]).trim();
-        break;
-      }
-    }
-
-    return {
-      id: `imported-${Date.now()}-${idx}-${Math.random().toString(36).substring(2, 6)}`,
-      tagNumber: tagNum,
-      name: nameVal || `ឈ្មោះ #${idx + 1}`,
-      location: locVal || 'ទីតាំងមិនទាន់កំណត់',
-      phone: phoneVal,
-      notes: notesVal,
-      updatedAt: new Date().toISOString()
-    };
+    return validTags;
   };
 
   // 3. Import File Handler (Excel or CSV)
@@ -153,9 +167,14 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
           const wb = XLSX.read(bstr, { type: 'binary' });
           const wsname = wb.SheetNames[0];
           const ws = wb.Sheets[wsname];
-          const jsonData = XLSX.utils.sheet_to_json(ws);
+          const raw2DRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
-          const formattedTags = jsonData.map((row, idx) => parseRowToTag(row, idx));
+          const formattedTags = parse2DRowsToTags(raw2DRows);
+
+          if (formattedTags.length === 0) {
+            setImportStatus('មិនអាចរកឃើញទិន្នន័យឈ្មោះក្នុងឯកសារនេះទេ');
+            return;
+          }
 
           onImportData(formattedTags);
           setImportStatus(`បានលុបទិន្នន័យចាស់ និងនាំចូលទិន្នន័យ ${formattedTags.length} ស្លាកលេខថ្មី ដោយជោគជ័យ!`);
@@ -166,10 +185,15 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
       reader.readAsBinaryString(file);
     } else if (fileExt === 'csv') {
       Papa.parse(file, {
-        header: true,
+        header: false,
         skipEmptyLines: true,
         complete: (results) => {
-          const formattedTags = results.data.map((row, idx) => parseRowToTag(row, idx));
+          const formattedTags = parse2DRowsToTags(results.data);
+
+          if (formattedTags.length === 0) {
+            setImportStatus('មិនអាចរកឃើញទិន្នន័យឈ្មោះក្នុងឯកសារ CSV នេះទេ');
+            return;
+          }
 
           onImportData(formattedTags);
           setImportStatus(`បានលុបទិន្នន័យចាស់ និងនាំចូលទិន្នន័យ CSV ចំនួន ${formattedTags.length} ថ្មី ដោយជោគជ័យ!`);
