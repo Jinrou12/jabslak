@@ -35,9 +35,11 @@ export const TEMPLE_PALI_DIRECTIONS = [
 ];
 
 const STORAGE_KEY = 'TEMPLE_MAP_LOCATIONS_PERSIST_V4';
+const STORAGE_KEY_TAB3 = 'TEMPLE_MAP_LOCATIONS_TAB3_V1';
 
 /**
  * Load temple locations from LocalStorage or return default 21 points
+ * Used by Tab 1 (read-only) and Tab 2 (editable)
  */
 export function getSavedTempleLocations() {
   try {
@@ -58,7 +60,7 @@ export function getSavedTempleLocations() {
 }
 
 /**
- * Save temple locations to LocalStorage
+ * Save temple locations to LocalStorage (Tab 1 & Tab 2)
  */
 export function saveTempleLocations(locations) {
   try {
@@ -69,9 +71,53 @@ export function saveTempleLocations(locations) {
 }
 
 /**
- * Reset temple locations back to initial 21 points
+ * Reset temple locations back to initial 21 points (Tab 1 & Tab 2)
  */
 export function resetTempleLocations() {
   saveTempleLocations(INITIAL_TEMPLE_LOCATIONS);
+  return INITIAL_TEMPLE_LOCATIONS;
+}
+
+// ════════════════════════════════════════════════
+// TAB 3 INDEPENDENT STORAGE (does NOT affect Tab 1 & Tab 2)
+// ════════════════════════════════════════════════
+
+/**
+ * Load Tab 3 locations from LocalStorage or return default 21 points
+ */
+export function getSavedTab3Locations() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY_TAB3);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((loc) => ({
+          ...loc,
+          category: loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')
+        }));
+      }
+    }
+  } catch (e) {
+    console.error('Failed to parse Tab 3 locations from storage:', e);
+  }
+  return INITIAL_TEMPLE_LOCATIONS;
+}
+
+/**
+ * Save Tab 3 locations to LocalStorage (independent, does NOT touch Tab 1 & Tab 2)
+ */
+export function saveTab3Locations(locations) {
+  try {
+    localStorage.setItem(STORAGE_KEY_TAB3, JSON.stringify(locations));
+  } catch (e) {
+    console.error('Failed to save Tab 3 locations to storage:', e);
+  }
+}
+
+/**
+ * Reset Tab 3 locations back to initial 21 points
+ */
+export function resetTab3Locations() {
+  saveTab3Locations(INITIAL_TEMPLE_LOCATIONS);
   return INITIAL_TEMPLE_LOCATIONS;
 }

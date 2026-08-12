@@ -30,11 +30,15 @@ import {
   INITIAL_TEMPLE_LOCATIONS,
   TEMPLE_PALI_DIRECTIONS,
   getSavedTempleLocations,
-  resetTempleLocations
+  getSavedTab3Locations,
+  resetTempleLocations,
+  resetTab3Locations
 } from '../data/templeLocations';
 import {
   subscribeToFirebaseTempleLocations,
-  saveTempleLocationsToFirebase
+  saveTempleLocationsToFirebase,
+  subscribeToFirebaseTab3Locations,
+  saveTab3LocationsToFirebase
 } from '../utils/firebase';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
@@ -45,8 +49,14 @@ export default function TempleMapModal({
   onFilterByLocation,
   onAddTagForLocation
 }) {
+  // Tab 1 & Tab 2 share this state
   const [locations, setLocations] = useState(getSavedTempleLocations());
+  // Tab 3 has its own INDEPENDENT state
+  const [tab3Locations, setTab3Locations] = useState(getSavedTab3Locations());
   const [activeTab, setActiveTab] = useState('labeled'); // 'labeled' | 'interactive' | 'tagger'
+
+  // Computed: which locations array to use based on active tab
+  const currentLocations = activeTab === 'tagger' ? tab3Locations : locations;
   const [zoomScale, setZoomScale] = useState(1.0);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -81,6 +91,7 @@ export default function TempleMapModal({
   const pinMovedFlagRef = useRef(false);
 
   // ════════ REAL-TIME CLOUD SYNC FOR PC & PHONE ════════
+  // Tab 1 & Tab 2 share this subscription
   useEffect(() => {
     const unsubscribe = subscribeToFirebaseTempleLocations(
       (cloudLocations) => {
@@ -90,6 +101,22 @@ export default function TempleMapModal({
       },
       (err) => {
         console.warn('Temple locations using local cache:', err);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // Tab 3 has its own INDEPENDENT subscription
+  useEffect(() => {
+    const unsubscribe = subscribeToFirebaseTab3Locations(
+      (cloudLocations) => {
+        if (Array.isArray(cloudLocations) && cloudLocations.length > 0) {
+          setTab3Locations(cloudLocations);
+        }
+      },
+      (err) => {
+        console.warn('Tab 3 locations using local cache:', err);
       }
     );
 
@@ -117,25 +144,25 @@ export default function TempleMapModal({
     const counts = {};
     allTags.forEach((t) => {
       const locStr = t.baseLocation || t.location || '';
-      locations.forEach((loc) => {
+      currentLocations.forEach((loc) => {
         if (locStr.includes(loc.name) || (t.templeLocationId && t.templeLocationId === loc.id)) {
           counts[loc.id] = (counts[loc.id] || 0) + 1;
         }
       });
     });
     return counts;
-  }, [allTags, locations]);
+  }, [allTags, currentLocations]);
 
   // Categories list
   const categoryGroups = useMemo(() => {
     const groups = {};
-    locations.forEach((loc) => {
+    currentLocations.forEach((loc) => {
       const cat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(loc);
     });
     return groups;
-  }, [locations]);
+  }, [currentLocations]);
 
   // Zoom handlers
   const handleZoom = (delta) => {
@@ -219,7 +246,7 @@ export default function TempleMapModal({
       y: pctY
     });
     setModalForm({
-      id: String(locations.length + 1),
+      id: String(currentLocations.length + 1),
       name: '',
       type: 'building',
       pos: 'R',
@@ -229,6 +256,14 @@ export default function TempleMapModal({
     setIsEditModalOpen(true);
   };
 
+  // Helper: get correct setter + saver for current tab
+  const getTabDataFunctions = () => {
+    if (activeTab === 'tagger') {
+      return { setter: setTab3Locations, saver: saveTab3LocationsToFirebase };
+    }
+    return { setter: setLocations, saver: saveTempleLocationsToFirebase };
+  };
+
   // Ultra-Precise Pin Dragging (Synchronizes to Cloud on End)
   const handlePinDragStart = (e, loc) => {
     if (activeTab !== 'tagger' && activeTab !== 'interactive') return;
@@ -236,6 +271,7 @@ export default function TempleMapModal({
     e.stopPropagation();
     pinMovedFlagRef.current = false;
     setDraggingPinId(loc.id);
+    const dragTab = activeTab; // capture which tab we started dragging in
 
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -262,7 +298,8 @@ export default function TempleMapModal({
         newPctX = Math.max(1.0, Math.min(99.0, newPctX));
         newPctY = Math.max(1.0, Math.min(99.0, newPctY));
 
-        setLocations((prev) =>
+        const targetSetter = dragTab === 'tagger' ? setTab3Locations : setLocations;
+        targetSetter((prev) =>
           prev.map((l) => (l.id === loc.id ? { ...l, x: newPctX, y: newPctY } : l))
         );
       }
@@ -277,10 +314,26 @@ export default function TempleMapModal({
       setDraggingPinId(null);
 
       if (hasMoved) {
-        setLocations((prev) => {
-          saveTempleLocationsToFirebase(prev);
-          return prev;
-        });
+        if (dragTab === 'tagger') {
+          setTab3Locations((prev) => {
+            saveTab3LocationsToFirebase(prev);
+            return prev;
+          });
+        } else {
+          setLocations((prev) => {
+            saveTempleLocationsToFirebase(prev);
+            // Tab 2 edits also propagate to Tab 3
+            setTab3Locations((prev3) => {
+              const updated3 = prev3.map((l3) => {
+                const match = prev.find((p) => p.id === l3.id);
+                return match ? { ...l3, x: match.x, y: match.y } : l3;
+              });
+              saveTab3LocationsToFirebase(updated3);
+              return updated3;
+            });
+            return prev;
+          });
+        }
         setTimeout(() => {
           pinMovedFlagRef.current = false;
         }, 150);
@@ -315,7 +368,7 @@ export default function TempleMapModal({
       y: 50
     });
     setModalForm({
-      id: String(locations.length + 1),
+      id: String(currentLocations.length + 1),
       name: '',
       type: 'building',
       pos: 'R',
@@ -340,7 +393,7 @@ export default function TempleMapModal({
     }
 
     // Check duplicate ID
-    const duplicate = locations.find(
+    const duplicate = currentLocations.find(
       (l) => l.id.toLowerCase() === id.toLowerCase() && (!editingLoc || editingLoc.id !== l.id)
     );
     if (duplicate) {
@@ -348,9 +401,11 @@ export default function TempleMapModal({
       return;
     }
 
+    const { setter, saver } = getTabDataFunctions();
+
     let updated;
     if (editingLoc && !editingLoc.isNew) {
-      updated = locations.map((l) =>
+      updated = currentLocations.map((l) =>
         l.id === editingLoc.id
           ? {
               ...l,
@@ -382,47 +437,69 @@ export default function TempleMapModal({
         pos: modalForm.pos || 'R',
         category: modalForm.category
       };
-      updated = [...locations, newPoint];
+      updated = [...currentLocations, newPoint];
       setSelectedLocation(newPoint);
     }
 
-    setLocations(updated);
-    saveTempleLocationsToFirebase(updated);
+    setter(updated);
+    saver(updated);
+
+    // If editing in Tab 2, also propagate to Tab 3
+    if (activeTab === 'interactive') {
+      setTab3Locations(updated);
+      saveTab3LocationsToFirebase(updated);
+    }
+
     setIsEditModalOpen(false);
     setEditingLoc(null);
   };
 
-  // Delete Location (Syncs to Firebase Cloud Database)
+  // Delete Location (routes to correct tab data)
   const handleDeleteLocation = (id) => {
     if (window.confirm(`តើអ្នកពិតជាចង់លុបទីតាំង #${id} នេះមែនទេ?`)) {
-      const updated = locations.filter((l) => l.id !== id);
-      setLocations(updated);
-      saveTempleLocationsToFirebase(updated);
+      const { setter, saver } = getTabDataFunctions();
+      const updated = currentLocations.filter((l) => l.id !== id);
+      setter(updated);
+      saver(updated);
+      // If Tab 2 delete, also propagate to Tab 3
+      if (activeTab === 'interactive') {
+        setTab3Locations(updated);
+        saveTab3LocationsToFirebase(updated);
+      }
       setIsEditModalOpen(false);
       if (selectedLocation?.id === id) setSelectedLocation(null);
     }
   };
 
-  // Reset to default (Syncs to Firebase Cloud Database)
+  // Reset to default (routes to correct tab data)
   const handleResetLocations = () => {
     if (window.confirm('តើអ្នកពិតជាចង់កំណត់ទីតាំងឡើងវិញទៅទិន្នន័យដើមទាំង ២១ ចំណុចមែនទេ?')) {
-      const reset = resetTempleLocations();
-      setLocations(reset);
-      saveTempleLocationsToFirebase(reset);
+      if (activeTab === 'tagger') {
+        const reset = resetTab3Locations();
+        setTab3Locations(reset);
+        saveTab3LocationsToFirebase(reset);
+      } else {
+        const reset = resetTempleLocations();
+        setLocations(reset);
+        saveTempleLocationsToFirebase(reset);
+        // Tab 2 reset also propagates to Tab 3
+        setTab3Locations(reset);
+        saveTab3LocationsToFirebase(reset);
+      }
       setSelectedLocation(null);
     }
   };
 
   // Export JSON
   const handleExportJSON = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(locations, null, 2));
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(currentLocations, null, 2));
     const dlAnchorElem = document.createElement('a');
     dlAnchorElem.setAttribute('href', dataStr);
     dlAnchorElem.setAttribute('download', 'temple_locations.json');
     dlAnchorElem.click();
   };
 
-  // Import JSON (Syncs to Firebase Cloud Database)
+  // Import JSON (routes to correct tab data)
   const handleImportJSON = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -432,8 +509,13 @@ export default function TempleMapModal({
         const parsed = JSON.parse(evt.target.result);
         const list = Array.isArray(parsed) ? parsed : parsed.locations || [];
         if (list.length > 0) {
-          setLocations(list);
-          saveTempleLocationsToFirebase(list);
+          const { setter, saver } = getTabDataFunctions();
+          setter(list);
+          saver(list);
+          if (activeTab === 'interactive') {
+            setTab3Locations(list);
+            saveTab3LocationsToFirebase(list);
+          }
           alert(`បាននាំចូលទិន្នន័យទីតាំងចំនួន ${list.length} ចំណុចដោយជោគជ័យ!`);
         }
       } catch (err) {
@@ -443,7 +525,7 @@ export default function TempleMapModal({
     reader.readAsText(file);
   };
 
-  // Save Custom Category
+  // Save Custom Category (routes to correct tab data)
   const handleSaveCustomCategory = () => {
     const name = newCategoryName.trim();
     if (!name) return;
@@ -452,15 +534,20 @@ export default function TempleMapModal({
       return;
     }
 
-    const updated = locations.map((loc) => {
+    const { setter, saver } = getTabDataFunctions();
+    const updated = currentLocations.map((loc) => {
       if (selectedLocationIdsForGroup.includes(loc.id)) {
         return { ...loc, category: name };
       }
       return loc;
     });
 
-    setLocations(updated);
-    saveTempleLocationsToFirebase(updated);
+    setter(updated);
+    saver(updated);
+    if (activeTab === 'interactive') {
+      setTab3Locations(updated);
+      saveTab3LocationsToFirebase(updated);
+    }
     setIsCategoryModalOpen(false);
     setNewCategoryName('');
     setSelectedLocationIdsForGroup([]);
@@ -469,7 +556,7 @@ export default function TempleMapModal({
   // Filtered locations for legend list
   const filteredLegendLocations = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    return locations.filter((loc) => {
+    return currentLocations.filter((loc) => {
       const matchesSearch =
         !q ||
         loc.name.toLowerCase().includes(q) ||
@@ -505,7 +592,7 @@ export default function TempleMapModal({
                   ផែនទីវត្ត និង ទីតាំង
                 </h2>
                 <span className="bg-amber-500/20 text-amber-300 text-[10px] sm:text-xs font-bold px-2 py-0.2 rounded-full border border-amber-500/30 shrink-0">
-                  {westernToKhmerDigits(locations.length)} ទីតាំង
+                  {westernToKhmerDigits(currentLocations.length)} ទីតាំង
                 </span>
               </div>
               <p className="text-[10px] sm:text-xs text-slate-400 truncate hidden sm:block">
@@ -679,7 +766,7 @@ export default function TempleMapModal({
                 {/* ════════ MAP PIN MARKERS & MATHEMATICALLY LOCKED BADGES ════════ */}
                 {isPinsVisible && (
                   <div className="absolute inset-0 z-20 pointer-events-none">
-                    {locations.map((loc) => {
+                    {currentLocations.map((loc) => {
                       const isHighlighted =
                         selectedLocation?.id === loc.id ||
                         hoveredLocation?.id === loc.id ||
@@ -881,7 +968,7 @@ export default function TempleMapModal({
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-amber-400" />
                 <h3 className="font-moul text-xs sm:text-sm text-amber-400">
-                  បញ្ជីឈ្មោះទីតាំងទាំង {westernToKhmerDigits(locations.length)}
+                  បញ្ជីឈ្មោះទីតាំងទាំង {westernToKhmerDigits(currentLocations.length)}
                 </h3>
               </div>
 
@@ -918,7 +1005,7 @@ export default function TempleMapModal({
                     : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
                 }`}
               >
-                🌐 ទាំងអស់ ({locations.length})
+                🌐 ទាំងអស់ ({currentLocations.length})
               </button>
 
               {Object.keys(categoryGroups).map((catName) => (
@@ -1247,7 +1334,7 @@ export default function TempleMapModal({
                     ជ្រើសរើសទីតាំងដាក់ចូលក្នុង Group នេះ ៖
                   </label>
                   <div className="max-h-40 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-xl p-2">
-                    {locations.map((loc) => {
+                    {currentLocations.map((loc) => {
                       const isChecked = selectedLocationIdsForGroup.includes(loc.id);
                       return (
                         <label

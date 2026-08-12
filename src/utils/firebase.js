@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase, ref, onValue, set, remove, get } from 'firebase/database';
-import { INITIAL_TEMPLE_LOCATIONS, saveTempleLocations as saveTempleLocationsLocal } from '../data/templeLocations';
+import { INITIAL_TEMPLE_LOCATIONS, saveTempleLocations as saveTempleLocationsLocal, saveTab3Locations as saveTab3LocationsLocal } from '../data/templeLocations';
 import { INITIAL_TAG_DATA } from '../data/sampleData';
 
 // Firebase configuration (Can be updated with user's Firebase project keys or default demo keys)
@@ -161,7 +161,7 @@ export function subscribeToFirebaseTempleLocations(onDataReceived, onError) {
 }
 
 /**
- * Save temple locations to Firebase Realtime DB and LocalStorage
+ * Save temple locations to Firebase Realtime DB and LocalStorage (Tab 1 & Tab 2)
  */
 export async function saveTempleLocationsToFirebase(locations) {
   saveTempleLocationsLocal(locations);
@@ -172,6 +172,67 @@ export async function saveTempleLocationsToFirebase(locations) {
     return true;
   } catch (err) {
     console.error('Error saving temple locations to Firebase:', err);
+    return false;
+  }
+}
+
+// ════════════════════════════════════════════════
+// TAB 3 INDEPENDENT FIREBASE SYNC
+// ════════════════════════════════════════════════
+
+/**
+ * Subscribe to Tab 3 temple locations in Firebase (independent from Tab 1/2)
+ */
+export function subscribeToFirebaseTab3Locations(onDataReceived, onError) {
+  if (!db) {
+    if (onError) onError(new Error('Firebase DB is not initialized'));
+    return () => {};
+  }
+
+  const locsRef = ref(db, 'temple_locations_tab3');
+  
+  const unsubscribe = onValue(
+    locsRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        let locList = [];
+        if (Array.isArray(val)) {
+          locList = val.filter(Boolean);
+        } else if (typeof val === 'object') {
+          locList = Object.values(val);
+        }
+        if (locList.length > 0) {
+          saveTab3LocationsLocal(locList);
+          onDataReceived(locList);
+          return;
+        }
+      }
+      // If empty -> seed with INITIAL
+      saveTab3LocationsToFirebase(INITIAL_TEMPLE_LOCATIONS);
+      onDataReceived(INITIAL_TEMPLE_LOCATIONS);
+    },
+    (err) => {
+      console.error('Firebase Tab 3 locations subscription error:', err);
+      if (onError) onError(err);
+    }
+  );
+
+  return unsubscribe;
+}
+
+/**
+ * Save Tab 3 locations to Firebase (independent, does NOT touch Tab 1/2)
+ */
+export async function saveTab3LocationsToFirebase(locations) {
+  saveTab3LocationsLocal(locations);
+  if (!db) return false;
+  try {
+    const locsRef = ref(db, 'temple_locations_tab3');
+    await set(locsRef, locations);
+    return true;
+  } catch (err) {
+    console.error('Error saving Tab 3 locations to Firebase:', err);
     return false;
   }
 }
