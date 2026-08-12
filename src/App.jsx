@@ -506,16 +506,6 @@ export default function App() {
         />
       )}
 
-      {/* 🔐 User Role Switcher Modal */}
-      {isUserSwitchOpen && (
-        <UserSwitchModal
-          currentUser={currentUser}
-          users={users}
-          onClose={() => setIsUserSwitchOpen(false)}
-          onSwitchUser={handleSwitchUser}
-        />
-      )}
-
       {/* 🔑 Email Login Modal */}
       {isLoginModalOpen && (
         <LoginModal
