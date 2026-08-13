@@ -84,16 +84,16 @@ const WESTERN_TAG_COLORS = {
 };
 
 export const COLOR_SWATCHES = [
-  { key: 'cyan', label: '🩵 ពណ៌ខៀវ (Cyan)', bg: 'bg-cyan-400', gradient: 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60' },
   { key: 'emerald', label: '💚 ពណ៌បៃតង (Emerald)', bg: 'bg-emerald-400', gradient: 'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60' },
   { key: 'purple', label: '💜 ពណ៌ស្វាយ (Purple)', bg: 'bg-purple-400', gradient: 'bg-gradient-to-br from-purple-300 via-purple-400 to-indigo-500 text-slate-950 border-white ring-1 ring-purple-400/60' },
   { key: 'rose', label: '🩷 ពណ៌ស៊ីជម្ពូ (Rose)', bg: 'bg-rose-400', gradient: 'bg-gradient-to-br from-rose-300 via-rose-400 to-pink-500 text-slate-950 border-white ring-1 ring-rose-400/60' },
-  { key: 'amber', label: '🧡 ពណ៌ទឹកក្រូច (Amber)', bg: 'bg-amber-400', gradient: 'bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 text-slate-950 border-white ring-1 ring-amber-400/60' },
   { key: 'fuchsia', label: '💖 ពណ៌ទង់ដែង (Fuchsia)', bg: 'bg-fuchsia-400', gradient: 'bg-gradient-to-br from-fuchsia-300 via-fuchsia-400 to-pink-600 text-slate-950 border-white ring-1 ring-fuchsia-400/60' },
   { key: 'lime', label: '🍏 ពណ៌បៃតងខ្ចី (Lime)', bg: 'bg-lime-400', gradient: 'bg-gradient-to-br from-lime-300 via-lime-400 to-emerald-500 text-slate-950 border-white ring-1 ring-lime-400/60' },
   { key: 'indigo', label: '💙 ពណ៌ខៀវចាស់ (Indigo)', bg: 'bg-indigo-400', gradient: 'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white border-white ring-1 ring-indigo-400/60' },
-  { key: 'gold', label: '💛 ពណ៌លឿងមាស (Gold)', bg: 'bg-yellow-400', gradient: 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 border-white ring-1 ring-amber-400/60' },
   { key: 'red', label: '🪸 ពណ៌ក្រហម (Crimson)', bg: 'bg-red-500', gradient: 'bg-gradient-to-br from-red-400 via-rose-500 to-red-600 text-white border-white ring-1 ring-rose-400/60' },
+  { key: 'teal', label: '🩵 ពណ៌ខៀវស្រស់ (Teal)', bg: 'bg-teal-400', gradient: 'bg-gradient-to-br from-teal-300 via-teal-400 to-cyan-600 text-slate-950 border-white ring-1 ring-teal-400/60' },
+  { key: 'violet', label: '🪻 ពណ៌ស្វាយចាស់ (Violet)', bg: 'bg-violet-400', gradient: 'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950 border-white ring-1 ring-violet-400/60' },
+  { key: 'pink', label: '🌸 ពណ៌ផ្កាឈូក (Pink)', bg: 'bg-pink-400', gradient: 'bg-gradient-to-br from-pink-300 via-fuchsia-400 to-purple-600 text-slate-950 border-white ring-1 ring-pink-400/60' }
 ];
 
 const COLOR_OPTION_GRADIENTS = COLOR_SWATCHES.reduce((acc, swatch) => {
@@ -470,7 +470,7 @@ export default function TempleMapModal({
     setModalForm({
       id: loc.id,
       name: loc.name,
-      badgeColor: loc.badgeColor || (loc.type === 'gate' ? 'gold' : 'cyan'),
+      badgeColor: loc.badgeColor || (loc.type === 'gate' ? 'emerald' : 'emerald'),
       type: loc.type || 'building',
       pos: loc.pos || 'R',
       category: loc.category || '🏢 ក្រុមអគារ និង កុដិ'
@@ -489,7 +489,7 @@ export default function TempleMapModal({
     setModalForm({
       id: String(currentLocations.length + 1),
       name: '',
-      badgeColor: 'cyan',
+      badgeColor: 'emerald',
       type: 'building',
       pos: 'R',
       category: '🏢 ក្រុមអគារ និង កុដិ'
@@ -531,7 +531,7 @@ export default function TempleMapModal({
               ...l,
               id: id,
               name: name,
-              badgeColor: modalForm.badgeColor || 'cyan',
+              badgeColor: modalForm.badgeColor || 'emerald',
               type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
               pos: modalForm.pos || 'R',
               category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
@@ -543,7 +543,7 @@ export default function TempleMapModal({
           ...selectedLocation,
           id: id,
           name: name,
-          badgeColor: modalForm.badgeColor || 'cyan',
+          badgeColor: modalForm.badgeColor || 'emerald',
           type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
           pos: modalForm.pos || 'R',
           category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
@@ -555,7 +555,7 @@ export default function TempleMapModal({
         name: name,
         x: editingLoc?.x || 50,
         y: editingLoc?.y || 50,
-        badgeColor: modalForm.badgeColor || 'cyan',
+        badgeColor: modalForm.badgeColor || 'emerald',
         type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
         pos: modalForm.pos || 'R',
         category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
