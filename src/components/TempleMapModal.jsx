@@ -1206,6 +1206,11 @@ export default function TempleMapModal({
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-72 overflow-y-auto pr-1">
                   {allTags
                     .filter((t) => {
+                      const isPinned = currentLocations.some(
+                        (loc) => String(loc.id).trim().toLowerCase() === String(t.tagNumber).trim().toLowerCase()
+                      );
+                      if (isPinned) return false;
+
                       const q = searchQuery.trim().toLowerCase();
                       if (!q) return true;
                       return (
@@ -1215,9 +1220,6 @@ export default function TempleMapModal({
                       );
                     })
                     .map((t) => {
-                      const isPinned = currentLocations.some(
-                        (loc) => loc.id === String(t.tagNumber) || (t.location && loc.name.toLowerCase().includes(t.location.toLowerCase()))
-                      );
                       return (
                         <div
                           key={t.id || t.tagNumber}
@@ -1478,11 +1480,21 @@ export default function TempleMapModal({
                     className="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-xs text-amber-200 focus:outline-none focus:border-amber-400 font-kantumruy"
                   >
                     <option value="">-- ជ្រើសរើសស្លាកលេខពីប្រព័ន្ធ ឬ បញ្ចូលព័ត៌មានដោយដៃ --</option>
-                    {allTags.map((t) => (
-                      <option key={t.id || t.tagNumber} value={t.tagNumber}>
-                        ស្លាកលេខ #{westernToKhmerDigits(t.tagNumber)} ៖ {t.name || 'គ្មានឈ្មោះ'} ({t.location || 'គ្មានទីតាំង'})
-                      </option>
-                    ))}
+                    {allTags
+                      .filter((t) => {
+                        const tagNumStr = String(t.tagNumber).trim().toLowerCase();
+                        if (editingLoc && String(editingLoc.id).trim().toLowerCase() === tagNumStr) {
+                          return true;
+                        }
+                        return !currentLocations.some(
+                          (loc) => String(loc.id).trim().toLowerCase() === tagNumStr
+                        );
+                      })
+                      .map((t) => (
+                        <option key={t.id || t.tagNumber} value={t.tagNumber}>
+                          ស្លាកលេខ #{westernToKhmerDigits(t.tagNumber)} ៖ {t.name || 'គ្មានឈ្មោះ'} ({t.location || 'គ្មានទីតាំង'})
+                        </option>
+                      ))}
                   </select>
                 </div>
               )}
