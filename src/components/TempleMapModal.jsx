@@ -1492,7 +1492,7 @@ export default function TempleMapModal({
                       })
                       .map((t) => (
                         <option key={t.id || t.tagNumber} value={t.tagNumber}>
-                          ស្លាកលេខ #{westernToKhmerDigits(t.tagNumber)} ៖ {t.name || 'គ្មានឈ្មោះ'} ({t.location || 'គ្មានទីតាំង'})
+                          ស្លាកលេខ {westernToKhmerDigits(t.tagNumber)} ៖ {t.name || 'គ្មានឈ្មោះ'}
                         </option>
                       ))}
                   </select>
