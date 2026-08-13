@@ -317,4 +317,41 @@ export async function seedFirebaseData(initialData, force = false) {
   return false;
 }
 
+/**
+ * Subscribe to Category Group Settings (Hidden / Locked states synced across devices)
+ */
+export function subscribeToGroupSettings(onDataReceived) {
+  if (!db) return () => {};
+  const settingsRef = ref(db, 'map_group_settings');
+  const unsubscribe = onValue(
+    settingsRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        onDataReceived(snapshot.val());
+      } else {
+        onDataReceived({});
+      }
+    },
+    (err) => {
+      console.warn('Group settings subscription error:', err);
+    }
+  );
+  return unsubscribe;
+}
+
+/**
+ * Save Category Group Settings to Firebase Realtime Database
+ */
+export async function saveGroupSettingsToFirebase(settings) {
+  if (!db) return false;
+  try {
+    const settingsRef = ref(db, 'map_group_settings');
+    await set(settingsRef, settings);
+    return true;
+  } catch (err) {
+    console.error('Error saving group settings to Firebase:', err);
+    return false;
+  }
+}
+
 export { db, isConnected };

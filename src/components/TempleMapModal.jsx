@@ -41,7 +41,9 @@ import {
   subscribeToFirebaseTempleLocations,
   saveTempleLocationsToFirebase,
   subscribeToFirebaseTab3Locations,
-  saveTab3LocationsToFirebase
+  saveTab3LocationsToFirebase,
+  subscribeToGroupSettings,
+  saveGroupSettingsToFirebase
 } from '../utils/firebase';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
@@ -227,6 +229,43 @@ export default function TempleMapModal({
 
     return () => unsubscribe();
   }, []);
+
+  // Subscribe to Realtime Group Settings (Hidden & Locked categories synced across PC & Phone)
+  useEffect(() => {
+    const unsubscribe = subscribeToGroupSettings((settings) => {
+      if (settings && typeof settings === 'object') {
+        const hidden = {};
+        const locked = {};
+        Object.entries(settings).forEach(([cat, s]) => {
+          if (s && s.hidden) hidden[cat] = true;
+          if (s && s.locked) locked[cat] = true;
+        });
+        setHiddenCategories(hidden);
+        setLockedCategories(locked);
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const syncGroupSettingsToCloud = (nextHidden, nextLocked) => {
+    const allCatNames = new Set([
+      ...Object.keys(hiddenCategories),
+      ...Object.keys(lockedCategories),
+      ...Object.keys(nextHidden),
+      ...Object.keys(nextLocked)
+    ]);
+
+    const payload = {};
+    allCatNames.forEach((cat) => {
+      payload[cat] = {
+        hidden: !!nextHidden[cat],
+        locked: !!nextLocked[cat]
+      };
+    });
+
+    saveGroupSettingsToFirebase(payload);
+  };
 
   // Focus on highlighted location if passed from parent
   useEffect(() => {
@@ -1354,10 +1393,12 @@ export default function TempleMapModal({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setHiddenCategories((prev) => ({
-                              ...prev,
-                              [catName]: !prev[catName]
-                            }));
+                            const nextHidden = {
+                              ...hiddenCategories,
+                              [catName]: !hiddenCategories[catName]
+                            };
+                            setHiddenCategories(nextHidden);
+                            syncGroupSettingsToCloud(nextHidden, lockedCategories);
                           }}
                           className={`p-1.5 rounded-lg border transition-all ${
                             hiddenCategories[catName]
@@ -1376,10 +1417,12 @@ export default function TempleMapModal({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setLockedCategories((prev) => ({
-                              ...prev,
-                              [catName]: !prev[catName]
-                            }));
+                            const nextLocked = {
+                              ...lockedCategories,
+                              [catName]: !lockedCategories[catName]
+                            };
+                            setLockedCategories(nextLocked);
+                            syncGroupSettingsToCloud(hiddenCategories, nextLocked);
                           }}
                           className={`p-1.5 rounded-lg border transition-all ${
                             lockedCategories[catName]
