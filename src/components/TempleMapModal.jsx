@@ -1527,7 +1527,7 @@ export default function TempleMapModal({
                   </label>
 
                   {/* Visual Color Swatch Grid */}
-                  <div className="grid grid-cols-5 gap-2 mb-2.5 p-2.5 bg-slate-950 border border-slate-800 rounded-2xl">
+                  <div className="grid grid-cols-5 gap-2 p-2.5 bg-slate-950 border border-slate-800 rounded-2xl">
                     {COLOR_SWATCHES.map((swatch) => {
                       const isSelected = (modalForm.badgeColor || 'cyan') === swatch.key;
                       return (
@@ -1553,25 +1553,6 @@ export default function TempleMapModal({
                       );
                     })}
                   </div>
-
-                  {/* Dropdown Selector */}
-                  <select
-                    value={modalForm.badgeColor || 'cyan'}
-                    onChange={(e) =>
-                      setModalForm((prev) => ({
-                        ...prev,
-                        badgeColor: e.target.value,
-                        type: e.target.value === 'gold' ? 'gate' : 'building'
-                      }))
-                    }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-amber-300 font-bold focus:outline-none focus:border-amber-400"
-                  >
-                    {COLOR_SWATCHES.map((swatch) => (
-                      <option key={swatch.key} value={swatch.key}>
-                        {swatch.label}
-                      </option>
-                    ))}
-                  </select>
                 </div>
               </div>
 
