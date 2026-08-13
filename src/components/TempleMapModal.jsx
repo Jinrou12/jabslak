@@ -58,15 +58,45 @@ const PIN_COLOR_GRADIENTS = [
   'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950 border-white ring-1 ring-violet-400/60',   // 12: Deep Violet
 ];
 
-const STANDARD_1_TO_16 = [
-  '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16',
-  '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩', '១០', '១១', '១២', '១៣', '១៤', '១៥', '១៦'
-];
-
 const STANDARD_GATES = ['A', 'B', 'C', 'D', 'E', 'a', 'b', 'c', 'd', 'e'];
 
+const NUMBER_EXACT_COLORS = {
+  '1': 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60',       // 1: Cyan Sky
+  '១': 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60',
+  '2': 'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60', // 2: Emerald Green
+  '២': 'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60',
+  '3': 'bg-gradient-to-br from-purple-300 via-purple-400 to-indigo-500 text-slate-950 border-white ring-1 ring-purple-400/60', // 3: Purple Violet
+  '៣': 'bg-gradient-to-br from-purple-300 via-purple-400 to-indigo-500 text-slate-950 border-white ring-1 ring-purple-400/60',
+  '4': 'bg-gradient-to-br from-rose-300 via-rose-400 to-pink-500 text-slate-950 border-white ring-1 ring-rose-400/60',       // 4: Rose Pink
+  '៤': 'bg-gradient-to-br from-rose-300 via-rose-400 to-pink-500 text-slate-950 border-white ring-1 ring-rose-400/60',
+  '5': 'bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 text-slate-950 border-white ring-1 ring-amber-400/60',   // 5: Amber Orange
+  '៥': 'bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 text-slate-950 border-white ring-1 ring-amber-400/60',
+  '6': 'bg-gradient-to-br from-fuchsia-300 via-fuchsia-400 to-pink-600 text-slate-950 border-white ring-1 ring-fuchsia-400/60', // 6: Fuchsia Magenta
+  '៦': 'bg-gradient-to-br from-fuchsia-300 via-fuchsia-400 to-pink-600 text-slate-950 border-white ring-1 ring-fuchsia-400/60',
+  '7': 'bg-gradient-to-br from-lime-300 via-lime-400 to-emerald-500 text-slate-950 border-white ring-1 ring-lime-400/60',     // 7: Lime Green
+  '៧': 'bg-gradient-to-br from-lime-300 via-lime-400 to-emerald-500 text-slate-950 border-white ring-1 ring-lime-400/60',
+  '8': 'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white border-white ring-1 ring-indigo-400/60',     // 8: Indigo Blue
+  '៨': 'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white border-white ring-1 ring-indigo-400/60',
+  '9': 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 text-slate-950 border-white ring-1 ring-yellow-400/60', // 9: Bright Gold
+  '៩': 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 text-slate-950 border-white ring-1 ring-yellow-400/60',
+  '10': 'bg-gradient-to-br from-teal-300 via-teal-400 to-cyan-600 text-slate-950 border-white ring-1 ring-teal-400/60',       // 10: Teal Cyan
+  '១០': 'bg-gradient-to-br from-teal-300 via-teal-400 to-cyan-600 text-slate-950 border-white ring-1 ring-teal-400/60',
+  '11': 'bg-gradient-to-br from-orange-300 via-orange-400 to-rose-500 text-slate-950 border-white ring-1 ring-orange-400/60',  // 11: Bright Orange
+  '១១': 'bg-gradient-to-br from-orange-300 via-orange-400 to-rose-500 text-slate-950 border-white ring-1 ring-orange-400/60',
+  '12': 'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950 border-white ring-1 ring-violet-400/60',   // 12: Deep Violet
+  '១២': 'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950 border-white ring-1 ring-violet-400/60',
+  '13': 'bg-gradient-to-br from-sky-300 via-sky-400 to-indigo-600 text-slate-950 border-white ring-1 ring-sky-400/60',        // 13: Sky Blue
+  '១៣': 'bg-gradient-to-br from-sky-300 via-sky-400 to-indigo-600 text-slate-950 border-white ring-1 ring-sky-400/60',
+  '14': 'bg-gradient-to-br from-red-400 via-rose-500 to-red-600 text-white border-white ring-1 ring-rose-400/60',             // 14: Crimson Red
+  '១៤': 'bg-gradient-to-br from-red-400 via-rose-500 to-red-600 text-white border-white ring-1 ring-rose-400/60',
+  '15': 'bg-gradient-to-br from-pink-300 via-fuchsia-400 to-purple-600 text-slate-950 border-white ring-1 ring-pink-400/60',   // 15: Bright Pink
+  '១៥': 'bg-gradient-to-br from-pink-300 via-fuchsia-400 to-purple-600 text-slate-950 border-white ring-1 ring-pink-400/60',
+  '16': 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-700 text-white border-white ring-1 ring-emerald-400/60',      // 16: Deep Green
+  '១៦': 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-700 text-white border-white ring-1 ring-emerald-400/60'
+};
+
 export function getPinBadgeColorClass(loc, idx = 0) {
-  if (!loc) return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
+  if (!loc) return PIN_COLOR_GRADIENTS[0];
   
   const idStr = String(loc.id || '').trim();
 
@@ -75,12 +105,12 @@ export function getPinBadgeColorClass(loc, idx = 0) {
     return 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 border-white ring-1 ring-amber-400/60';
   }
 
-  // Numbers 1-16: Original Cyan / Sky Blue
-  if (STANDARD_1_TO_16.includes(idStr)) {
-    return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
+  // Exact number color mapping for 1-16 (១-១៦)
+  if (NUMBER_EXACT_COLORS[idStr]) {
+    return NUMBER_EXACT_COLORS[idStr];
   }
 
-  // New or custom pins: Vibrant dynamic color palette
+  // Any other number pin (17, 18...): dynamic distinct color from palette
   let charSum = 0;
   for (let i = 0; i < idStr.length; i++) {
     charSum += idStr.charCodeAt(i);
