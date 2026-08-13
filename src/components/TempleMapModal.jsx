@@ -9,6 +9,8 @@ import {
   Upload,
   Eye,
   EyeOff,
+  Lock,
+  Unlock,
   Plus,
   Edit2,
   Trash2,
@@ -158,6 +160,8 @@ export default function TempleMapModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [openAccordions, setOpenAccordions] = useState({});
+  const [hiddenCategories, setHiddenCategories] = useState({});
+  const [lockedCategories, setLockedCategories] = useState({});
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [hoveredLocation, setHoveredLocation] = useState(null);
 
@@ -945,6 +949,10 @@ export default function TempleMapModal({
                 {isPinsVisible && (
                   <div className="absolute inset-0 z-20 pointer-events-none">
                     {currentLocations.map((loc, locIdx) => {
+                      const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+                      if (hiddenCategories[locCat]) return null;
+
+                      const isCategoryLocked = lockedCategories[locCat];
                       const isHighlighted =
                         selectedLocation?.id === loc.id ||
                         hoveredLocation?.id === loc.id ||
@@ -953,7 +961,7 @@ export default function TempleMapModal({
 
                       const isGate = loc.type === 'gate';
                       const isCurrentlyDragging = draggingPinId === loc.id;
-                      const canDragThisPin = activeTab === 'interactive' || activeTab === 'tagger';
+                      const canDragThisPin = (activeTab === 'interactive' || activeTab === 'tagger') && !isCategoryLocked;
                       
                       const pos = loc.pos || (loc.x > 75 ? 'L' : 'R');
 
@@ -1334,17 +1342,65 @@ export default function TempleMapModal({
                       }
                       className="px-3.5 py-2 bg-gradient-to-r from-slate-900 to-slate-950 cursor-pointer flex items-center justify-between gap-2 hover:bg-slate-800/80 transition-colors"
                     >
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs text-amber-400">{catName}</span>
-                        <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.2 rounded-full">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="font-bold text-xs text-amber-400 truncate">{catName}</span>
+                        <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.2 rounded-full shrink-0">
                           {filteredItems.length}
                         </span>
                       </div>
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
-                          isOpen ? 'rotate-180 text-amber-400' : ''
-                        }`}
-                      />
+
+                      {/* Eye (Show/Hide) & Lock (Lock/Unlock Dragging) Controls for this Group */}
+                      <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setHiddenCategories((prev) => ({
+                              ...prev,
+                              [catName]: !prev[catName]
+                            }));
+                          }}
+                          className={`p-1.5 rounded-lg border transition-all ${
+                            hiddenCategories[catName]
+                              ? 'bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30'
+                              : 'bg-slate-800 text-emerald-400 border-slate-700 hover:bg-slate-700'
+                          }`}
+                          title={hiddenCategories[catName] ? `បង្ហាញ Pin ក្រុម «${catName}» ឡើងវិញ` : `លាក់ Pin ក្រុម «${catName}» លើ Map`}
+                        >
+                          {hiddenCategories[catName] ? (
+                            <EyeOff className="w-3.5 h-3.5" />
+                          ) : (
+                            <Eye className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLockedCategories((prev) => ({
+                              ...prev,
+                              [catName]: !prev[catName]
+                            }));
+                          }}
+                          className={`p-1.5 rounded-lg border transition-all ${
+                            lockedCategories[catName]
+                              ? 'bg-amber-500/20 text-amber-400 border-amber-500/40 hover:bg-amber-500/30'
+                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700 hover:text-slate-200'
+                          }`}
+                          title={lockedCategories[catName] ? `បើកសោរដើម្បីរំកិល Pin ក្រុម «${catName}»` : `បិទសោរការពាររំកិល Pin ក្រុម «${catName}»`}
+                        >
+                          {lockedCategories[catName] ? (
+                            <Lock className="w-3.5 h-3.5 text-amber-400" />
+                          ) : (
+                            <Unlock className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
+                            isOpen ? 'rotate-180 text-amber-400' : ''
+                          }`}
+                        />
+                      </div>
                     </div>
 
                     {/* Accordion Content Grid */}
