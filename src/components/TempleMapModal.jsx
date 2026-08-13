@@ -501,15 +501,21 @@ export default function TempleMapModal({
   // Save / Edit Location (Syncs to Firebase Cloud Database)
   const handleSaveLocationForm = () => {
     const id = modalForm.id.trim();
-    const name = modalForm.name.trim();
+    let name = modalForm.name.trim();
 
     if (!id) {
       setFormError('សូមបញ្ចូលលេខ ឬ អក្សរស្លាក');
       return;
     }
+
+    // Auto-fill location name from tag owner or tag number if user leaves it blank
     if (!name) {
-      setFormError('សូមបញ្ចូលឈ្មោះទីតាំង');
-      return;
+      const matchedTag = allTags.find((t) => String(t.tagNumber).trim() === id);
+      if (matchedTag && matchedTag.name) {
+        name = matchedTag.name;
+      } else {
+        name = `ស្លាកលេខ ${westernToKhmerDigits(id)}`;
+      }
     }
 
     // Check duplicate ID
