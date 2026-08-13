@@ -83,8 +83,31 @@ const WESTERN_TAG_COLORS = {
   '16': 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-700 text-white border-white ring-1 ring-emerald-400/60'       // 16: Deep Green
 };
 
+export const COLOR_SWATCHES = [
+  { key: 'cyan', label: '🩵 ពណ៌ខៀវ (Cyan)', bg: 'bg-cyan-400', gradient: 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60' },
+  { key: 'emerald', label: '💚 ពណ៌បៃតង (Emerald)', bg: 'bg-emerald-400', gradient: 'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60' },
+  { key: 'purple', label: '💜 ពណ៌ស្វាយ (Purple)', bg: 'bg-purple-400', gradient: 'bg-gradient-to-br from-purple-300 via-purple-400 to-indigo-500 text-slate-950 border-white ring-1 ring-purple-400/60' },
+  { key: 'rose', label: '🩷 ពណ៌ស៊ីជម្ពូ (Rose)', bg: 'bg-rose-400', gradient: 'bg-gradient-to-br from-rose-300 via-rose-400 to-pink-500 text-slate-950 border-white ring-1 ring-rose-400/60' },
+  { key: 'amber', label: '🧡 ពណ៌ទឹកក្រូច (Amber)', bg: 'bg-amber-400', gradient: 'bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 text-slate-950 border-white ring-1 ring-amber-400/60' },
+  { key: 'fuchsia', label: '💖 ពណ៌ទង់ដែង (Fuchsia)', bg: 'bg-fuchsia-400', gradient: 'bg-gradient-to-br from-fuchsia-300 via-fuchsia-400 to-pink-600 text-slate-950 border-white ring-1 ring-fuchsia-400/60' },
+  { key: 'lime', label: '🍏 ពណ៌បៃតងខ្ចី (Lime)', bg: 'bg-lime-400', gradient: 'bg-gradient-to-br from-lime-300 via-lime-400 to-emerald-500 text-slate-950 border-white ring-1 ring-lime-400/60' },
+  { key: 'indigo', label: '💙 ពណ៌ខៀវចាស់ (Indigo)', bg: 'bg-indigo-400', gradient: 'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white border-white ring-1 ring-indigo-400/60' },
+  { key: 'gold', label: '💛 ពណ៌លឿងមាស (Gold)', bg: 'bg-yellow-400', gradient: 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 border-white ring-1 ring-amber-400/60' },
+  { key: 'red', label: '🪸 ពណ៌ក្រហម (Crimson)', bg: 'bg-red-500', gradient: 'bg-gradient-to-br from-red-400 via-rose-500 to-red-600 text-white border-white ring-1 ring-rose-400/60' },
+];
+
+const COLOR_OPTION_GRADIENTS = COLOR_SWATCHES.reduce((acc, swatch) => {
+  acc[swatch.key] = swatch.gradient;
+  return acc;
+}, {});
+
 export function getPinBadgeColorClass(loc, idx = 0) {
   if (!loc) return PIN_COLOR_GRADIENTS[0];
+
+  // Custom user-selected badge color from edit modal form
+  if (loc.badgeColor && COLOR_OPTION_GRADIENTS[loc.badgeColor]) {
+    return COLOR_OPTION_GRADIENTS[loc.badgeColor];
+  }
   
   const idStr = String(loc.id || '').trim();
 
@@ -447,6 +470,7 @@ export default function TempleMapModal({
     setModalForm({
       id: loc.id,
       name: loc.name,
+      badgeColor: loc.badgeColor || (loc.type === 'gate' ? 'gold' : 'cyan'),
       type: loc.type || 'building',
       pos: loc.pos || 'R',
       category: loc.category || '🏢 ក្រុមអគារ និង កុដិ'
@@ -465,6 +489,7 @@ export default function TempleMapModal({
     setModalForm({
       id: String(currentLocations.length + 1),
       name: '',
+      badgeColor: 'cyan',
       type: 'building',
       pos: 'R',
       category: '🏢 ក្រុមអគារ និង កុដិ'
@@ -506,9 +531,10 @@ export default function TempleMapModal({
               ...l,
               id: id,
               name: name,
-              type: modalForm.type,
+              badgeColor: modalForm.badgeColor || 'cyan',
+              type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
               pos: modalForm.pos || 'R',
-              category: modalForm.category
+              category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
             }
           : l
       );
@@ -517,9 +543,10 @@ export default function TempleMapModal({
           ...selectedLocation,
           id: id,
           name: name,
-          type: modalForm.type,
+          badgeColor: modalForm.badgeColor || 'cyan',
+          type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
           pos: modalForm.pos || 'R',
-          category: modalForm.category
+          category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
         });
       }
     } else {
@@ -528,9 +555,10 @@ export default function TempleMapModal({
         name: name,
         x: editingLoc?.x || 50,
         y: editingLoc?.y || 50,
-        type: modalForm.type,
+        badgeColor: modalForm.badgeColor || 'cyan',
+        type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
         pos: modalForm.pos || 'R',
-        category: modalForm.category
+        category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
       };
       updated = [...currentLocations, newPoint];
       setSelectedLocation(newPoint);
@@ -1493,51 +1521,56 @@ export default function TempleMapModal({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    ទិសដៅស្លាកឈ្មោះ (Label Direction) ៖
+                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                    <span>🎨 ជ្រើសរើសពណ៌ស្លាកលេខ (Badge Color) ៖</span>
+                    <span className="text-[10px] text-amber-400 font-normal">ចុចលើពណ៌ដែលពេញចិត្ត</span>
                   </label>
-                  <select
-                    value={modalForm.pos || 'R'}
-                    onChange={(e) =>
-                      setModalForm((prev) => ({ ...prev, pos: e.target.value }))
-                    }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
-                  >
-                    <option value="R">➡️ ខាងស្តាំ (Right)</option>
-                    <option value="L">⬅️ ខាងឆ្វេង (Left)</option>
-                    <option value="T">⬆️ ខាងលើ (Top)</option>
-                    <option value="B">⬇️ ខាងក្រោម (Bottom)</option>
-                  </select>
-                </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    ក្រុមបញ្ជីឈ្មោះ (Category Group) ៖
-                  </label>
-                  <input
-                    type="text"
-                    value={modalForm.category}
-                    onChange={(e) =>
-                      setModalForm((prev) => ({ ...prev, category: e.target.value }))
-                    }
-                    placeholder="ឧ. 🏢 ក្រុមអគារ និង កុដិ, ⛩️ ក្រុមខ្លោងទ្វារវត្ត..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
-                  />
-                </div>
+                  {/* Visual Color Swatch Grid */}
+                  <div className="grid grid-cols-5 gap-2 mb-2.5 p-2.5 bg-slate-950 border border-slate-800 rounded-2xl">
+                    {COLOR_SWATCHES.map((swatch) => {
+                      const isSelected = (modalForm.badgeColor || 'cyan') === swatch.key;
+                      return (
+                        <button
+                          key={swatch.key}
+                          type="button"
+                          onClick={() =>
+                            setModalForm((prev) => ({
+                              ...prev,
+                              badgeColor: swatch.key,
+                              type: swatch.key === 'gold' ? 'gate' : 'building'
+                            }))
+                          }
+                          className={`h-9 rounded-xl flex items-center justify-center transition-all ${swatch.bg} ${
+                            isSelected
+                              ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105 shadow-lg'
+                              : 'opacity-70 hover:opacity-100 hover:scale-100'
+                          }`}
+                          title={swatch.label}
+                        >
+                          {isSelected && <span className="text-slate-950 font-bold text-xs">✓</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    ប្រភេទពណ៌ស្លាក ៖
-                  </label>
+                  {/* Dropdown Selector */}
                   <select
-                    value={modalForm.type}
+                    value={modalForm.badgeColor || 'cyan'}
                     onChange={(e) =>
-                      setModalForm((prev) => ({ ...prev, type: e.target.value }))
+                      setModalForm((prev) => ({
+                        ...prev,
+                        badgeColor: e.target.value,
+                        type: e.target.value === 'gold' ? 'gate' : 'building'
+                      }))
                     }
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-amber-300 font-bold focus:outline-none focus:border-amber-400"
                   >
-                    <option value="building">🏢 អគារ / កុដិ / ទីតាំង (ពណ៌ខៀវ Cyan)</option>
-                    <option value="gate">⛩️ ក្លោងទ្វារវត្ត (ពណ៌លឿង Gold)</option>
+                    {COLOR_SWATCHES.map((swatch) => (
+                      <option key={swatch.key} value={swatch.key}>
+                        {swatch.label}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>
