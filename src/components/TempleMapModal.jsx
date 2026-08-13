@@ -58,15 +58,32 @@ const PIN_COLOR_GRADIENTS = [
   'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950 border-white ring-1 ring-violet-400/60',   // 12: Deep Violet
 ];
 
+const STANDARD_1_TO_16 = [
+  '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15', '16',
+  '១', '២', '៣', '៤', '៥', '៦', '៧', '៨', '៩', '១០', '១១', '១២', '១៣', '១៤', '១៥', '១៦'
+];
+
+const STANDARD_GATES = ['A', 'B', 'C', 'D', 'E', 'a', 'b', 'c', 'd', 'e'];
+
 export function getPinBadgeColorClass(loc, idx = 0) {
-  if (!loc) return PIN_COLOR_GRADIENTS[0];
-  if (loc.type === 'gate') {
+  if (!loc) return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
+  
+  const idStr = String(loc.id || '').trim();
+
+  // Gates A-E: Original Gold Yellow
+  if (loc.type === 'gate' || STANDARD_GATES.includes(idStr)) {
     return 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 border-white ring-1 ring-amber-400/60';
   }
+
+  // Numbers 1-16: Original Cyan / Sky Blue
+  if (STANDARD_1_TO_16.includes(idStr)) {
+    return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
+  }
+
+  // New or custom pins: Vibrant dynamic color palette
   let charSum = 0;
-  const str = String(loc.id || idx);
-  for (let i = 0; i < str.length; i++) {
-    charSum += str.charCodeAt(i);
+  for (let i = 0; i < idStr.length; i++) {
+    charSum += idStr.charCodeAt(i);
   }
   const colorIdx = (charSum + idx) % PIN_COLOR_GRADIENTS.length;
   return PIN_COLOR_GRADIENTS[colorIdx];
