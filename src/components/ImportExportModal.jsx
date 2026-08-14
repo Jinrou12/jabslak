@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Download, Upload, FileSpreadsheet, FileText, CheckCircle2, AlertCircle, File, Sparkles, FolderArchive } from 'lucide-react';
+import { X, Download, Upload, FileSpreadsheet, FileText, CheckCircle2, AlertCircle, File, Sparkles, FolderArchive, PlusCircle, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
 import { khmerToWesternDigits } from '../utils/khmerSearch';
@@ -23,6 +23,7 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
   const [importStatus, setImportStatus] = useState(null);
   const [autoSequence, setAutoSequence] = useState(true);
   const [isDragging, setIsDragging] = useState(false);
+  const [importAction, setImportAction] = useState('append'); // 'append' or 'replace'
 
   // 1. Export Excel File (.xlsx)
   const handleExportExcel = () => {
@@ -291,8 +292,10 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
   };
 
   // 3. Process Uploaded File (Any File Type)
-  const processFile = async (file) => {
+  const processFile = async (file, forceAppendMode = null) => {
     if (!file) return;
+
+    const isAppend = forceAppendMode !== null ? forceAppendMode : (importAction === 'append');
 
     setImportStatus(`កំពុងអាន និងស្រង់ទិន្នន័យពីឯកសារ "${file.name}"...`);
     const fileExt = file.name.split('.').pop().toLowerCase();
@@ -393,17 +396,21 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
         return;
       }
 
-      onImportData(formattedTags);
-      setImportStatus(`បានលុបទិន្នន័យចាស់ និងនាំចូលទិន្នន័យ ${formattedTags.length} ស្លាកលេខ ពីឯកសារ "${file.name}" ដោយជោគជ័យ!`);
+      onImportData(formattedTags, isAppend);
+      if (isAppend) {
+        setImportStatus(`បានបន្ថែមទិន្នន័យ ${formattedTags.length} ស្លាកលេខ ពីឯកសារ "${file.name}" ចូលបញ្ជីដែលមានស្រាប់!`);
+      } else {
+        setImportStatus(`បានលុបទិន្នន័យចាស់ និងជំនួសដោយទិន្នន័យ ${formattedTags.length} ស្លាកលេខ ពីឯកសារ "${file.name}"!`);
+      }
     } catch (err) {
       console.error('File import error:', err);
       setImportStatus(`មានបញ្ហាក្នុងការអានឯកសារ "${file.name}"`);
     }
   };
 
-  const handleFileUpload = (e) => {
+  const handleFileUpload = (e, isAppendMode = null) => {
     const file = e.target.files?.[0];
-    if (file) processFile(file);
+    if (file) processFile(file, isAppendMode);
   };
 
   const handleDragOver = (e) => {
@@ -467,30 +474,65 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
         )}
 
         <div className="space-y-4">
+
+          {/* Import Mode Selector Tabs */}
+          <div className="bg-slate-900/90 p-1.5 rounded-2xl border border-slate-800 grid grid-cols-2 gap-1 font-kantumruy">
+            <button
+              type="button"
+              onClick={() => setImportAction('append')}
+              className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl text-xs font-bold transition-all ${
+                importAction === 'append'
+                  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-950/50'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>➕ បន្ថែមលើបញ្ជីដែលមាន</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setImportAction('replace')}
+              className={`flex items-center justify-center gap-1.5 p-2.5 rounded-xl text-xs font-bold transition-all ${
+                importAction === 'replace'
+                  ? 'bg-amber-600 text-white shadow-lg shadow-amber-950/50'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+              }`}
+            >
+              <RefreshCw className="w-4 h-4" />
+              <span>🔄 ជំនួសបញ្ជីចាស់</span>
+            </button>
+          </div>
+
+          <p className="text-[11px] text-slate-400 text-center font-kantumruy px-2">
+            {importAction === 'append'
+              ? '💡 របៀបបន្ថែម៖ រក្សាទុកស្លាកលេខចាស់ និងបន្ថែមឈ្មោះពី File ថ្មីបន្តរត់លេខបន្ទាប់'
+              : '⚠️ របៀបជំនួស៖ លុបទិន្នន័យចាស់ចោលទាំងអស់ ហើយជំនួសដោយ File ថ្មីនេះទាំងស្រុង'}
+          </p>
           
           {/* Universal Drag & Drop Upload Section */}
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-2xl p-6 text-center transition-all duration-200 relative ${
+            className={`border-2 border-dashed rounded-2xl p-5 text-center transition-all duration-200 relative ${
               isDragging
                 ? 'border-emerald-400 bg-emerald-950/40 ring-4 ring-emerald-500/20 scale-[1.01]'
                 : 'border-slate-700/80 hover:border-emerald-500/80 bg-slate-950/80'
             }`}
           >
-            <Upload className="w-9 h-9 text-emerald-400 mx-auto mb-2.5 animate-bounce" />
+            <Upload className="w-8 h-8 text-emerald-400 mx-auto mb-2 animate-bounce" />
             
             <div className="text-sm font-bold text-slate-100 font-kantumruy">
-              នាំចូលទិន្នន័យពីគ្រប់ប្រភេទឯកសារ (Bulk Upload)
+              {importAction === 'append' ? 'បន្ថែមទិន្នន័យពី File ថ្មី (Add File Data)' : 'ជំនួសទិន្នន័យចាស់ដោយ File ថ្មី'}
             </div>
             
             <p className="text-xs text-slate-400 mt-1 mb-3 font-kantumruy leading-relaxed">
-              ទម្លាក់ (Drag & Drop) ឬចុចជ្រើសរើសឯកសារគ្រប់ប្រភេទពីកុំព្យូទ័រ/ទូរស័ព្ទ
+              ទម្លាក់ (Drag & Drop) ឬចុចជ្រើសរើសឯកសារពីកុំព្យូទ័រ/ទូរស័ព្ទ
             </p>
 
             {/* File type badges */}
-            <div className="flex flex-wrap items-center justify-center gap-1.5 mb-4 text-[11px] font-medium text-slate-300">
+            <div className="flex flex-wrap items-center justify-center gap-1.5 mb-3 text-[11px] font-medium text-slate-300">
               <span className="bg-emerald-950/80 text-emerald-300 px-2 py-0.5 rounded-lg border border-emerald-800/60">
                 📊 .xlsx, .xls, .ods
               </span>
@@ -500,13 +542,10 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
               <span className="bg-amber-950/80 text-amber-300 px-2 py-0.5 rounded-lg border border-amber-800/60">
                 📝 .docx, .doc, .pdf
               </span>
-              <span className="bg-purple-950/80 text-purple-300 px-2 py-0.5 rounded-lg border border-purple-800/60">
-                ⚙️ .json, .xml, .log
-              </span>
             </div>
 
             {/* Auto Sequence Option */}
-            <div className="mb-4 text-left bg-slate-900/90 p-3 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
+            <div className="mb-4 text-left bg-slate-900/90 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between gap-2">
               <label className="text-xs text-emerald-300 font-semibold cursor-pointer flex items-center gap-2.5 select-none font-kantumruy">
                 <input
                   type="checkbox"
@@ -518,16 +557,31 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
               </label>
             </div>
 
-            <label className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-5 py-3 rounded-xl text-xs shadow-lg shadow-emerald-950/60 cursor-pointer transition-all active:scale-95">
-              <FileSpreadsheet className="w-4 h-4" />
-              <span>ជ្រើសរើសឯកសារគ្រប់ប្រភេទ (Browse Any File)</span>
-              <input
-                type="file"
-                accept="*"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-            </label>
+            {/* Action Buttons: Explicit Add vs Replace Buttons */}
+            <div className="grid grid-cols-1 gap-2">
+              <label className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-4 py-3 rounded-xl text-xs shadow-lg shadow-emerald-950/60 cursor-pointer transition-all active:scale-95">
+                <PlusCircle className="w-4 h-4" />
+                <span>➕ បន្ថែមទិន្នន័យពី File ថ្មី (Add File Data)</span>
+                <input
+                  type="file"
+                  accept="*"
+                  onChange={(e) => handleFileUpload(e, true)}
+                  className="hidden"
+                />
+              </label>
+
+              <label className="inline-flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-amber-400 border border-slate-700 hover:border-amber-500/50 font-bold px-4 py-2.5 rounded-xl text-xs transition-all active:scale-95 cursor-pointer">
+                <RefreshCw className="w-4 h-4" />
+                <span>🔄 ជំនួសទិន្នន័យចាស់ទាំងស្រុង (Replace All)</span>
+                <input
+                  type="file"
+                  accept="*"
+                  onChange={(e) => handleFileUpload(e, false)}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
           </div>
 
           {/* Export Buttons */}

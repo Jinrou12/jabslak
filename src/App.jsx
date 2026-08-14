@@ -252,16 +252,33 @@ export default function App() {
     }
   };
 
-  const handleImportData = (importedTags) => {
-    // Replace old tags completely with newly imported tags
-    setTags(importedTags);
-    saveTags(importedTags);
+  const handleImportData = (importedTags, isAppend = false) => {
+    let updatedTags;
+
+    if (isAppend && tags.length > 0) {
+      // Find highest existing tag number
+      const maxExistingNum = Math.max(...tags.map((t) => Number(t.tagNumber) || 0));
+
+      // Re-sequence newly imported tags starting after highest existing number
+      const reSequencedImported = importedTags.map((t, idx) => ({
+        ...t,
+        tagNumber: maxExistingNum + idx + 1
+      }));
+
+      updatedTags = [...tags, ...reSequencedImported];
+      showToast(`បានបន្ថែមទិន្នន័យថ្មីចំនួន ${westernToKhmerDigits(importedTags.length)} ស្លាកលេខ ចូលក្នុងបញ្ជីដែលមានស្រាប់! (សរុបសរុប ៖ ${westernToKhmerDigits(updatedTags.length)} ស្លាក)`);
+    } else {
+      updatedTags = importedTags;
+      showToast(`បានលុបទិន្នន័យចាស់ និងជំនួសដោយទិន្នន័យថ្មីចំនួន ${westernToKhmerDigits(importedTags.length)} ស្លាកលេខ!`);
+    }
+
+    setTags(updatedTags);
+    saveTags(updatedTags);
     
     // Push to Zero-Config Cloud Sync (PC to Mobile instant sync) & Firebase
-    pushTagsToCloud(importedTags);
-    seedFirebaseData(importedTags, true);
+    pushTagsToCloud(updatedTags);
+    seedFirebaseData(updatedTags, true);
 
-    showToast(`បានលុបទិន្នន័យចាស់ និងជំនួសដោយទិន្នន័យថ្មីចំនួន ${westernToKhmerDigits(importedTags.length)} ស្លាកលេខ!`);
     try {
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     } catch (e) {}
