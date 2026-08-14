@@ -434,6 +434,10 @@ export default function App() {
           onOpenTempleMap={() => {
             setIsTempleMapOpen(true);
           }}
+          onOpenImportExport={() => {
+            setIsFormOpen(false);
+            setIsImportExportOpen(true);
+          }}
         />
       )}
 

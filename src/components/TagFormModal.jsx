@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Tag, MapPin, User, Phone, FileText, ChevronDown, Sparkles, Map as MapIcon } from 'lucide-react';
+import { X, Save, Tag, MapPin, User, Phone, FileText, ChevronDown, Sparkles, Map as MapIcon, FileSpreadsheet } from 'lucide-react';
 import { locationsList } from '../data/sampleData';
 
-export default function TagFormModal({ initialData, onClose, onSave, nextAvailableNumber, onOpenTempleMap }) {
+export default function TagFormModal({ initialData, onClose, onSave, nextAvailableNumber, onOpenTempleMap, onOpenImportExport }) {
   const isEditing = Boolean(initialData && initialData.id);
 
   const [formData, setFormData] = useState({
@@ -299,22 +299,36 @@ export default function TagFormModal({ initialData, onClose, onSave, nextAvailab
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs md:text-sm font-semibold transition-all"
-            >
-              បោះបង់
-            </button>
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-4 border-t border-slate-800">
+            {onOpenImportExport && (
+              <button
+                type="button"
+                onClick={onOpenImportExport}
+                className="px-3.5 py-2.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 font-bold text-xs flex items-center gap-2 transition-all active:scale-95 shadow-md shadow-emerald-950/40"
+                title="នាំចូលទិន្នន័យជា Bulk ពី File (Excel, CSV, Word, PDF...)"
+              >
+                <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
+                <span>📂 នាំចូលពី File (Excel/Word/PDF)</span>
+              </button>
+            )}
 
-            <button
-              type="submit"
-              className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs md:text-sm shadow-lg shadow-amber-500/25 flex items-center gap-2 transition-all active:scale-95"
-            >
-              <Save className="w-4 h-4 stroke-[2.5]" />
-              <span>{isEditing ? 'រក្សាទុកការកែប្រែ' : 'បញ្ចូលស្លាកលេខ'}</span>
-            </button>
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 hover:bg-slate-800 text-xs md:text-sm font-semibold transition-all"
+              >
+                បោះបង់
+              </button>
+
+              <button
+                type="submit"
+                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs md:text-sm shadow-lg shadow-amber-500/25 flex items-center gap-2 transition-all active:scale-95"
+              >
+                <Save className="w-4 h-4 stroke-[2.5]" />
+                <span>{isEditing ? 'រក្សាទុកការកែប្រែ' : 'បញ្ចូលស្លាកលេខ'}</span>
+              </button>
+            </div>
           </div>
 
         </form>
