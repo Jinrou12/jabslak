@@ -311,6 +311,7 @@ export default function App() {
         onOpenImportExport={() => setIsImportExportOpen(true)}
         onResetData={handleResetData}
         onOpenLocationStats={() => setIsLocationStatsOpen(true)}
+        onOpenAttendanceReport={() => setIsAttendanceReportOpen(true)}
         onOpenCloudConfig={() => setIsCloudConfigOpen(true)}
         onOpenMobileConnect={() => setIsMobileConnectOpen(true)}
         onOpenTempleMap={() => {
