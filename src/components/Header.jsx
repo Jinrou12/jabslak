@@ -145,18 +145,18 @@ export default function Header({
           </div>
         </div>
 
-        {/* Second Row: Main Action Buttons */}
-        <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-0.5">
+        {/* Second Row: Action Buttons Bar (Responsive grid on mobile phones) */}
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 pt-1 w-full font-kantumruy">
           
-          {/* Main Function: 🗺️ ផែនទី/ទីតាំង Button (Visible for Everyone) */}
+          {/* 🗺️ Temple Map Button */}
           <button
             onClick={onOpenTempleMap}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/25 via-amber-400/20 to-sky-500/25 border-2 border-amber-400/80 hover:border-amber-300 text-amber-300 rounded-xl px-3 py-2 text-xs sm:text-sm font-bold transition-all shrink-0 active:scale-95 shadow-lg shadow-amber-500/15"
-            title="បើកមើលផែនទីវត្ត និងទីតាំងអន្តរកម្ម"
+            className="px-2.5 py-2 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center justify-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 active:scale-95 shadow-sm"
+            title="មើលផែនទីទីតាំងក្នុងវត្ត"
           >
-            <MapIcon className="w-4 h-4 text-amber-400 animate-pulse" />
-            <span className="font-moul text-xs text-amber-400 whitespace-nowrap">🗺️ ផែនទីវត្ត</span>
-            <span className="bg-amber-500 text-slate-950 font-sans-en text-[10px] font-black px-1.5 py-0.2 rounded-full ml-0.5">
+            <MapIcon className="w-4 h-4 text-amber-400" />
+            <span className="hidden sm:inline">ផែនទីវត្ត</span>
+            <span className="bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded-md font-sans-en text-[10px] font-black ml-0.5">
               ២១
             </span>
           </button>
@@ -165,35 +165,35 @@ export default function Header({
           {(isOwner || isAdmin) && (
             <button
               onClick={onOpenAddModal}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm shadow-lg transition-all shrink-0 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25 active:scale-95 animate-in zoom-in-50 duration-200"
+              className="flex-1 min-w-[120px] flex items-center justify-center gap-1.5 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm shadow-lg transition-all shrink-0 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-amber-500/25 active:scale-95 animate-in zoom-in-50 duration-200"
               title="បន្ថែមស្លាកលេខថ្មី"
             >
               <Plus className="w-4 h-4 stroke-[3]" />
-              <span className="whitespace-nowrap">បន្ថែមថ្មី</span>
+              <span className="whitespace-nowrap font-bold">បន្ថែមថ្មី</span>
             </button>
           )}
+
+          {/* 📊 Attendance Report Dashboard Button (Visible for EVERYONE on Mobile & PC!) */}
+          <button
+            onClick={onOpenAttendanceReport}
+            className="flex-1 min-w-[140px] flex items-center justify-center gap-1.5 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm shadow-lg transition-all shrink-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white border border-emerald-400/60 shadow-emerald-950/60 active:scale-95 animate-in zoom-in-50 duration-200"
+            title="មើលតារាងរបាយការណ៍អ្នកបានមកដល់ និងមិនទាន់មកដល់"
+          >
+            <UserCheck className="w-4 h-4 text-emerald-200 animate-pulse shrink-0" />
+            <span className="whitespace-nowrap font-moul text-xs">📊 របាយការណ៍មកដល់</span>
+          </button>
 
           {/* Import / Export (Pops up for Owner & Admin only) */}
           {(isOwner || isAdmin) && (
             <button
               onClick={onOpenImportExport}
-              className="p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm transition-all shrink-0 flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 animate-in zoom-in-50 duration-200"
+              className="p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm transition-all shrink-0 flex items-center justify-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 active:scale-95 animate-in zoom-in-50 duration-200"
               title="ទាញចូល/ទាញចេញ Excel, CSV"
             >
               <FileSpreadsheet className="w-4 h-4 text-emerald-400" />
               <span className="hidden md:inline">Excel/CSV</span>
             </button>
           )}
-
-          {/* 📊 Attendance Report Dashboard Button (Visible for EVERYONE!) */}
-          <button
-            onClick={onOpenAttendanceReport}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm shadow-lg transition-all shrink-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white border border-emerald-400/60 shadow-emerald-950/60 active:scale-95 animate-in zoom-in-50 duration-200"
-            title="មើលតារាងរបាយការណ៍អ្នកបានមកដល់ និងមិនទាន់មកដល់"
-          >
-            <UserCheck className="w-4 h-4 text-emerald-200 animate-pulse" />
-            <span className="whitespace-nowrap font-moul text-xs">📊 របាយការណ៍មកដល់</span>
-          </button>
 
           {/* Delete All Data (Pops up for Owner & Admin only) */}
           {(isOwner || isAdmin) && (
