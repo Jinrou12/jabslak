@@ -18,6 +18,7 @@ export default function Header({
   onOpenRoleManagement,
   onOpenLoginModal,
   onLogout,
+  onOpenAttendanceReport,
   isCloudSyncing
 }) {
   const isOwner = currentUser?.role === 'owner';
@@ -184,6 +185,18 @@ export default function Header({
             </button>
           )}
 
+          {/* 📊 Attendance Report Dashboard Button (Owner & Admin) */}
+          {(isOwner || isAdmin) && (
+            <button
+              onClick={onOpenAttendanceReport}
+              className="p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm transition-all shrink-0 flex items-center gap-1 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/80 active:scale-95 shadow-md shadow-emerald-950/40"
+              title="មើលតារាងរបាយការណ៍អ្នកបានមកដល់ និងមិនទាន់មកដល់ (សម្រាប់ PC/Admin)"
+            >
+              <UserCheck className="w-4 h-4 text-emerald-400" />
+              <span className="hidden lg:inline font-bold">របាយការណ៍មកដល់</span>
+            </button>
+          )}
+
           {/* Delete All Data (Pops up for Owner & Admin only) */}
           {(isOwner || isAdmin) && (
             <button
@@ -216,13 +229,17 @@ export default function Header({
           </div>
 
           {!isGuest && (
-            <div className="flex items-center gap-1.5 bg-emerald-950/40 border border-emerald-800/50 rounded-xl px-2.5 py-1 text-[11px] text-emerald-300 shrink-0 animate-in zoom-in-50 duration-200">
-              <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <button
+              onClick={onOpenAttendanceReport}
+              className="flex items-center gap-1.5 bg-emerald-950/60 hover:bg-emerald-900/90 border border-emerald-700/80 hover:border-emerald-500 rounded-xl px-2.5 py-1 text-[11px] text-emerald-300 shrink-0 transition-all active:scale-95 shadow-sm cursor-pointer"
+              title="ចុចដើម្បីមើលតារាងរបាយការណ៍អ្នកមកដល់ និងមិនទាន់មកដល់"
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
               <span>មកដល់ (Report) ៖</span>
               <span className="text-emerald-400 font-bold font-sans-en">
                 {westernToKhmerDigits(arrivedCount || 0)} នាក់
               </span>
-            </div>
+            </button>
           )}
         </div>
 

@@ -10,6 +10,7 @@ import TagFormModal from './components/TagFormModal';
 import QRScannerModal from './components/QRScannerModal';
 import ImportExportModal from './components/ImportExportModal';
 import LocationStatsModal from './components/LocationStatsModal';
+import AttendanceReportModal from './components/AttendanceReportModal';
 import FirebaseConfigModal from './components/FirebaseConfigModal';
 import MobileConnectModal from './components/MobileConnectModal';
 import TempleMapModal from './components/TempleMapModal';
@@ -46,6 +47,7 @@ export default function App() {
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
   const [isLocationStatsOpen, setIsLocationStatsOpen] = useState(false);
+  const [isAttendanceReportOpen, setIsAttendanceReportOpen] = useState(false);
   const [isCloudConfigOpen, setIsCloudConfigOpen] = useState(false);
   const [isMobileConnectOpen, setIsMobileConnectOpen] = useState(false);
   const [isTempleMapOpen, setIsTempleMapOpen] = useState(false);
