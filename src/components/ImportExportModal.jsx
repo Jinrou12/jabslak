@@ -2,6 +2,22 @@ import React, { useState } from 'react';
 import { X, Download, Upload, FileSpreadsheet, FileText, CheckCircle2, AlertCircle, File, Sparkles, FolderArchive } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import Papa from 'papaparse';
+import { khmerToWesternDigits } from '../utils/khmerSearch';
+
+// Convert any Khmer or Western digit string to integer if possible
+const parseDigitsToNumber = (str) => {
+  if (str === null || str === undefined) return null;
+  const western = khmerToWesternDigits(String(str).trim());
+  const num = Number(western);
+  return !isNaN(num) && western !== '' ? num : null;
+};
+
+// Check if a string is purely numeric (in Western or Khmer digits)
+const isNumericString = (str) => {
+  if (!str) return false;
+  const western = khmerToWesternDigits(String(str).trim());
+  return !isNaN(Number(western)) && western !== '';
+};
 
 export default function ImportExportModal({ onClose, allTags, onImportData }) {
   const [importStatus, setImportStatus] = useState(null);
@@ -48,41 +64,133 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
   const parseKhmerRowsToTags = (rawRows, forceAutoSeq = true) => {
     if (!Array.isArray(rawRows) || rawRows.length === 0) return [];
 
-    const isHeaderOrFooter = (str) => {
+    // Helper: Check if string is a title banner or summary footer
+    const isTitleOrSummaryBanner = (str) => {
       if (!str) return true;
       const s = String(str).trim().toLowerCase();
       return (
-        s.includes('គោត') ||
-        s.includes('គោត្ត') ||
-        s.includes('បញ្ជី') ||
+        s.includes('បញ្ជីឈ្មោះ') ||
+        s.includes('បញ្ជីស្លាក') ||
         s.includes('សម្រាប់') ||
         s.includes('សរុប') ||
         s.includes('total') ||
         s.includes('summary') ||
-        s.includes('លេខរៀង') ||
-        s.includes('ស្លាកលេខ') ||
-        s.includes('លេខទូរស័ព្ទ') ||
-        s === 'ឈ្មោះ' ||
-        s === 'name' ||
-        s === 'ល.រ' ||
-        s === 'លរ' ||
         s === 'ភេទ' ||
-        s === 'gender'
+        s === 'gender' ||
+        s === 'ប្រុស' ||
+        s === 'ស្រី'
       );
     };
+
+    // 1. Scan rows to detect Table Header Row and Column Mapping
+    let headerRowIdx = -1;
+    let nameColIdx = -1;
+    let phoneColIdx = -1;
+    let locColIdx = -1;
+    let notesColIdx = -1;
+    let seqColIdx = -1;
+
+    for (let r = 0; r < Math.min(rawRows.length, 10); r++) {
+      const row = rawRows[r];
+      if (!Array.isArray(row) || row.length === 0) continue;
+
+      let nIdx = -1, pIdx = -1, lIdx = -1, ntIdx = -1, sIdx = -1;
+      let matchesCount = 0;
+
+      for (let c = 0; c < row.length; c++) {
+        const cell = String(row[c] || '').trim().toLowerCase();
+        if (!cell) continue;
+
+        if (nIdx === -1 && (cell.includes('ឈ្មោះ') || cell.includes('គោត្តនាម') || cell.includes('គោត') || cell.includes('fullname') || cell === 'name')) {
+          nIdx = c;
+          matchesCount++;
+        } else if (pIdx === -1 && (cell.includes('ទូរស័ព្ទ') || cell.includes('phone') || cell.includes('tel') || cell.includes('mobile'))) {
+          pIdx = c;
+          matchesCount++;
+        } else if (sIdx === -1 && (cell === 'ល.រ' || cell === 'លរ' || cell.includes('លេខរៀង') || cell.includes('ស្លាកលេខ') || cell === 'no' || cell === 'id' || cell === '#')) {
+          sIdx = c;
+          matchesCount++;
+        } else if (lIdx === -1 && (cell.includes('ទីតាំង') || cell.includes('កុដិ') || cell.includes('អាគារ') || cell.includes('ព្រះសង្ឃ') || cell.includes('location') || cell.includes('address'))) {
+          lIdx = c;
+          matchesCount++;
+        } else if (ntIdx === -1 && (cell.includes('ផ្សេង') || cell.includes('កំណត់') || cell.includes('កត់') || cell.includes('note') || cell.includes('remark'))) {
+          ntIdx = c;
+          matchesCount++;
+        }
+      }
+
+      if (matchesCount >= 2 && nIdx !== -1) {
+        headerRowIdx = r;
+        nameColIdx = nIdx;
+        phoneColIdx = pIdx;
+        locColIdx = lIdx;
+        notesColIdx = ntIdx;
+        seqColIdx = sIdx;
+        break;
+      }
+    }
 
     const validTags = [];
     let seqNumber = 1;
 
+    // 2A. If Header Row was detected, parse using direct column indices
+    if (headerRowIdx !== -1 && nameColIdx !== -1) {
+      for (let i = headerRowIdx + 1; i < rawRows.length; i++) {
+        const row = rawRows[i];
+        if (!Array.isArray(row) || row.length === 0) continue;
+
+        const rawName = String(row[nameColIdx] || '').trim();
+        if (!rawName || isTitleOrSummaryBanner(rawName) || isNumericString(rawName)) continue;
+
+        // Skip if rawName is header label repeating
+        if (rawName.includes('ឈ្មោះ') || rawName.includes('គោត្តនាម')) continue;
+
+        const rawPhone = phoneColIdx !== -1 ? String(row[phoneColIdx] || '').trim() : '';
+        const rawLoc = locColIdx !== -1 ? String(row[locColIdx] || '').trim() : '';
+        const rawNotes = notesColIdx !== -1 ? String(row[notesColIdx] || '').trim() : '';
+        const rawSeq = seqColIdx !== -1 ? String(row[seqColIdx] || '').trim() : '';
+
+        // Extract Tag Number
+        let tagNum = seqNumber++;
+        if (!forceAutoSeq && rawSeq) {
+          const parsedSeq = parseDigitsToNumber(rawSeq);
+          if (parsedSeq) tagNum = parsedSeq;
+        }
+
+        // Location vs Notes distinction
+        let finalLoc = 'ទីតាំងមិនទាន់កំណត់';
+        let finalNotes = rawNotes;
+
+        if (rawLoc) {
+          if (rawLoc.includes('កុដិ') || rawLoc.includes('អាគារ') || rawLoc.includes('ធម្មសាលា') || rawLoc.includes('វត្ត') || rawLoc.includes('ក្លោងទ្វារ')) {
+            finalLoc = rawLoc;
+          } else {
+            finalNotes = finalNotes ? `${finalNotes} (${rawLoc})` : rawLoc;
+          }
+        }
+
+        validTags.push({
+          id: `imported-${Date.now()}-${validTags.length}-${Math.random().toString(36).substring(2, 6)}`,
+          tagNumber: tagNum,
+          name: rawName,
+          location: finalLoc,
+          phone: rawPhone,
+          notes: finalNotes,
+          updatedAt: new Date().toISOString()
+        });
+      }
+
+      if (validTags.length > 0) return validTags;
+    }
+
+    // 2B. Positional / Cell Classification Fallback (If no explicit header row)
     for (let i = 0; i < rawRows.length; i++) {
       const row = rawRows[i];
       if (!Array.isArray(row) || row.length === 0) continue;
 
-      // Convert row cells to trimmed strings
       let cells = row.map((cell) => String(cell || '').trim()).filter(Boolean);
       if (cells.length === 0) continue;
 
-      // If single cell string containing tab/comma/pipe/semicolon, split into cells
       if (cells.length === 1 && (cells[0].includes('\t') || cells[0].includes(',') || cells[0].includes('|') || cells[0].includes(';'))) {
         const parts = cells[0].split(/[\t,;|]/).map((s) => s.trim()).filter(Boolean);
         if (parts.length > 1) cells = parts;
@@ -95,39 +203,42 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
       let notesVal = '';
       let tagNumFromRow = null;
 
-      // Scan all cells in the current row
       for (const cell of cells) {
-        if (isHeaderOrFooter(cell)) continue;
+        if (isTitleOrSummaryBanner(cell)) continue;
+
+        // Skip index digit strings (e.g. "១", "២", "1", "2")
+        if (isNumericString(cell)) {
+          const num = parseDigitsToNumber(cell);
+          if (num && num > 0 && num < 10000 && !tagNumFromRow) {
+            tagNumFromRow = num;
+          }
+          continue;
+        }
 
         const lower = cell.toLowerCase();
 
-        // Check if phone number (8 to 11 digits)
+        // Phone number check
         const digitsOnly = cell.replace(/[^0-9]/g, '');
         if (digitsOnly.length >= 8 && digitsOnly.length <= 11 && (cell.startsWith('0') || cell.startsWith('+') || cell.startsWith('855') || cell.includes(' '))) {
           if (!phoneVal) phoneVal = cell;
           continue;
         }
 
-        // Check if vehicle tag (contains pattern like 1EY-2579, 1GH-9279, 2A-3615 or province names)
+        // Vehicle tag check
         if (/\d[A-Z]{1,2}[-\s]?\d{3,4}/i.test(cell) || lower.includes('ភ្នំពេញ') || lower.includes('កណ្ដាល') || lower.includes('សៀមរាប') || lower.includes('បាត់ដំបង')) {
           if (!vehicleTagVal) vehicleTagVal = cell;
           continue;
         }
 
-        // Check if location (contains កុដិ, អាគារ, ធម្មសាលា, វត្ត)
-        if (lower.includes('កុដិ') || lower.includes('អាគារ') || lower.includes('ធម្មសាលា') || lower.includes('វត្ត')) {
+        // Location check
+        if (lower.includes('កុដិ') || lower.includes('អាគារ') || lower.includes('ធម្មសាលា') || lower.includes('វត្ត') || lower.includes('ក្លោងទ្វារ')) {
           if (!locVal) locVal = cell;
           continue;
         }
 
-        // Check numeric tag number from row if explicit sequence disabled
-        if (!isNaN(Number(cell)) && Number(cell) > 0 && Number(cell) < 10000 && !tagNumFromRow) {
-          tagNumFromRow = Number(cell);
-        }
-
-        // Check if person name: Contains Khmer characters, not purely numbers, not gender (ប្រុស/ស្រី)
-        if (/[\u1780-\u17FF]/.test(cell) && isNaN(Number(cell))) {
-          if (cell !== 'ប្រុស' && cell !== 'ស្រី' && cell !== 'male' && cell !== 'female') {
+        // Person Name check: Contains Khmer characters, not numeric, not header label
+        if (/[\u1780-\u17FF]/.test(cell) && !isNumericString(cell)) {
+          if (!cell.includes('ឈ្មោះ') && !cell.includes('គោត្តនាម') && !cell.includes('លេខរៀង') && !cell.includes('ស្លាកលេខ')) {
             if (!nameVal) {
               nameVal = cell;
             }
@@ -135,27 +246,11 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
         }
       }
 
-      // Fallback: If no name found yet, attempt extracting Khmer words from cell string if present
-      if (!nameVal && cells.length > 0) {
-        for (const cell of cells) {
-          if (isHeaderOrFooter(cell)) continue;
-          const khmerMatch = cell.match(/[\u1780-\u17FF]{2,}(\s+[\u1780-\u17FF]{2,})*/);
-          if (khmerMatch && !isHeaderOrFooter(khmerMatch[0])) {
-            nameVal = khmerMatch[0];
-            break;
-          }
-        }
-      }
-
-      // Skip row if no valid person name was found or if name is a header/footer label
-      if (!nameVal || isHeaderOrFooter(nameVal)) {
-        continue;
-      }
+      if (!nameVal || isTitleOrSummaryBanner(nameVal)) continue;
 
       const finalTagNum = forceAutoSeq ? seqNumber++ : (tagNumFromRow || seqNumber++);
-
       if (vehicleTagVal) {
-        notesVal = `ស្លាកលេខរថយន្ត ៖ ${vehicleTagVal}`;
+        notesVal = notesVal ? `${notesVal} | ស្លាកលេខរថយន្ត ៖ ${vehicleTagVal}` : `ស្លាកលេខរថយន្ត ៖ ${vehicleTagVal}`;
       }
 
       validTags.push({
