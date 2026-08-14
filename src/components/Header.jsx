@@ -189,11 +189,11 @@ export default function Header({
           {(isOwner || isAdmin) && (
             <button
               onClick={onOpenAttendanceReport}
-              className="p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm transition-all shrink-0 flex items-center gap-1 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/80 active:scale-95 shadow-md shadow-emerald-950/40"
+              className="p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm transition-all shrink-0 flex items-center gap-1.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/80 active:scale-95 shadow-md shadow-emerald-950/40"
               title="មើលតារាងរបាយការណ៍អ្នកបានមកដល់ និងមិនទាន់មកដល់ (សម្រាប់ PC/Admin)"
             >
               <UserCheck className="w-4 h-4 text-emerald-400" />
-              <span className="hidden lg:inline font-bold">របាយការណ៍មកដល់</span>
+              <span className="font-bold">របាយការណ៍មកដល់</span>
             </button>
           )}
 

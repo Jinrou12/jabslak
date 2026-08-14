@@ -473,6 +473,15 @@ export default function App() {
         />
       )}
 
+      {isAttendanceReportOpen && (
+        <AttendanceReportModal
+          allTags={tags}
+          currentUser={currentUser}
+          onClose={() => setIsAttendanceReportOpen(false)}
+          onToggleAttendance={handleToggleAttendance}
+        />
+      )}
+
       {isCloudConfigOpen && (
         <FirebaseConfigModal
           onClose={() => setIsCloudConfigOpen(false)}
