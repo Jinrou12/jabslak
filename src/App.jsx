@@ -11,6 +11,7 @@ import QRScannerModal from './components/QRScannerModal';
 import ImportExportModal from './components/ImportExportModal';
 import LocationStatsModal from './components/LocationStatsModal';
 import AttendanceReportModal from './components/AttendanceReportModal';
+import AttendanceReportView from './components/AttendanceReportView';
 import FirebaseConfigModal from './components/FirebaseConfigModal';
 import MobileConnectModal from './components/MobileConnectModal';
 import TempleMapModal from './components/TempleMapModal';
@@ -311,7 +312,7 @@ export default function App() {
         onOpenImportExport={() => setIsImportExportOpen(true)}
         onResetData={handleResetData}
         onOpenLocationStats={() => setIsLocationStatsOpen(true)}
-        onOpenAttendanceReport={() => setIsAttendanceReportOpen(true)}
+        onOpenAttendanceReport={() => setViewMode('report')}
         onOpenCloudConfig={() => setIsCloudConfigOpen(true)}
         onOpenMobileConnect={() => setIsMobileConnectOpen(true)}
         onOpenTempleMap={() => {
@@ -337,8 +338,17 @@ export default function App() {
           setViewMode={setViewMode}
         />
 
-        {/* Tag List View (Grid vs Table) */}
-        {filteredTags.length > 0 ? (
+        {/* Main View Mode (Report Inline View vs Grid vs Table) */}
+        {viewMode === 'report' ? (
+          <div className="pb-12">
+            <AttendanceReportView
+              allTags={tags}
+              currentUser={currentUser}
+              onToggleAttendance={handleToggleAttendance}
+              onCloseView={() => setViewMode('grid')}
+            />
+          </div>
+        ) : filteredTags.length > 0 ? (
           viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 pb-12">
               {filteredTags.map((tag) => (
@@ -471,15 +481,6 @@ export default function App() {
           onSelectLocationFilter={(locName) => {
             setSelectedLocation(locName);
           }}
-        />
-      )}
-
-      {isAttendanceReportOpen && (
-        <AttendanceReportModal
-          allTags={tags}
-          currentUser={currentUser}
-          onClose={() => setIsAttendanceReportOpen(false)}
-          onToggleAttendance={handleToggleAttendance}
         />
       )}
 
