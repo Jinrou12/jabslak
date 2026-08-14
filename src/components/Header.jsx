@@ -185,17 +185,15 @@ export default function Header({
             </button>
           )}
 
-          {/* 📊 Attendance Report Dashboard Button (Owner & Admin) */}
-          {(isOwner || isAdmin) && (
-            <button
-              onClick={onOpenAttendanceReport}
-              className="p-2 sm:px-3 sm:py-2 rounded-xl text-xs sm:text-sm transition-all shrink-0 flex items-center gap-1.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/80 active:scale-95 shadow-md shadow-emerald-950/40"
-              title="មើលតារាងរបាយការណ៍អ្នកបានមកដល់ និងមិនទាន់មកដល់ (សម្រាប់ PC/Admin)"
-            >
-              <UserCheck className="w-4 h-4 text-emerald-400" />
-              <span className="font-bold">របាយការណ៍មកដល់</span>
-            </button>
-          )}
+          {/* 📊 Attendance Report Dashboard Button (Visible for EVERYONE!) */}
+          <button
+            onClick={onOpenAttendanceReport}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 font-bold px-3 py-2 rounded-xl text-xs sm:text-sm shadow-lg transition-all shrink-0 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-teal-500 text-white border border-emerald-400/60 shadow-emerald-950/60 active:scale-95 animate-in zoom-in-50 duration-200"
+            title="មើលតារាងរបាយការណ៍អ្នកបានមកដល់ និងមិនទាន់មកដល់"
+          >
+            <UserCheck className="w-4 h-4 text-emerald-200 animate-pulse" />
+            <span className="whitespace-nowrap font-moul text-xs">📊 របាយការណ៍មកដល់</span>
+          </button>
 
           {/* Delete All Data (Pops up for Owner & Admin only) */}
           {(isOwner || isAdmin) && (
@@ -228,19 +226,18 @@ export default function Header({
             </span>
           </div>
 
-          {!isGuest && (
-            <button
-              onClick={onOpenAttendanceReport}
-              className="flex items-center gap-1.5 bg-emerald-950/60 hover:bg-emerald-900/90 border border-emerald-700/80 hover:border-emerald-500 rounded-xl px-2.5 py-1 text-[11px] text-emerald-300 shrink-0 transition-all active:scale-95 shadow-sm cursor-pointer"
-              title="ចុចដើម្បីមើលតារាងរបាយការណ៍អ្នកមកដល់ និងមិនទាន់មកដល់"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>មកដល់ (Report) ៖</span>
-              <span className="text-emerald-400 font-bold font-sans-en">
-                {westernToKhmerDigits(arrivedCount || 0)} នាក់
-              </span>
-            </button>
-          )}
+          {/* Arrived Count Chip Button (Visible for EVERYONE!) */}
+          <button
+            onClick={onOpenAttendanceReport}
+            className="flex items-center gap-1.5 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600/80 hover:border-emerald-400 rounded-xl px-2.5 py-1 text-[11px] text-emerald-300 shrink-0 transition-all active:scale-95 shadow-md shadow-emerald-950/40 cursor-pointer"
+            title="ចុចដើម្បីមើលតារាងរបាយការណ៍អ្នកមកដល់ និងមិនទាន់មកដល់"
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+            <span>មកដល់ (Report) ៖</span>
+            <span className="text-emerald-400 font-bold font-sans-en">
+              {westernToKhmerDigits(arrivedCount || 0)} នាក់
+            </span>
+          </button>
         </div>
 
       </div>
