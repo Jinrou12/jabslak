@@ -134,13 +134,18 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
               </div>
             </div>
 
-            <div className="text-right">
-              <span className="text-3xl font-black text-emerald-400 font-sans-en block leading-none">
-                {westernToKhmerDigits(arrivedCount)}
-              </span>
-              <span className="text-xs font-bold text-emerald-500 font-sans-en mt-1 block">
-                ({arrivedPercentage}%)
-              </span>
+            <div className="flex items-center gap-2 bg-gradient-to-br from-emerald-500/20 via-emerald-950/80 to-slate-950 p-2.5 sm:p-3 rounded-2xl border border-emerald-500/50 shadow-lg shadow-emerald-950/60 shrink-0">
+              <div className="text-right font-kantumruy">
+                <div className="flex items-baseline justify-end gap-1">
+                  <span className="text-3xl sm:text-4xl font-black font-moul text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-200 drop-shadow-[0_2px_10px_rgba(16,185,129,0.6)]">
+                    {westernToKhmerDigits(arrivedCount)}
+                  </span>
+                  <span className="text-xs font-bold text-emerald-400 font-kantumruy">នាក់</span>
+                </div>
+                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-sans-en">
+                  {arrivedPercentage}% នៃសរុប
+                </span>
+              </div>
             </div>
           </div>
 
@@ -159,7 +164,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
               : 'bg-slate-900/90 border-slate-800 hover:border-rose-800/60 opacity-85 hover:opacity-100'
           }`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className={`p-2.5 rounded-xl border ${
                 activeTab === 'notArrived' ? 'bg-rose-500 text-slate-950 border-rose-300' : 'bg-slate-800 text-rose-400 border-slate-700'
@@ -176,13 +181,18 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
               </div>
             </div>
 
-            <div className="text-right">
-              <span className="text-3xl font-black text-rose-400 font-sans-en block leading-none">
-                {westernToKhmerDigits(notArrivedCount)}
-              </span>
-              <span className="text-xs font-bold text-rose-500 font-sans-en mt-1 block">
-                ({notArrivedPercentage}%)
-              </span>
+            <div className="flex items-center gap-2 bg-gradient-to-br from-rose-500/20 via-rose-950/80 to-slate-950 p-2.5 sm:p-3 rounded-2xl border border-rose-500/50 shadow-lg shadow-rose-950/60 shrink-0">
+              <div className="text-right font-kantumruy">
+                <div className="flex items-baseline justify-end gap-1">
+                  <span className="text-3xl sm:text-4xl font-black font-moul text-transparent bg-clip-text bg-gradient-to-r from-rose-300 via-rose-400 to-amber-200 drop-shadow-[0_2px_10px_rgba(244,63,94,0.6)]">
+                    {westernToKhmerDigits(notArrivedCount)}
+                  </span>
+                  <span className="text-xs font-bold text-rose-400 font-kantumruy">នាក់</span>
+                </div>
+                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/40 font-sans-en">
+                  {notArrivedPercentage}% នៃសរុប
+                </span>
+              </div>
             </div>
           </div>
 
