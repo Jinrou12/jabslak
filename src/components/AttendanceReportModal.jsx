@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { X, CheckCircle2, XCircle, Search, MapPin, Phone, Download, Printer, UserCheck, Clock, Filter, Users, ArrowUpRight } from 'lucide-react';
+import { X, CheckCircle2, XCircle, Search, MapPin, Phone, Download, Printer, UserCheck, Clock, Filter, Users, ArrowRightLeft } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
 
 export default function AttendanceReportModal({ onClose, allTags, onToggleAttendance, currentUser }) {
-  const [activeTab, setActiveTab] = useState('all'); // 'all', 'arrived', 'notArrived'
+  const [activeTab, setActiveTab] = useState('arrived'); // 'arrived' (ផ្ទាំងទី១) or 'notArrived' (ផ្ទាំងទី២) or 'all'
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocFilter, setSelectedLocFilter] = useState('ALL');
 
@@ -30,7 +30,7 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
     return Array.from(locSet).sort();
   }, [allTags]);
 
-  // Filter tags based on tab, search query, and location
+  // Filter tags based on active tab, search query, and location
   const filteredTags = useMemo(() => {
     let list = allTags;
 
@@ -120,11 +120,11 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
               <h2 className="text-base sm:text-lg font-bold font-moul text-emerald-400 flex items-center gap-2">
                 <span>របាយការណ៍វត្តមានអ្នកមកដល់</span>
                 <span className="text-[10px] bg-slate-800 text-slate-300 font-sans-en px-2 py-0.5 rounded-full border border-slate-700">
-                  PC & Admin Dashboard
+                  PC Dashboard
                 </span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                ពិនិត្យបញ្ជីអ្នកបានមកដល់ ({westernToKhmerDigits(arrivedCount)}) និងអ្នកមិនទាន់មកដល់ ({westernToKhmerDigits(notArrivedCount)})
+                ចុចស្វីច (Switch) រវាង ផ្ទាំងទី១ (អ្នកបានមកដល់) និង ផ្ទាំងទី២ (អ្នកមិនទាន់មកដល់)
               </p>
             </div>
           </div>
@@ -148,121 +148,129 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
           </div>
         </div>
 
-        {/* Summary Dashboard Cards (PC / Admin View) */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4 shrink-0">
+        {/* 🔄 Primary Dual Panel Switch Buttons (ផ្ទាំងស្វីច ទី១ vs ទី២) */}
+        <div className="grid grid-cols-2 gap-3 mb-4 shrink-0">
           
-          {/* Card 1: Total Tags */}
-          <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3.5 flex items-center justify-between">
-            <div>
-              <span className="text-xs text-slate-400 block font-medium">ចំនួនស្លាកសរុប (Total)</span>
-              <span className="text-xl font-black text-slate-100 font-sans-en mt-0.5 block">
-                {westernToKhmerDigits(totalCount)} <span className="text-xs font-normal text-slate-400">នាក់</span>
-              </span>
-            </div>
-            <div className="p-3 bg-sky-500/10 text-sky-400 rounded-2xl border border-sky-500/20">
-              <Users className="w-6 h-6" />
-            </div>
-          </div>
-
-          {/* Card 2: Arrived Count */}
-          <div
+          {/* Panel 1 Switcher: Arrived List (ផ្ទាំងទី១) */}
+          <button
+            type="button"
             onClick={() => setActiveTab('arrived')}
-            className={`border rounded-2xl p-3.5 flex items-center justify-between cursor-pointer transition-all ${
+            className={`p-4 rounded-2xl border transition-all text-left relative overflow-hidden group active:scale-[0.99] ${
               activeTab === 'arrived'
-                ? 'bg-emerald-950/70 border-emerald-500 ring-2 ring-emerald-500/20 scale-[1.01]'
-                : 'bg-slate-900/90 border-slate-800 hover:border-emerald-700/60'
+                ? 'bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-900 border-emerald-500 ring-2 ring-emerald-500/30 shadow-xl shadow-emerald-950/50'
+                : 'bg-slate-900/90 border-slate-800 hover:border-emerald-700/60 opacity-80 hover:opacity-100'
             }`}
           >
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                <span className="text-xs text-emerald-300 font-bold">បានមកដល់ (Arrived)</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`p-2 rounded-xl border ${
+                  activeTab === 'arrived' ? 'bg-emerald-500 text-slate-950 border-emerald-300' : 'bg-slate-800 text-emerald-400 border-slate-700'
+                }`}>
+                  <CheckCircle2 className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <span className="text-xs font-black text-emerald-400 block font-moul">
+                    ផ្ទាំងទី១ ៖ អ្នកបានមកដល់
+                  </span>
+                  <span className="text-[11px] text-slate-400 block">
+                    រាយនាមអ្នកដែលបានគ្រីសវត្តមាន
+                  </span>
+                </div>
               </div>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-emerald-400 font-sans-en">
+
+              <div className="text-right">
+                <span className="text-2xl font-black text-emerald-400 font-sans-en block leading-none">
                   {westernToKhmerDigits(arrivedCount)}
                 </span>
-                <span className="text-xs font-bold text-emerald-500">({arrivedPercentage}%)</span>
+                <span className="text-[11px] font-bold text-emerald-500 font-sans-en">
+                  ({arrivedPercentage}%)
+                </span>
               </div>
             </div>
-            <div className="p-3 bg-emerald-500/15 text-emerald-400 rounded-2xl border border-emerald-500/30">
-              <CheckCircle2 className="w-6 h-6" />
-            </div>
-          </div>
 
-          {/* Card 3: Not Arrived Count */}
-          <div
+            {/* Bottom highlight indicator */}
+            {activeTab === 'arrived' && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-emerald-400"></div>
+            )}
+          </button>
+
+          {/* Panel 2 Switcher: Not Arrived List (ផ្ទាំងទី២) */}
+          <button
+            type="button"
             onClick={() => setActiveTab('notArrived')}
-            className={`border rounded-2xl p-3.5 flex items-center justify-between cursor-pointer transition-all ${
+            className={`p-4 rounded-2xl border transition-all text-left relative overflow-hidden group active:scale-[0.99] ${
               activeTab === 'notArrived'
-                ? 'bg-rose-950/70 border-rose-500 ring-2 ring-rose-500/20 scale-[1.01]'
-                : 'bg-slate-900/90 border-slate-800 hover:border-rose-800/60'
+                ? 'bg-gradient-to-r from-rose-950 via-rose-900 to-slate-900 border-rose-500 ring-2 ring-rose-500/30 shadow-xl shadow-rose-950/50'
+                : 'bg-slate-900/90 border-slate-800 hover:border-rose-800/60 opacity-80 hover:opacity-100'
             }`}
           >
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-rose-400"></span>
-                <span className="text-xs text-rose-300 font-bold">មិនទាន់មកដល់ (Not Arrived)</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`p-2 rounded-xl border ${
+                  activeTab === 'notArrived' ? 'bg-rose-500 text-slate-950 border-rose-300' : 'bg-slate-800 text-rose-400 border-slate-700'
+                }`}>
+                  <XCircle className="w-5 h-5 stroke-[2.5]" />
+                </div>
+                <div>
+                  <span className="text-xs font-black text-rose-400 block font-moul">
+                    ផ្ទាំងទី២ ៖ អ្នកមិនទាន់មកដល់
+                  </span>
+                  <span className="text-[11px] text-slate-400 block">
+                    រាយនាមអ្នកដែលមិនទាន់បានមកដល់
+                  </span>
+                </div>
               </div>
-              <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-rose-400 font-sans-en">
+
+              <div className="text-right">
+                <span className="text-2xl font-black text-rose-400 font-sans-en block leading-none">
                   {westernToKhmerDigits(notArrivedCount)}
                 </span>
-                <span className="text-xs font-bold text-rose-500">({notArrivedPercentage}%)</span>
+                <span className="text-[11px] font-bold text-rose-500 font-sans-en">
+                  ({notArrivedPercentage}%)
+                </span>
               </div>
             </div>
-            <div className="p-3 bg-rose-500/15 text-rose-400 rounded-2xl border border-rose-500/30">
-              <XCircle className="w-6 h-6" />
-            </div>
-          </div>
+
+            {/* Bottom highlight indicator */}
+            {activeTab === 'notArrived' && (
+              <div className="absolute bottom-0 left-0 right-0 h-1 bg-rose-400"></div>
+            )}
+          </button>
 
         </div>
 
-        {/* Tab Filter & Action Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-2.5 mb-3.5 shrink-0 bg-slate-900/80 p-2 rounded-2xl border border-slate-800">
+        {/* Panel Header Title Banner & Filter Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-3 shrink-0 bg-slate-900/90 p-3 rounded-2xl border border-slate-800">
           
-          {/* Main Category Tabs */}
-          <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+          {/* Active Panel Title */}
+          <div className="flex items-center gap-2">
+            <span className={`w-3 h-3 rounded-full ${
+              activeTab === 'arrived' ? 'bg-emerald-400 animate-ping' : activeTab === 'notArrived' ? 'bg-rose-400' : 'bg-amber-400'
+            }`}></span>
+            <h3 className={`text-sm font-bold font-moul ${
+              activeTab === 'arrived' ? 'text-emerald-400' : activeTab === 'notArrived' ? 'text-rose-400' : 'text-amber-400'
+            }`}>
+              {activeTab === 'arrived' && `🟢 ផ្ទាំងទី១ ៖ បញ្ជីរាយនាមអ្នកបានមកដល់ (${westernToKhmerDigits(arrivedCount)} នាក់)`}
+              {activeTab === 'notArrived' && `🔴 ផ្ទាំងទី២ ៖ បញ្ជីរាយនាមអ្នកមិនទាន់មកដល់ (${westernToKhmerDigits(notArrivedCount)} នាក់)`}
+              {activeTab === 'all' && `📋 ទិន្នន័យស្លាកលេខសរុប (${westernToKhmerDigits(totalCount)} នាក់)`}
+            </h3>
+
+            {/* All toggle button option */}
             <button
               onClick={() => setActiveTab('all')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
-                activeTab === 'all'
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                  : 'text-slate-400 hover:text-slate-200'
+              className={`text-[11px] px-2 py-0.5 rounded-lg border font-sans-en transition-all ${
+                activeTab === 'all' ? 'bg-amber-500 text-slate-950 font-bold border-amber-400' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-slate-200'
               }`}
             >
-              ទាំងអស់ ({westernToKhmerDigits(totalCount)})
-            </button>
-
-            <button
-              onClick={() => setActiveTab('arrived')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
-                activeTab === 'arrived'
-                  ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/40'
-                  : 'text-slate-400 hover:text-emerald-300'
-              }`}
-            >
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              <span>បានមកដល់ ({westernToKhmerDigits(arrivedCount)})</span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('notArrived')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
-                activeTab === 'notArrived'
-                  ? 'bg-rose-600 text-white shadow-md shadow-rose-950/40'
-                  : 'text-slate-400 hover:text-rose-300'
-              }`}
-            >
-              <XCircle className="w-3.5 h-3.5 text-rose-400" />
-              <span>មិនទាន់មកដល់ ({westernToKhmerDigits(notArrivedCount)})</span>
+              មើលទាំងអស់ ({westernToKhmerDigits(totalCount)})
             </button>
           </div>
 
-          {/* Quick Search & Location Filter */}
-          <div className="flex items-center gap-2 flex-1 max-w-md min-w-[240px]">
+          {/* Quick Search & Filter Actions */}
+          <div className="flex flex-wrap items-center gap-2 flex-1 max-w-lg justify-end">
+            
             {/* Search Input */}
-            <div className="relative flex-1">
+            <div className="relative flex-1 min-w-[200px]">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
@@ -277,7 +285,7 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
             <select
               value={selectedLocFilter}
               onChange={(e) => setSelectedLocFilter(e.target.value)}
-              className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none max-w-[140px] truncate"
+              className="bg-slate-950 border border-slate-800 text-slate-300 text-xs rounded-xl px-2.5 py-1.5 focus:outline-none max-w-[130px] truncate"
             >
               <option value="ALL">គ្រប់ទីតាំង</option>
               {uniqueLocations.map((loc) => (
@@ -286,27 +294,28 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
                 </option>
               ))}
             </select>
-          </div>
 
-          {/* Excel Export Buttons */}
-          <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={exportArrivedExcel}
-              className="px-2.5 py-1.5 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-700/80 text-emerald-300 rounded-xl text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
-              title="ទាញយកបញ្ជីអ្នកបានមកដល់ជា Excel"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Excel មកដល់</span>
-            </button>
+            {/* Excel Download Button for Active Panel */}
+            {activeTab === 'arrived' && (
+              <button
+                onClick={exportArrivedExcel}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-md shadow-emerald-950/40 shrink-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>ទាញយក Excel មកដល់</span>
+              </button>
+            )}
 
-            <button
-              onClick={exportNotArrivedExcel}
-              className="px-2.5 py-1.5 bg-rose-950/80 hover:bg-rose-900 border border-rose-700/80 text-rose-300 rounded-xl text-xs font-bold flex items-center gap-1 transition-all active:scale-95"
-              title="ទាញយកបញ្ជីអ្នកមិនទាន់មកដល់ជា Excel"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Excel មិនទាន់មកដល់</span>
-            </button>
+            {activeTab === 'notArrived' && (
+              <button
+                onClick={exportNotArrivedExcel}
+                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all active:scale-95 shadow-md shadow-rose-950/40 shrink-0"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>ទាញយក Excel មិនទាន់មកដល់</span>
+              </button>
+            )}
+
           </div>
 
         </div>
@@ -316,7 +325,7 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
           {filteredTags.length === 0 ? (
             <div className="p-12 text-center text-slate-400">
               <UserCheck className="w-10 h-10 text-slate-600 mx-auto mb-2 opacity-50" />
-              <p className="text-sm font-semibold">មិនមានទិន្នន័យត្រូវគ្នានឹងការស្វែងរកឡើយ</p>
+              <p className="text-sm font-semibold">មិនមានទិន្នន័យក្នុងផ្ទាំងនេះឡើយ</p>
             </div>
           ) : (
             <table className="w-full text-left border-collapse text-xs">
@@ -337,7 +346,7 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
                     <tr
                       key={tag.id}
                       className={`hover:bg-slate-900/80 transition-colors ${
-                        isArrived ? 'bg-emerald-950/15' : ''
+                        isArrived ? 'bg-emerald-950/15' : 'bg-rose-950/10'
                       }`}
                     >
                       {/* Tag Number Badge */}
@@ -393,8 +402,8 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
                             )}
                           </div>
                         ) : (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 font-semibold text-xs">
-                            <XCircle className="w-3.5 h-3.5 text-slate-500" />
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-950/50 border border-rose-800/80 text-rose-300 font-semibold text-xs">
+                            <XCircle className="w-3.5 h-3.5 text-rose-400" />
                             <span>មិនទាន់មកដល់</span>
                           </div>
                         )}
@@ -426,7 +435,7 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
         {/* Modal Footer Summary */}
         <div className="flex items-center justify-between border-t border-slate-800 pt-3 mt-3 shrink-0 text-xs text-slate-400">
           <div>
-            <span>បង្ហាញទិន្នន័យ ៖ </span>
+            <span>បង្ហាញក្នុងផ្ទាំងនេះ ៖ </span>
             <span className="text-emerald-400 font-bold font-sans-en">{westernToKhmerDigits(filteredTags.length)}</span>
             <span> / {westernToKhmerDigits(totalCount)} នាក់</span>
           </div>
