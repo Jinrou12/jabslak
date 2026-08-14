@@ -134,15 +134,15 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-gradient-to-br from-emerald-500/20 via-emerald-950/80 to-slate-950 p-2.5 sm:p-3 rounded-2xl border border-emerald-500/50 shadow-lg shadow-emerald-950/60 shrink-0">
-              <div className="text-right font-kantumruy">
-                <div className="flex items-baseline justify-end gap-1">
-                  <span className="text-3xl sm:text-4xl font-black font-moul text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-200 drop-shadow-[0_2px_10px_rgba(16,185,129,0.6)]">
+            <div className="flex items-center justify-center bg-gradient-to-br from-emerald-500/25 via-emerald-950/90 to-slate-950 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border border-emerald-500/60 shadow-lg shadow-emerald-950/70 shrink-0 min-w-[100px] sm:min-w-[115px]">
+              <div className="text-center font-kantumruy w-full">
+                <div className="flex items-baseline justify-center gap-1 py-0.5">
+                  <span className="text-3xl sm:text-4xl font-extrabold font-kantumruy text-emerald-300 tracking-normal drop-shadow-[0_2px_10px_rgba(16,185,129,0.7)] leading-normal inline-block">
                     {westernToKhmerDigits(arrivedCount)}
                   </span>
                   <span className="text-xs font-bold text-emerald-400 font-kantumruy">នាក់</span>
                 </div>
-                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-sans-en">
+                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 font-sans-en">
                   {arrivedPercentage}% នៃសរុប
                 </span>
               </div>
@@ -181,15 +181,15 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-gradient-to-br from-rose-500/20 via-rose-950/80 to-slate-950 p-2.5 sm:p-3 rounded-2xl border border-rose-500/50 shadow-lg shadow-rose-950/60 shrink-0">
-              <div className="text-right font-kantumruy">
-                <div className="flex items-baseline justify-end gap-1">
-                  <span className="text-3xl sm:text-4xl font-black font-moul text-transparent bg-clip-text bg-gradient-to-r from-rose-300 via-rose-400 to-amber-200 drop-shadow-[0_2px_10px_rgba(244,63,94,0.6)]">
+            <div className="flex items-center justify-center bg-gradient-to-br from-rose-500/25 via-rose-950/90 to-slate-950 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border border-rose-500/60 shadow-lg shadow-rose-950/70 shrink-0 min-w-[100px] sm:min-w-[115px]">
+              <div className="text-center font-kantumruy w-full">
+                <div className="flex items-baseline justify-center gap-1 py-0.5">
+                  <span className="text-3xl sm:text-4xl font-extrabold font-kantumruy text-rose-300 tracking-normal drop-shadow-[0_2px_10px_rgba(244,63,94,0.7)] leading-normal inline-block">
                     {westernToKhmerDigits(notArrivedCount)}
                   </span>
                   <span className="text-xs font-bold text-rose-400 font-kantumruy">នាក់</span>
                 </div>
-                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/40 font-sans-en">
+                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/25 text-rose-300 border border-rose-500/40 font-sans-en">
                   {notArrivedPercentage}% នៃសរុប
                 </span>
               </div>
