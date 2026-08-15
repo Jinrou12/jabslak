@@ -162,6 +162,8 @@ export default function TempleMapModal({
   const currentLocations = activeTab === 'tagger' ? tab3Locations : locations;
   const [zoomScale, setZoomScale] = useState(1.0);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
+  const [isCompassVisible, setIsCompassVisible] = useState(true);
+  const [isCompassExpanded, setIsCompassExpanded] = useState(false);
   const [isDragEnabled, setIsDragEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -932,8 +934,20 @@ export default function TempleMapModal({
             </button>
           </div>
 
-          {/* Eye Toggle Indicator (Keep ONLY Show/Hide button) */}
+          {/* Eye & Compass Toggle Indicator */}
           <div className="flex items-center justify-end w-full sm:w-auto gap-2 text-xs">
+            <button
+              onClick={() => setIsCompassVisible(!isCompassVisible)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm ${
+                isCompassVisible
+                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 hover:bg-amber-500/30'
+                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Compass className="w-4 h-4 text-amber-400" />
+              <span>{isCompassVisible ? 'ត្រីវិស័យ' : 'លាក់ត្រីវិស័យ'}</span>
+            </button>
+
             <button
               onClick={() => setIsPinsVisible(!isPinsVisible)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm ${
@@ -1012,51 +1026,142 @@ export default function TempleMapModal({
 
                 {/* ════════ 8 KHMER PALI COMPASS DIRECTIONS (MATCHING UPLOADED PHOTO) ════════ */}
                 <div className="absolute inset-0 pointer-events-none z-10">
-                  {/* Floating 8-Color Compass Star in Top-Right Corner */}
-                  <div className="absolute top-10 right-4 pointer-events-auto opacity-90 hover:opacity-100 transition-all hover:scale-105">
-                    <div className="bg-slate-950/80 border border-amber-500/40 rounded-2xl p-1.5 shadow-2xl backdrop-blur-sm flex flex-col items-center">
-                      <div className="relative w-16 h-16 sm:w-24 sm:h-24">
-                        <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-lg">
-                          {/* North Point (Black / Dark Slate) */}
-                          <polygon points="100,100 88,75 100,15" fill="#0f172a" />
-                          <polygon points="100,100 112,75 100,15" fill="#334155" />
+                  {/* Floating 8-Color Compass Rose Widget with Text Badges (Matching Photo 100%) */}
+                  {isCompassVisible && (
+                    <div className="absolute top-8 right-3 pointer-events-auto z-30 transition-all hover:scale-102">
+                      <div className="bg-amber-100/95 border-2 border-amber-600/70 rounded-2xl p-2 sm:p-2.5 shadow-2xl backdrop-blur-md flex flex-col items-center select-none text-slate-900 font-kantumruy">
+                        {/* Header Title */}
+                        <div className="flex items-center justify-between w-full mb-1 border-b border-amber-300/80 pb-1 gap-2">
+                          <span className="text-[10px] sm:text-xs font-moul font-bold text-amber-950 flex items-center gap-1">
+                            🧭 ត្រីវិស័យទិសទាំង ៨
+                          </span>
+                          <button
+                            onClick={() => setIsCompassExpanded(!isCompassExpanded)}
+                            className="text-[9px] bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold px-1.5 py-0.5 rounded-md transition-all border border-amber-400/60"
+                          >
+                            {isCompassExpanded ? '➖ បង្រួម' : '🔍 ពង្រីក'}
+                          </button>
+                        </div>
 
-                          {/* NE Point (Orange) */}
-                          <polygon points="100,100 120,68 160,40" fill="#ea580c" />
-                          <polygon points="100,100 132,80 160,40" fill="#f97316" />
+                        {/* Compass Canvas Container with 8 Star Points and Text Badges */}
+                        <div className={`relative flex items-center justify-center transition-all ${
+                          isCompassExpanded ? 'w-56 h-56 sm:w-64 sm:h-64' : 'w-40 h-40 sm:w-48 sm:h-48'
+                        }`}>
+                          {/* Central 8-Color Compass Star SVG */}
+                          <div className={`absolute z-10 transition-all ${
+                            isCompassExpanded ? 'w-28 h-28 sm:w-36 sm:h-36' : 'w-20 h-20 sm:w-24 sm:h-24'
+                          }`}>
+                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl">
+                              {/* North Point (Black / Dark Slate) */}
+                              <polygon points="100,100 88,75 100,15" fill="#0f172a" />
+                              <polygon points="100,100 112,75 100,15" fill="#334155" />
 
-                          {/* East Point (Green) */}
-                          <polygon points="100,100 125,88 185,100" fill="#15803d" />
-                          <polygon points="100,100 125,112 185,100" fill="#22c55e" />
+                              {/* NE Point (Orange) */}
+                              <polygon points="100,100 120,68 160,40" fill="#ea580c" />
+                              <polygon points="100,100 132,80 160,40" fill="#f97316" />
 
-                          {/* SE Point (Lime Green) */}
-                          <polygon points="100,100 132,120 160,160" fill="#4d7c0f" />
-                          <polygon points="100,100 120,132 160,160" fill="#84cc16" />
+                              {/* East Point (Green) */}
+                              <polygon points="100,100 125,88 185,100" fill="#15803d" />
+                              <polygon points="100,100 125,112 185,100" fill="#22c55e" />
 
-                          {/* South Point (Yellow) */}
-                          <polygon points="100,100 88,125 100,185" fill="#a16207" />
-                          <polygon points="100,100 112,125 100,185" fill="#eab308" />
+                              {/* SE Point (Lime Green) */}
+                              <polygon points="100,100 132,120 160,160" fill="#4d7c0f" />
+                              <polygon points="100,100 120,132 160,160" fill="#84cc16" />
 
-                          {/* SW Point (Cyan / Light Blue) */}
-                          <polygon points="100,100 80,132 40,160" fill="#0e7490" />
-                          <polygon points="100,100 68,120 40,160" fill="#06b6d4" />
+                              {/* South Point (Yellow) */}
+                              <polygon points="100,100 88,125 100,185" fill="#a16207" />
+                              <polygon points="100,100 112,125 100,185" fill="#eab308" />
 
-                          {/* West Point (Red) */}
-                          <polygon points="100,100 75,88 15,100" fill="#b91c1c" />
-                          <polygon points="100,100 75,112 15,100" fill="#ef4444" />
+                              {/* SW Point (Cyan / Light Blue) */}
+                              <polygon points="100,100 80,132 40,160" fill="#0e7490" />
+                              <polygon points="100,100 68,120 40,160" fill="#06b6d4" />
 
-                          {/* NW Point (Pink) */}
-                          <polygon points="100,100 68,80 40,40" fill="#be185d" />
-                          <polygon points="100,100 80,68 40,40" fill="#ec4899" />
+                              {/* West Point (Red) */}
+                              <polygon points="100,100 75,88 15,100" fill="#b91c1c" />
+                              <polygon points="100,100 75,112 15,100" fill="#ef4444" />
 
-                          {/* Center Emblem */}
-                          <circle cx="100" cy="100" r="14" fill="#fef08a" stroke="#ca8a04" strokeWidth="2" />
-                          <circle cx="100" cy="100" r="5" fill="#0f172a" />
-                        </svg>
+                              {/* NW Point (Pink) */}
+                              <polygon points="100,100 68,80 40,40" fill="#be185d" />
+                              <polygon points="100,100 80,68 40,40" fill="#ec4899" />
+
+                              {/* Center Emblem */}
+                              <circle cx="100" cy="100" r="14" fill="#fef08a" stroke="#ca8a04" strokeWidth="2.5" />
+                              <circle cx="100" cy="100" r="5" fill="#0f172a" />
+                            </svg>
+                          </div>
+
+                          {/* 8 Direction White Pill Badges Positioned Around Star Tips */}
+                          {/* North (Top) */}
+                          <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 z-20">
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              ឧត្តរ
+                            </span>
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              ជើង
+                            </span>
+                          </div>
+
+                          {/* NE (Top-Right) */}
+                          <div className="absolute top-1 right-1 flex flex-col items-end z-20">
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              ឦសាន
+                            </span>
+                          </div>
+
+                          {/* East (Right) */}
+                          <div className="absolute top-1/2 right-0 -translate-y-1/2 flex flex-col items-end gap-0.5 z-20">
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              បូព៌
+                            </span>
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              កើត
+                            </span>
+                          </div>
+
+                          {/* SE (Bottom-Right) */}
+                          <div className="absolute bottom-1 right-1 flex flex-col items-end z-20">
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              អាគ្នេយ៍
+                            </span>
+                          </div>
+
+                          {/* South (Bottom) */}
+                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 z-20">
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              ត្បូង
+                            </span>
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              ទក្សិណ
+                            </span>
+                          </div>
+
+                          {/* SW (Bottom-Left) */}
+                          <div className="absolute bottom-1 left-1 flex flex-col items-start z-20">
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              និរតី
+                            </span>
+                          </div>
+
+                          {/* West (Left) */}
+                          <div className="absolute top-1/2 left-0 -translate-y-1/2 flex flex-row items-center gap-0.5 z-20">
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              លិច
+                            </span>
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              បស្ចឹម
+                            </span>
+                          </div>
+
+                          {/* NW (Top-Left) */}
+                          <div className="absolute top-1 left-1 flex flex-col items-start z-20">
+                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                              ពាយ័ព្យ
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                      <span className="text-[9px] font-moul font-bold text-amber-400 mt-0.5">ទិសទាំង ៨</span>
                     </div>
-                  </div>
+                  )}
 
                   {/* 8 Direction White Pill Badges Around Map Edges */}
                   {[
