@@ -173,11 +173,9 @@ export default function TempleMapModal({
   // Computed: which locations array to use based on active tab
   const currentLocations = activeTab === 'tagger' ? tab3Locations : locations;
   const [zoomScale, setZoomScale] = useState(1.0);
-  const [pinSizePx, setPinSizePx] = useState(12); // Default global Pin circle size in px
-  const [pinFontSizePx, setPinFontSizePx] = useState(6); // Default global Pin Khmer number font size in px
+  const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin circle size in px (14px)
   const [selectedSizeGroup, setSelectedSizeGroup] = useState('all'); // 'all' | categoryName
   const [groupPinSizes, setGroupPinSizes] = useState({}); // { [catName]: sizeInPx }
-  const [groupPinFontSizes, setGroupPinFontSizes] = useState({}); // { [catName]: fontSizeInPx }
   const [isLabelsVisible, setIsLabelsVisible] = useState(true);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
   const [isCompassVisible, setIsCompassVisible] = useState(true);
@@ -231,7 +229,6 @@ export default function TempleMapModal({
     if (isMobile) {
       setZoomScale(1.35); // Expand map to fill phone screen edge-to-edge
       setPinSizePx(12);   // Compact 12px pin circle for mobile
-      setPinFontSizePx(5.5); // Ultra clean 5.5px Khmer number font for mobile
       setIsLabelsVisible(false); // Hide text clutter by default on mobile so map stays super clean
     }
   }, []);
@@ -970,7 +967,7 @@ export default function TempleMapModal({
 
           {/* Eye & Compass & Customizable Group Size Controls */}
           <div className="flex flex-wrap items-center justify-end w-full sm:w-auto gap-2 text-xs">
-            {/* Custom Group Selector & Dual Pin / Font Size Control (ONLY VISIBLE ON TAB 3) */}
+            {/* Custom Group Selector & Pin Size Control (ONLY VISIBLE ON TAB 3) */}
             {activeTab === 'tagger' && (
               <div className="flex flex-wrap items-center gap-2 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 shadow-sm">
                 {/* Group Dropdown */}
@@ -981,7 +978,7 @@ export default function TempleMapModal({
                   <select
                     value={selectedSizeGroup}
                     onChange={(e) => setSelectedSizeGroup(e.target.value)}
-                    className="bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-0.5 text-xs text-amber-300 font-bold focus:outline-none focus:border-amber-400 font-kantumruy max-w-[130px] sm:max-w-[170px] truncate cursor-pointer"
+                    className="bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-0.5 text-xs text-amber-300 font-bold focus:outline-none focus:border-amber-400 font-kantumruy max-w-[140px] sm:max-w-[180px] truncate cursor-pointer"
                   >
                     <option value="all">🌐 គ្រប់ Group ទាំងអស់</option>
                     {Object.keys(categoryGroups).map((cat) => (
@@ -994,10 +991,10 @@ export default function TempleMapModal({
 
                 <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
 
-                {/* 1. Pin Circle Size Control */}
+                {/* Pin Circle Size Control */}
                 <div className="flex items-center gap-1.5">
                   <span className="text-[11px] text-amber-400 font-bold whitespace-nowrap">
-                    📏 រង្វង់ ៖{' '}
+                    📏 ទំហំ ៖{' '}
                     <span className="font-sans-en font-black text-amber-300">
                       {selectedSizeGroup === 'all'
                         ? `${pinSizePx}px`
@@ -1007,8 +1004,8 @@ export default function TempleMapModal({
 
                   <input
                     type="range"
-                    min="4"
-                    max="28"
+                    min="8"
+                    max="30"
                     step="1"
                     value={
                       selectedSizeGroup === 'all'
@@ -1023,73 +1020,37 @@ export default function TempleMapModal({
                         setGroupPinSizes((prev) => ({ ...prev, [selectedSizeGroup]: val }));
                       }
                     }}
-                    className="w-12 sm:w-16 accent-amber-400 cursor-pointer h-1.5 bg-slate-950 rounded-lg"
-                    title="កែប្រែទំហំរង្វង់ Pin"
-                  />
-                </div>
-
-                <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
-
-                {/* 2. Khmer Number Font Size Control */}
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[11px] text-emerald-400 font-bold whitespace-nowrap">
-                    🔤 លេខ ៖{' '}
-                    <span className="font-sans-en font-black text-emerald-300">
-                      {selectedSizeGroup === 'all'
-                        ? `${pinFontSizePx}px`
-                        : `${groupPinFontSizes[selectedSizeGroup] || pinFontSizePx}px`}
-                    </span>
-                  </span>
-
-                  <input
-                    type="range"
-                    min="3"
-                    max="18"
-                    step="0.5"
-                    value={
-                      selectedSizeGroup === 'all'
-                        ? pinFontSizePx
-                        : groupPinFontSizes[selectedSizeGroup] || pinFontSizePx
-                    }
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      if (selectedSizeGroup === 'all') {
-                        setPinFontSizePx(val);
-                      } else {
-                        setGroupPinFontSizes((prev) => ({ ...prev, [selectedSizeGroup]: val }));
-                      }
-                    }}
-                    className="w-12 sm:w-16 accent-emerald-400 cursor-pointer h-1.5 bg-slate-950 rounded-lg"
-                    title="កែប្រែទំហំលេខខ្មែរ"
+                    className="w-14 sm:w-20 accent-amber-400 cursor-pointer h-1.5 bg-slate-950 rounded-lg"
+                    title="កែប្រែទំហំ Pin"
                   />
 
                   <div className="flex items-center gap-0.5">
                     {[
-                      { label: 'តូចខ្លាំង', size: 4 },
-                      { label: 'តូច', size: 5.5 },
-                      { label: 'មធ្យម', size: 8 },
-                      { label: 'ធំ', size: 12 }
+                      { label: 'តូច', size: 10 },
+                      { label: 'មធ្យម', size: 14 },
+                      { label: 'ធំ', size: 18 },
+                      { label: 'ធំខ្លាំង', size: 24 }
                     ].map((p) => {
-                      const activeFont =
+                      const currentActiveSize =
                         selectedSizeGroup === 'all'
-                          ? pinFontSizePx
-                          : groupPinFontSizes[selectedSizeGroup] || pinFontSizePx;
+                          ? pinSizePx
+                          : groupPinSizes[selectedSizeGroup] || pinSizePx;
                       return (
                         <button
                           key={p.size}
                           onClick={() => {
                             if (selectedSizeGroup === 'all') {
-                              setPinFontSizePx(p.size);
+                              setPinSizePx(p.size);
                             } else {
-                              setGroupPinFontSizes((prev) => ({ ...prev, [selectedSizeGroup]: p.size }));
+                              setGroupPinSizes((prev) => ({ ...prev, [selectedSizeGroup]: p.size }));
                             }
                           }}
                           className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
-                            activeFont === p.size
-                              ? 'bg-emerald-500 text-slate-950 font-extrabold shadow-sm'
+                            currentActiveSize === p.size
+                              ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
                               : 'bg-slate-800 text-slate-400 hover:text-slate-200'
                           }`}
-                          title={`ទំហំលេខ ${p.label} (${p.size}px)`}
+                          title={`កំណត់ទំហំ ${p.label} (${p.size}px)`}
                         >
                           {p.label}
                         </button>
@@ -1369,25 +1330,34 @@ export default function TempleMapModal({
                             } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-50' : 'z-20'}`}
                             style={{ touchAction: canDragThisPin ? 'none' : 'auto' }}
                           >
-                            {/* Customizable Pin Badge (Dynamic Circle Size & Customizable Khmer Number Font Size) */}
-                            <div
-                              style={{
-                                width: `${currentPinSize}px`,
-                                height: `${currentPinSize}px`,
-                                fontSize: `${currentFontSize}px`,
-                                lineHeight: `${currentPinSize}px`
-                              }}
-                              className={`rounded-full flex items-center justify-center font-moul font-bold leading-none text-center border border-white/90 shrink-0 z-10 overflow-hidden select-none ${getPinBadgeColorClass(
-                                loc,
-                                locIdx
-                              )} ${
-                                isHighlighted
-                                  ? 'ring-2 ring-amber-400 ring-offset-1 animate-pulse scale-125 z-50'
-                                  : ''
-                              }`}
-                            >
-                              {loc.id}
-                            </div>
+                            {/* Mathematically Scaled Pin Badge (Dynamic Circle Size & Proportional Centered Khmer Digits) */}
+                            {(() => {
+                              const idStr = String(loc.id || '');
+                              const fontRatio = idStr.length > 2 ? 0.35 : idStr.length > 1 ? 0.44 : 0.55;
+                              const computedFontSize = Math.max(4.0, Math.round(currentPinSize * fontRatio));
+
+                              return (
+                                <div
+                                  style={{
+                                    width: `${currentPinSize}px`,
+                                    height: `${currentPinSize}px`,
+                                    fontSize: `${computedFontSize}px`
+                                  }}
+                                  className={`rounded-full flex items-center justify-center font-sans font-black leading-none text-center border border-white/90 shrink-0 z-10 overflow-hidden select-none ${getPinBadgeColorClass(
+                                    loc,
+                                    locIdx
+                                  )} ${
+                                    isHighlighted
+                                      ? 'ring-2 ring-amber-400 ring-offset-1 animate-pulse scale-125 z-50'
+                                      : ''
+                                  }`}
+                                >
+                                  <span className="flex items-center justify-center leading-none text-center transform translate-y-[0.5px]">
+                                    {loc.id}
+                                  </span>
+                                </div>
+                              );
+                            })()}
 
                             {/* Floating Name Label: RENDERED IN TAB 1 when isLabelsVisible is true, OR when highlighted */}
                             {activeTab === 'labeled' && (isLabelsVisible || isHighlighted) && (
