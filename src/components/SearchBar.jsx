@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, Filter, LayoutGrid, List, UserCheck, Map as MapIcon } from 'lucide-react';
+import { Search, X, Filter, LayoutGrid, List, Map as MapIcon } from 'lucide-react';
 import { locationsList } from '../data/sampleData';
 
 export default function SearchBar({
@@ -66,19 +66,6 @@ export default function SearchBar({
           >
             <List className="w-4 h-4" />
             <span className="hidden sm:inline">តារាង</span>
-          </button>
-
-          <button
-            onClick={() => setViewMode('report')}
-            className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
-              viewMode === 'report'
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20'
-                : 'text-emerald-400 hover:text-emerald-200'
-            }`}
-            title="ទម្រង់របាយការណ៍មកដល់ (Report View)"
-          >
-            <UserCheck className="w-4 h-4" />
-            <span className="hidden sm:inline">របាយការណ៍</span>
           </button>
 
           <button
