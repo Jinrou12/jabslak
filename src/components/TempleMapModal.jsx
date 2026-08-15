@@ -487,10 +487,9 @@ export default function TempleMapModal({
     }
   };
 
-  // Map Click in Tab 2 or Tab 3 (Add new pin)
+  // Map Click in ANY Tab (Add new pin)
   const handleMapClick = (e) => {
-    if (!canCustomizeMap) return;
-    if ((activeTab !== 'tagger' && activeTab !== 'interactive') || draggingPinId || pinMovedFlagRef.current) return;
+    if (draggingPinId || pinMovedFlagRef.current) return;
     const rect = mapContainerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
