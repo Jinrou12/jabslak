@@ -106,7 +106,7 @@ const COLOR_OPTION_GRADIENTS = COLOR_SWATCHES.reduce((acc, swatch) => {
 }, {});
 
 export function getPinBadgeColorClass(loc, idx = 0) {
-  if (!loc) return PIN_COLOR_GRADIENTS[0];
+  if (!loc) return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
 
   // Custom user-selected badge color from edit modal form
   if (loc.badgeColor && COLOR_OPTION_GRADIENTS[loc.badgeColor]) {
@@ -115,28 +115,18 @@ export function getPinBadgeColorClass(loc, idx = 0) {
   
   const idStr = String(loc.id || '').trim();
 
-  // Gates A-E: Original Gold Yellow
+  // Gates A-E: Original Gold Yellow (ពណ៌លឿង/មាស សម្រាប់ខ្លោងទ្វារ)
   if (loc.type === 'gate' || STANDARD_GATES.includes(idStr)) {
     return 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 border-white ring-1 ring-amber-400/60';
   }
 
-  // Khmer Temple Location Digits (១ ដល់ ១៦): Original Cyan Sky Blue
-  if (KHMER_STANDARD_LOCATIONS.includes(idStr)) {
-    return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
+  // Western Tag Digits (1, 2, 3...): Green (ពណ៌បៃតង សម្រាប់ដៅស្លាកលេខ)
+  if (/^\d+$/.test(idStr)) {
+    return 'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60';
   }
 
-  // Western Tag Digits (1, 2, 3...): Distinct unique color per tag number
-  if (WESTERN_TAG_COLORS[idStr]) {
-    return WESTERN_TAG_COLORS[idStr];
-  }
-
-  // Any other number pin (17, 18...): dynamic distinct color from palette
-  let charSum = 0;
-  for (let i = 0; i < idStr.length; i++) {
-    charSum += idStr.charCodeAt(i);
-  }
-  const colorIdx = (charSum + idx) % PIN_COLOR_GRADIENTS.length;
-  return PIN_COLOR_GRADIENTS[colorIdx];
+  // Khmer Location Digits (១ ដល់ ១៦) or Khmer Location Names: Blue (ពណ៌ខៀវ សម្រាប់ដៅឈ្មោះទីតាំង)
+  return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
 }
 
 export function getPinSizeClasses(size) {
@@ -153,29 +143,9 @@ export function getPinSizeClasses(size) {
 
 export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3Locations = []) {
   if (!loc) return '';
-  if (activeTab === 'labeled') return loc.name;
-
   const locIdStr = String(loc.id || '').trim();
-  const locNameStr = String(loc.name || '').trim();
-
-  const matchedTag = allTags.find((t) => {
-    const tNoStr = String(t.tagNumber || '').trim();
-    const tKhmerNo = westernToKhmerDigits(t.tagNumber);
-    const tBase = String(t.baseLocation || t.location || '').trim();
-
-    if (tNoStr === locIdStr) return true;
-
-    if (tKhmerNo === locIdStr || tBase === locIdStr || tBase === locNameStr) {
-      const westernPinExists = tab3Locations.some(
-        (p) => String(p.id || '').trim() === tNoStr
-      );
-      if (!westernPinExists) return true;
-    }
-
-    return false;
-  });
-
-  return matchedTag ? matchedTag.name : loc.name;
+  const initialMatch = INITIAL_TEMPLE_LOCATIONS.find((init) => String(init.id).trim() === locIdStr);
+  return initialMatch ? initialMatch.name : loc.name;
 }
 
 export default function TempleMapModal({
@@ -197,39 +167,34 @@ export default function TempleMapModal({
   const [tab3Locations, setTab3Locations] = useState(getSavedTab3Locations());
   const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ នៅស្លាកលើ Map)
 
-  // Auto-sync Tab 3 pin names with Person/Owner names from allTags
+  // Sync Tab 3 metadata with allTags while preserving Location Names (ឈ្មោះទីតាំង)
   const effectiveTab3Locations = useMemo(() => {
     return tab3Locations.map((loc) => {
       const locIdStr = String(loc.id || '').trim();
-      const locNameStr = String(loc.name || '').trim();
+      
+      // Look up authentic original location name from INITIAL_TEMPLE_LOCATIONS if available
+      const initialMatch = INITIAL_TEMPLE_LOCATIONS.find((init) => String(init.id).trim() === locIdStr);
+      const locationName = initialMatch ? initialMatch.name : loc.name;
 
       const matchedTag = allTags.find((t) => {
         const tNoStr = String(t.tagNumber || '').trim();
-        const tKhmerNo = westernToKhmerDigits(t.tagNumber);
         const tBase = String(t.baseLocation || t.location || '').trim();
 
-        // 1. Direct exact match with Western pin ID (e.g. "1" === "1")
+        // 1. Match Western Tag Pin ID (e.g. Pin "2" matches Tag #2)
         if (tNoStr === locIdStr) return true;
 
-        // 2. Khmer pin ID ("១") or base location name ONLY if no dedicated Western pin exists
-        if (tKhmerNo === locIdStr || tBase === locIdStr || tBase === locNameStr) {
-          const westernPinExists = tab3Locations.some(
-            (p) => String(p.id || '').trim() === tNoStr
-          );
-          if (!westernPinExists) return true;
-        }
+        // 2. Match Location Pin by location name ONLY if tag's location explicitly matches locationName
+        if (tBase && (tBase === locIdStr || tBase === locationName)) return true;
 
         return false;
       });
 
-      if (matchedTag && matchedTag.name) {
-        return {
-          ...loc,
-          tagOwnerName: matchedTag.name,
-          tagNumber: matchedTag.tagNumber
-        };
-      }
-      return loc;
+      return {
+        ...loc,
+        name: locationName, // ALWAYS KEEP LOCATION NAME! (ឈ្មោះទីតាំង)
+        tagOwnerName: matchedTag && matchedTag.name ? matchedTag.name : loc.tagOwnerName,
+        tagNumber: matchedTag && matchedTag.tagNumber ? matchedTag.tagNumber : loc.tagNumber
+      };
     });
   }, [tab3Locations, allTags]);
 

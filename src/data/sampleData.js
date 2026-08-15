@@ -28,8 +28,8 @@ export function generateSampleData(count = 1000) {
     const ln = lastNames[(i * 13) % lastNames.length];
     const fullName = `${title} ${fn} ${ln}`;
 
-    const locationName = 'មិនទាន់ដៅលើ Map';
-    const fullLocation = 'មិនទាន់ដៅលើ Map';
+    const locationName = 'មើលទីកន្លែង';
+    const fullLocation = 'មើលទីកន្លែង';
 
     const phonePrefixes = ['012', '010', '069', '077', '088', '097', '092', '015'];
     const phonePrefix = phonePrefixes[i % phonePrefixes.length];

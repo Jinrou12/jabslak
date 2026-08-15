@@ -159,7 +159,7 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
         }
 
         // Location vs Notes distinction
-        let finalLoc = 'ទីតាំងមិនទាន់កំណត់';
+        let finalLoc = 'មើលទីកន្លែង';
         let finalNotes = rawNotes;
 
         if (rawLoc) {
@@ -258,7 +258,7 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
         id: `imported-${Date.now()}-${validTags.length}-${Math.random().toString(36).substring(2, 6)}`,
         tagNumber: finalTagNum,
         name: nameVal,
-        location: locVal || 'ទីតាំងមិនទាន់កំណត់',
+        location: locVal || 'មើលទីកន្លែង',
         phone: phoneVal,
         notes: notesVal,
         updatedAt: new Date().toISOString()

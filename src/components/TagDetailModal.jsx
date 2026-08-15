@@ -7,6 +7,7 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
   if (!tag) return null;
 
   const isAssistant = currentUser?.role === 'assistant';
+  const isGuest = currentUser?.role === 'guest';
   const isArrived = !!tag.arrived;
 
   const khmerTagNo = westernToKhmerDigits(tag.tagNumber);
@@ -165,7 +166,7 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
                 </span>
               </div>
               <div className="text-[1.05rem] font-bold text-slate-100 font-kantumruy mt-0.5 leading-snug">
-                {tag.location}
+                {(!tag.location || tag.location === 'ទីតាំងមិនទាន់កំណត់' || tag.location === 'មិនទាន់ដៅលើ Map') ? 'មើលទីកន្លែង' : tag.location}
               </div>
             </div>
             <div className="p-2 text-amber-400/40 group-hover:text-amber-400 transition-colors shrink-0 self-center">

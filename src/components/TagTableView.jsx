@@ -60,7 +60,7 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                       title="ចុចដើម្បីមើលទីតាំងលើផែនទីវត្ត"
                     >
                       <MapPin className="w-3.5 h-3.5 shrink-0" />
-                      <span>{tag.location}</span>
+                      <span>{(!tag.location || tag.location === 'ទីតាំងមិនទាន់កំណត់' || tag.location === 'មិនទាន់ដៅលើ Map') ? 'មើលទីកន្លែង' : tag.location}</span>
                       <MapIcon className="w-3 h-3 opacity-60 ml-1" />
                     </button>
                   </td>

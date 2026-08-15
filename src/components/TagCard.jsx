@@ -83,7 +83,7 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
               ទីតាំងស្លាកលេខ (LOCATION)
             </span>
             <span className="text-xs md:text-sm font-extrabold text-amber-200 truncate block font-kantumruy">
-              {tag.location}
+              {(!tag.location || tag.location === 'ទីតាំងមិនទាន់កំណត់' || tag.location === 'មិនទាន់ដៅលើ Map') ? 'មើលទីកន្លែង' : tag.location}
             </span>
           </div>
         </div>
