@@ -1024,34 +1024,33 @@ export default function TempleMapModal({
                   className="w-full h-auto block pointer-events-none"
                 />
 
-                {/* ════════ 8 KHMER PALI COMPASS DIRECTIONS (MATCHING UPLOADED PHOTO) ════════ */}
+                {/* ════════ AUTHENTIC KHMER COMPASS ROSE (EXACT MATCH TO USER PHOTO) ════════ */}
                 <div className="absolute inset-0 pointer-events-none z-10">
-                  {/* Floating 8-Color Compass Rose Widget with Text Badges (Matching Photo 100%) */}
                   {isCompassVisible && (
-                    <div className="absolute top-8 right-3 pointer-events-auto z-30 transition-all hover:scale-102">
-                      <div className="bg-amber-100/95 border-2 border-amber-600/70 rounded-2xl p-2 sm:p-2.5 shadow-2xl backdrop-blur-md flex flex-col items-center select-none text-slate-900 font-kantumruy">
-                        {/* Header Title */}
-                        <div className="flex items-center justify-between w-full mb-1 border-b border-amber-300/80 pb-1 gap-2">
-                          <span className="text-[10px] sm:text-xs font-moul font-bold text-amber-950 flex items-center gap-1">
+                    <div className="absolute top-4 right-4 pointer-events-auto z-30 transition-all hover:scale-[1.02]">
+                      <div className="bg-amber-300 border-4 border-amber-600/70 rounded-3xl p-2.5 sm:p-3 shadow-2xl backdrop-blur-md flex flex-col items-center select-none text-slate-900 font-kantumruy">
+                        {/* Header Bar */}
+                        <div className="flex items-center justify-between w-full mb-2 border-b border-amber-500/50 pb-1 gap-2">
+                          <span className="text-xs sm:text-sm font-moul font-bold text-amber-950 flex items-center gap-1.5">
                             🧭 ត្រីវិស័យទិសទាំង ៨
                           </span>
                           <button
                             onClick={() => setIsCompassExpanded(!isCompassExpanded)}
-                            className="text-[9px] bg-amber-200 hover:bg-amber-300 text-amber-950 font-bold px-1.5 py-0.5 rounded-md transition-all border border-amber-400/60"
+                            className="text-[10px] sm:text-xs bg-amber-100 hover:bg-white text-amber-950 font-bold px-2 py-0.5 rounded-lg transition-all border border-amber-400 shadow-sm"
                           >
                             {isCompassExpanded ? '➖ បង្រួម' : '🔍 ពង្រីក'}
                           </button>
                         </div>
 
-                        {/* Compass Canvas Container with 8 Star Points and Text Badges */}
-                        <div className={`relative flex items-center justify-center transition-all ${
-                          isCompassExpanded ? 'w-56 h-56 sm:w-64 sm:h-64' : 'w-40 h-40 sm:w-48 sm:h-48'
+                        {/* Compass Canvas Poster (Exact Replica of Photo) */}
+                        <div className={`relative bg-amber-400/50 rounded-2xl border-2 border-amber-500/60 flex items-center justify-center transition-all overflow-hidden ${
+                          isCompassExpanded ? 'w-72 h-72 sm:w-88 sm:h-88' : 'w-56 h-56 sm:w-64 sm:h-64'
                         }`}>
-                          {/* Central 8-Color Compass Star SVG */}
+                          {/* Center 8-Color Compass Star SVG */}
                           <div className={`absolute z-10 transition-all ${
-                            isCompassExpanded ? 'w-28 h-28 sm:w-36 sm:h-36' : 'w-20 h-20 sm:w-24 sm:h-24'
+                            isCompassExpanded ? 'w-40 h-40 sm:w-48 sm:h-48' : 'w-28 h-28 sm:w-32 sm:h-32'
                           }`}>
-                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-xl">
+                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-2xl">
                               {/* North Point (Black / Dark Slate) */}
                               <polygon points="100,100 88,75 100,15" fill="#0f172a" />
                               <polygon points="100,100 112,75 100,15" fill="#334155" />
@@ -1084,77 +1083,77 @@ export default function TempleMapModal({
                               <polygon points="100,100 68,80 40,40" fill="#be185d" />
                               <polygon points="100,100 80,68 40,40" fill="#ec4899" />
 
-                              {/* Center Emblem */}
+                              {/* Center Golden Circle */}
                               <circle cx="100" cy="100" r="14" fill="#fef08a" stroke="#ca8a04" strokeWidth="2.5" />
                               <circle cx="100" cy="100" r="5" fill="#0f172a" />
                             </svg>
                           </div>
 
-                          {/* 8 Direction White Pill Badges Positioned Around Star Tips */}
-                          {/* North (Top) */}
-                          <div className="absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 z-20">
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                          {/* 8 Direction White Pill Badges Positioned Directly Around Star Tips */}
+                          {/* 1. North (Top) */}
+                          <div className="absolute top-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 z-20">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               ឧត្តរ
                             </span>
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               ជើង
                             </span>
                           </div>
 
-                          {/* NE (Top-Right) */}
-                          <div className="absolute top-1 right-1 flex flex-col items-end z-20">
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                          {/* 2. NE (Top-Right) */}
+                          <div className="absolute top-4 right-4 flex flex-col items-end z-20">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               ឦសាន
                             </span>
                           </div>
 
-                          {/* East (Right) */}
-                          <div className="absolute top-1/2 right-0 -translate-y-1/2 flex flex-col items-end gap-0.5 z-20">
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                          {/* 3. East (Right) */}
+                          <div className="absolute top-1/2 right-2 -translate-y-1/2 flex flex-col items-end gap-0.5 z-20">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               បូព៌
                             </span>
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               កើត
                             </span>
                           </div>
 
-                          {/* SE (Bottom-Right) */}
-                          <div className="absolute bottom-1 right-1 flex flex-col items-end z-20">
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                          {/* 4. SE (Bottom-Right) */}
+                          <div className="absolute bottom-4 right-4 flex flex-col items-end z-20">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               អាគ្នេយ៍
                             </span>
                           </div>
 
-                          {/* South (Bottom) */}
-                          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 z-20">
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                          {/* 5. South (Bottom) */}
+                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 z-20">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               ត្បូង
                             </span>
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               ទក្សិណ
                             </span>
                           </div>
 
-                          {/* SW (Bottom-Left) */}
-                          <div className="absolute bottom-1 left-1 flex flex-col items-start z-20">
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                          {/* 6. SW (Bottom-Left) */}
+                          <div className="absolute bottom-4 left-4 flex flex-col items-start z-20">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               និរតី
                             </span>
                           </div>
 
-                          {/* West (Left) */}
-                          <div className="absolute top-1/2 left-0 -translate-y-1/2 flex flex-row items-center gap-0.5 z-20">
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                          {/* 7. West (Left) */}
+                          <div className="absolute top-1/2 left-2 -translate-y-1/2 flex flex-row items-center gap-0.5 z-20">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               លិច
                             </span>
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               បស្ចឹម
                             </span>
                           </div>
 
-                          {/* NW (Top-Left) */}
-                          <div className="absolute top-1 left-1 flex flex-col items-start z-20">
-                            <span className="bg-white text-slate-900 border border-slate-700/80 font-moul font-bold text-[8px] sm:text-[10px] px-1 py-0.2 rounded shadow-sm whitespace-nowrap">
+                          {/* 8. NW (Top-Left) */}
+                          <div className="absolute top-4 left-4 flex flex-col items-start z-20">
+                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
                               ពាយ័ព្យ
                             </span>
                           </div>
@@ -1162,30 +1161,6 @@ export default function TempleMapModal({
                       </div>
                     </div>
                   )}
-
-                  {/* 8 Direction White Pill Badges Around Map Edges */}
-                  {[
-                    { key: 'N',  badges: ['ឧត្តរ', 'ជើង'],   pos: 'top-2 left-1/2 -translate-x-1/2 flex-col items-center' },
-                    { key: 'NE', badges: ['ឦសាន'],           pos: 'top-3 right-3 flex-col items-end' },
-                    { key: 'E',  badges: ['បូព៌', 'កើត'],   pos: 'top-1/2 right-2 -translate-y-1/2 flex-col items-end' },
-                    { key: 'SE', badges: ['អាគ្នេយ៍'],       pos: 'bottom-3 right-3 flex-col items-end' },
-                    { key: 'S',  badges: ['ត្បូង', 'ទក្សិណ'], pos: 'bottom-2 left-1/2 -translate-x-1/2 flex-col items-center' },
-                    { key: 'SW', badges: ['និរតី'],          pos: 'bottom-3 left-3 flex-col items-start' },
-                    { key: 'W',  badges: ['លិច', 'បស្ចឹម'],   pos: 'top-1/2 left-2 -translate-y-1/2 flex-row items-center' },
-                    { key: 'NW', badges: ['ពាយ័ព្យ'],        pos: 'top-3 left-3 flex-col items-start' }
-                  ].map((dir) => (
-                    <div key={dir.key} className={`absolute flex gap-1 ${dir.pos} pointer-events-none`}>
-                      {dir.badges.map((label, idx) => (
-                        <div
-                          key={idx}
-                          className="bg-white/95 text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md tracking-wider whitespace-nowrap drop-shadow"
-                          style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}
-                        >
-                          {label}
-                        </div>
-                      ))}
-                    </div>
-                  ))}
                 </div>
 
                 {/* ════════ MAP PIN MARKERS & MATHEMATICALLY LOCKED BADGES ════════ */}
