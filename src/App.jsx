@@ -32,7 +32,8 @@ export default function App() {
   const [tags, setTags] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('ALL');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'table'
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table' | 'map' | 'report'
+  const [reportActiveTab, setReportActiveTab] = useState('arrived'); // 'arrived' | 'notArrived' | 'all'
   const [isCloudSyncing, setIsCloudSyncing] = useState(true);
 
   // User & Role State
@@ -153,8 +154,14 @@ export default function App() {
       try {
         confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
       } catch (e) {}
+      // Auto-navigate to Report view → Panel 1 (Arrived) to see the newly ticked person
+      setReportActiveTab('arrived');
+      setViewMode('report');
     } else {
       showToast(`បានដកការគ្រីសវត្តមានស្លាកលេខ ${westernToKhmerDigits(tagToToggle.tagNumber)}!`);
+      // Auto-navigate to Report view → Panel 2 (Not Arrived) since person moved back
+      setReportActiveTab('notArrived');
+      setViewMode('report');
     }
   };
 
@@ -377,6 +384,8 @@ export default function App() {
               currentUser={currentUser}
               onToggleAttendance={handleToggleAttendance}
               onCloseView={() => setViewMode('grid')}
+              activeTab={reportActiveTab}
+              setActiveTab={setReportActiveTab}
             />
           </div>
         ) : filteredTags.length > 0 ? (

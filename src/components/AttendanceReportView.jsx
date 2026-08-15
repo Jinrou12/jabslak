@@ -3,8 +3,11 @@ import { CheckCircle2, XCircle, Search, MapPin, Phone, Download, Printer, UserCh
 import * as XLSX from 'xlsx';
 import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
 
-export default function AttendanceReportView({ allTags, onToggleAttendance, currentUser, onCloseView }) {
-  const [activeTab, setActiveTab] = useState('arrived'); // 'arrived' (ផ្ទាំងទី១) or 'notArrived' (ផ្ទាំងទី២) or 'all'
+export default function AttendanceReportView({ allTags, onToggleAttendance, currentUser, onCloseView, activeTab: activeTabProp, setActiveTab: setActiveTabProp }) {
+  const [activeTabInternal, setActiveTabInternal] = useState('arrived');
+  // Use controlled prop if provided (from App.jsx after tick), else use internal state
+  const activeTab = activeTabProp !== undefined ? activeTabProp : activeTabInternal;
+  const setActiveTab = setActiveTabProp !== undefined ? setActiveTabProp : setActiveTabInternal;
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocFilter, setSelectedLocFilter] = useState('ALL');
 
