@@ -1024,29 +1024,29 @@ export default function TempleMapModal({
                   className="w-full h-auto block pointer-events-none"
                 />
 
-                {/* ════════ AUTHENTIC KHMER COMPASS ROSE (EXACT MATCH TO USER PHOTO) ════════ */}
+                {/* ════════ TRANSPARENT PNG-STYLE KHMER COMPASS ROSE ════════ */}
                 <div className="absolute inset-0 pointer-events-none z-10">
                   {isCompassVisible && (
                     <div className="absolute top-3 right-3 pointer-events-auto z-30 transition-all hover:scale-[1.02]">
-                      <div className="bg-amber-300 border-4 border-amber-600/70 rounded-3xl p-2 sm:p-2.5 shadow-2xl backdrop-blur-md flex flex-col items-center select-none text-slate-900 font-kantumruy">
+                      <div className="bg-slate-950/60 border border-amber-500/40 rounded-3xl p-2 sm:p-2.5 shadow-2xl backdrop-blur-md flex flex-col items-center select-none text-white font-kantumruy">
                         {/* Header Bar */}
-                        <div className="flex items-center justify-between w-full mb-1.5 border-b border-amber-500/50 pb-1 gap-2">
-                          <span className="text-xs sm:text-sm font-moul font-bold text-amber-950 flex items-center gap-1.5">
+                        <div className="flex items-center justify-between w-full mb-1 border-b border-amber-500/30 pb-1 gap-2">
+                          <span className="text-xs sm:text-sm font-moul font-bold text-amber-300 flex items-center gap-1.5 drop-shadow">
                             🧭 ត្រីវិស័យទិសទាំង ៨
                           </span>
                           <button
                             onClick={() => setIsCompassExpanded(!isCompassExpanded)}
-                            className="text-[10px] sm:text-xs bg-amber-100 hover:bg-white text-amber-950 font-bold px-2 py-0.5 rounded-lg transition-all border border-amber-400 shadow-sm"
+                            className="text-[10px] sm:text-xs bg-slate-800/80 hover:bg-slate-700 text-amber-200 font-bold px-2 py-0.5 rounded-lg transition-all border border-amber-500/40 shadow-sm"
                           >
                             {isCompassExpanded ? '➖ បង្រួម' : '🔍 ពង្រីក'}
                           </button>
                         </div>
 
-                        {/* Integrated 100% Mathematically Locked SVG Compass Poster */}
-                        <div className={`relative bg-amber-400/50 rounded-2xl border-2 border-amber-500/60 flex items-center justify-center transition-all overflow-hidden ${
+                        {/* Transparent PNG-Style Compass Canvas */}
+                        <div className={`relative flex items-center justify-center transition-all overflow-hidden bg-transparent ${
                           isCompassExpanded ? 'w-64 h-64 sm:w-80 sm:h-80' : 'w-48 h-48 sm:w-56 sm:h-56'
                         }`}>
-                          <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-xl select-none">
+                          <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-2xl select-none">
                             {/* ════════ 8 COLOR STAR POINTS ════════ */}
                             {/* North Point (Black / Dark Slate - 0°) */}
                             <polygon points="200,200 180,145 200,60" fill="#0f172a" />
@@ -1065,7 +1065,7 @@ export default function TempleMapModal({
                             <polygon points="200,200 230,250 299,299" fill="#84cc16" />
 
                             {/* South Point (Yellow - 180°) */}
-                            <polygon points="200,200 180,255 200,340" fill="#a16207" />
+                            <polygon points="200,200 180,255 200,340" fill="#ca8a04" />
                             <polygon points="200,200 220,255 200,340" fill="#eab308" />
 
                             {/* SW Point (Cyan - 225°) */}
@@ -1087,53 +1087,53 @@ export default function TempleMapModal({
                             {/* ════════ 8 DIRECTION TEXT BADGES TOUCHING STAR TIPS ════════ */}
                             {/* 1. North Badges (Top) */}
                             <g transform="translate(200, 32)">
-                              <rect x="-34" y="-22" width="68" height="44" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <rect x="-34" y="-22" width="68" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
                               <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ឧត្តរ</text>
                               <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ជើង</text>
                             </g>
 
                             {/* 2. NE Badge (Top-Right) */}
                             <g transform="translate(325, 75)">
-                              <rect x="-30" y="-14" width="60" height="28" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <rect x="-30" y="-14" width="60" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
                               <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ឦសាន</text>
                             </g>
 
                             {/* 3. East Badges (Right) */}
                             <g transform="translate(366, 200)">
-                              <rect x="-32" y="-22" width="64" height="44" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <rect x="-32" y="-22" width="64" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
                               <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">បូព៌</text>
                               <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">កើត</text>
                             </g>
 
                             {/* 4. SE Badge (Bottom-Right) */}
                             <g transform="translate(325, 325)">
-                              <rect x="-34" y="-14" width="68" height="28" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <rect x="-34" y="-14" width="68" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
                               <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">អាគ្នេយ៍</text>
                             </g>
 
                             {/* 5. South Badges (Bottom) */}
                             <g transform="translate(200, 368)">
-                              <rect x="-34" y="-22" width="68" height="44" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <rect x="-34" y="-22" width="68" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
                               <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ត្បូង</text>
                               <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ទក្សិណ</text>
                             </g>
 
                             {/* 6. SW Badge (Bottom-Left) */}
                             <g transform="translate(75, 325)">
-                              <rect x="-30" y="-14" width="60" height="28" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <rect x="-30" y="-14" width="60" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
                               <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">និរតី</text>
                             </g>
 
                             {/* 7. West Badges (Left) */}
                             <g transform="translate(34, 200)">
-                              <rect x="-32" y="-22" width="64" height="44" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <rect x="-32" y="-22" width="64" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
                               <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">លិច</text>
                               <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">បស្ចឹម</text>
                             </g>
 
                             {/* 8. NW Badge (Top-Left) */}
                             <g transform="translate(75, 75)">
-                              <rect x="-32" y="-14" width="64" height="28" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <rect x="-32" y="-14" width="64" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
                               <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ពាយ័ព្យ</text>
                             </g>
                           </svg>
