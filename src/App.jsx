@@ -119,7 +119,7 @@ export default function App() {
   // Handle open map focused on a location
   const handleOpenMapWithLocation = (locName) => {
     setTempleMapTargetLoc(locName);
-    setViewMode('map');
+    setIsTempleMapOpen(true);
   };
 
   // Attendance Toggle Handler ("គ្រីសអ្នកបានមកដល់")
@@ -317,7 +317,7 @@ export default function App() {
         onOpenMobileConnect={() => setIsMobileConnectOpen(true)}
         onOpenTempleMap={() => {
           setTempleMapTargetLoc(null);
-          setViewMode('map');
+          setIsTempleMapOpen(true);
         }}
         onOpenRoleManagement={() => setIsRoleManagementOpen(true)}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
@@ -476,7 +476,7 @@ export default function App() {
           onSave={handleSaveTag}
           nextAvailableNumber={nextAvailableTagNumber}
           onOpenTempleMap={() => {
-            setViewMode('map');
+            setIsTempleMapOpen(true);
           }}
           onOpenImportExport={() => {
             setIsFormOpen(false);

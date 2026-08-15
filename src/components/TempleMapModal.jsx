@@ -168,7 +168,7 @@ export default function TempleMapModal({
   const [locations, setLocations] = useState(getSavedTempleLocations());
   // Tab 3 has its own INDEPENDENT state
   const [tab3Locations, setTab3Locations] = useState(getSavedTab3Locations());
-  const [activeTab, setActiveTab] = useState('labeled'); // 'labeled' | 'interactive' | 'tagger'
+  const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ នៅស្លាកលើ Map)
 
   // Computed: which locations array to use based on active tab
   const currentLocations = activeTab === 'tagger' ? tab3Locations : locations;
@@ -306,18 +306,24 @@ export default function TempleMapModal({
   // Focus on highlighted location if passed from parent
   useEffect(() => {
     if (highlightLocationName) {
-      const match = locations.find(
+      setActiveTab('tagger');
+      const searchTarget = highlightLocationName.toLowerCase().trim();
+      const match = tab3Locations.find(
         (l) =>
-          l.name.toLowerCase() === highlightLocationName.toLowerCase() ||
-          highlightLocationName.toLowerCase().includes(l.name.toLowerCase()) ||
-          l.name.toLowerCase().includes(highlightLocationName.toLowerCase())
+          l.name.toLowerCase().trim() === searchTarget ||
+          searchTarget.includes(l.name.toLowerCase().trim()) ||
+          l.name.toLowerCase().trim().includes(searchTarget)
+      ) || locations.find(
+        (l) =>
+          l.name.toLowerCase().trim() === searchTarget ||
+          searchTarget.includes(l.name.toLowerCase().trim()) ||
+          l.name.toLowerCase().trim().includes(searchTarget)
       );
       if (match) {
         setSelectedLocation(match);
-        setActiveTab('interactive');
       }
     }
-  }, [highlightLocationName, locations]);
+  }, [highlightLocationName, tab3Locations, locations]);
 
   // Auto scroll to legend card when selected location changes
   useEffect(() => {
