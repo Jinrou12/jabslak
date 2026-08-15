@@ -828,7 +828,7 @@ export default function TempleMapModal({
 
     // Check duplicate ID
     const duplicate = currentLocations.find(
-      (l) => l.id.toLowerCase() === id.toLowerCase() && (!editingLoc || editingLoc.id !== l.id)
+      (l) => String(l.id || '').toLowerCase() === String(id || '').toLowerCase() && (!editingLoc || editingLoc.id !== l.id)
     );
     if (duplicate) {
       setFormError(`លេខ/អក្សរ «${id}» នេះមានរួចហើយ! (${duplicate.name})`);
@@ -996,9 +996,9 @@ export default function TempleMapModal({
     return currentLocations.filter((loc) => {
       const matchesSearch =
         !q ||
-        loc.name.toLowerCase().includes(q) ||
-        loc.id.toLowerCase().includes(q) ||
-        (loc.category && loc.category.toLowerCase().includes(q));
+        String(loc.name || '').toLowerCase().includes(q) ||
+        String(loc.id || '').toLowerCase().includes(q) ||
+        String(loc.category || '').toLowerCase().includes(q);
       const matchesCat =
         selectedCategory === 'all' || (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === selectedCategory;
       return matchesSearch && matchesCat;
@@ -1418,7 +1418,7 @@ export default function TempleMapModal({
                         selectedLocation?.id === loc.id ||
                         hoveredLocation?.id === loc.id ||
                         (highlightLocationName &&
-                          loc.name.toLowerCase().includes(highlightLocationName.toLowerCase()));
+                          String(loc.name || '').toLowerCase().includes(String(highlightLocationName).toLowerCase()));
 
                       const isGate = loc.type === 'gate';
                       const isCurrentlyDragging = draggingPinId === loc.id;
@@ -1722,16 +1722,16 @@ export default function TempleMapModal({
                   {allTags
                     .filter((t) => {
                       const isPinned = currentLocations.some(
-                        (loc) => String(loc.id).trim().toLowerCase() === String(t.tagNumber).trim().toLowerCase()
+                        (loc) => String(loc.id || '').trim().toLowerCase() === String(t.tagNumber || '').trim().toLowerCase()
                       );
                       if (isPinned) return false;
 
                       const q = searchQuery.trim().toLowerCase();
                       if (!q) return true;
                       return (
-                        String(t.tagNumber).includes(q) ||
-                        (t.name && t.name.toLowerCase().includes(q)) ||
-                        (t.location && t.location.toLowerCase().includes(q))
+                        String(t.tagNumber || '').includes(q) ||
+                        String(t.name || '').toLowerCase().includes(q) ||
+                        String(t.location || '').toLowerCase().includes(q)
                       );
                     })
                     .map((t) => {
@@ -2078,12 +2078,12 @@ export default function TempleMapModal({
                     <option value="">-- ជ្រើសរើសស្លាកលេខពីប្រព័ន្ធ ឬ បញ្ចូលព័ត៌មានដោយដៃ --</option>
                     {allTags
                       .filter((t) => {
-                        const tagNumStr = String(t.tagNumber).trim().toLowerCase();
-                        if (editingLoc && String(editingLoc.id).trim().toLowerCase() === tagNumStr) {
+                        const tagNumStr = String(t.tagNumber || '').trim().toLowerCase();
+                        if (editingLoc && String(editingLoc.id || '').trim().toLowerCase() === tagNumStr) {
                           return true;
                         }
                         return !currentLocations.some(
-                          (loc) => String(loc.id).trim().toLowerCase() === tagNumStr
+                          (loc) => String(loc.id || '').trim().toLowerCase() === tagNumStr
                         );
                       })
                       .map((t) => (
