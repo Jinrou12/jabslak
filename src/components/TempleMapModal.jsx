@@ -1327,25 +1327,32 @@ export default function TempleMapModal({
                             } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-50' : 'z-20'}`}
                             style={{ touchAction: canDragThisPin ? 'none' : 'auto' }}
                           >
-                            {/* Customizable Pin Badge (Dynamic Pixel Size & Font Size) */}
-                            <div
-                              style={{
-                                width: `${currentPinSize}px`,
-                                height: `${currentPinSize}px`,
-                                fontSize: `${Math.max(6.5, Math.round(currentPinSize * 0.48))}px`,
-                                lineHeight: `${currentPinSize}px`
-                              }}
-                              className={`rounded-full flex items-center justify-center font-moul font-black border shadow-md shrink-0 z-10 ${getPinBadgeColorClass(
-                                loc,
-                                locIdx
-                              )} ${
-                                isHighlighted
-                                  ? 'ring-2 ring-amber-400 ring-offset-1 animate-pulse scale-110 z-50'
-                                  : ''
-                              }`}
-                            >
-                              {loc.id}
-                            </div>
+                            {/* Customizable Pin Badge (Dynamic Pixel Size & Proportional Font Size) */}
+                            {(() => {
+                              const idStr = String(loc.id || '');
+                              const fontRatio = idStr.length > 2 ? 0.32 : idStr.length > 1 ? 0.40 : 0.50;
+                              const computedFontSize = Math.max(3.5, Math.round(currentPinSize * fontRatio));
+                              return (
+                                <div
+                                  style={{
+                                    width: `${currentPinSize}px`,
+                                    height: `${currentPinSize}px`,
+                                    fontSize: `${computedFontSize}px`,
+                                    lineHeight: `${currentPinSize}px`
+                                  }}
+                                  className={`rounded-full flex items-center justify-center font-sans font-black leading-none text-center border shadow-md shrink-0 z-10 overflow-hidden select-none ${getPinBadgeColorClass(
+                                    loc,
+                                    locIdx
+                                  )} ${
+                                    isHighlighted
+                                      ? 'ring-2 ring-amber-400 ring-offset-1 animate-pulse scale-110 z-50'
+                                      : ''
+                                  }`}
+                                >
+                                  {loc.id}
+                                </div>
+                              );
+                            })()}
 
                             {/* Floating Name Label: RENDERED IN TAB 1 when isLabelsVisible is true, OR when highlighted */}
                             {activeTab === 'labeled' && (isLabelsVisible || isHighlighted) && (
