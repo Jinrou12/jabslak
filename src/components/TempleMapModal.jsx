@@ -1027,10 +1027,10 @@ export default function TempleMapModal({
                 {/* ════════ AUTHENTIC KHMER COMPASS ROSE (EXACT MATCH TO USER PHOTO) ════════ */}
                 <div className="absolute inset-0 pointer-events-none z-10">
                   {isCompassVisible && (
-                    <div className="absolute top-4 right-4 pointer-events-auto z-30 transition-all hover:scale-[1.02]">
-                      <div className="bg-amber-300 border-4 border-amber-600/70 rounded-3xl p-2.5 sm:p-3 shadow-2xl backdrop-blur-md flex flex-col items-center select-none text-slate-900 font-kantumruy">
+                    <div className="absolute top-3 right-3 pointer-events-auto z-30 transition-all hover:scale-[1.02]">
+                      <div className="bg-amber-300 border-4 border-amber-600/70 rounded-3xl p-2 sm:p-2.5 shadow-2xl backdrop-blur-md flex flex-col items-center select-none text-slate-900 font-kantumruy">
                         {/* Header Bar */}
-                        <div className="flex items-center justify-between w-full mb-2 border-b border-amber-500/50 pb-1 gap-2">
+                        <div className="flex items-center justify-between w-full mb-1.5 border-b border-amber-500/50 pb-1 gap-2">
                           <span className="text-xs sm:text-sm font-moul font-bold text-amber-950 flex items-center gap-1.5">
                             🧭 ត្រីវិស័យទិសទាំង ៨
                           </span>
@@ -1042,121 +1042,101 @@ export default function TempleMapModal({
                           </button>
                         </div>
 
-                        {/* Compass Canvas Poster (Exact Replica of Photo) */}
+                        {/* Integrated 100% Mathematically Locked SVG Compass Poster */}
                         <div className={`relative bg-amber-400/50 rounded-2xl border-2 border-amber-500/60 flex items-center justify-center transition-all overflow-hidden ${
-                          isCompassExpanded ? 'w-72 h-72 sm:w-88 sm:h-88' : 'w-56 h-56 sm:w-64 sm:h-64'
+                          isCompassExpanded ? 'w-64 h-64 sm:w-80 sm:h-80' : 'w-48 h-48 sm:w-56 sm:h-56'
                         }`}>
-                          {/* Center 8-Color Compass Star SVG */}
-                          <div className={`absolute z-10 transition-all ${
-                            isCompassExpanded ? 'w-40 h-40 sm:w-48 sm:h-48' : 'w-28 h-28 sm:w-32 sm:h-32'
-                          }`}>
-                            <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-2xl">
-                              {/* North Point (Black / Dark Slate) */}
-                              <polygon points="100,100 88,75 100,15" fill="#0f172a" />
-                              <polygon points="100,100 112,75 100,15" fill="#334155" />
+                          <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-xl select-none">
+                            {/* ════════ 8 COLOR STAR POINTS ════════ */}
+                            {/* North Point (Black / Dark Slate - 0°) */}
+                            <polygon points="200,200 180,145 200,60" fill="#0f172a" />
+                            <polygon points="200,200 220,145 200,60" fill="#334155" />
 
-                              {/* NE Point (Orange) */}
-                              <polygon points="100,100 120,68 160,40" fill="#ea580c" />
-                              <polygon points="100,100 132,80 160,40" fill="#f97316" />
+                            {/* NE Point (Orange - 45°) */}
+                            <polygon points="200,200 230,150 299,101" fill="#c2410c" />
+                            <polygon points="200,200 250,170 299,101" fill="#f97316" />
 
-                              {/* East Point (Green) */}
-                              <polygon points="100,100 125,88 185,100" fill="#15803d" />
-                              <polygon points="100,100 125,112 185,100" fill="#22c55e" />
+                            {/* East Point (Green - 90°) */}
+                            <polygon points="200,200 255,180 332,200" fill="#15803d" />
+                            <polygon points="200,200 255,220 332,200" fill="#22c55e" />
 
-                              {/* SE Point (Lime Green) */}
-                              <polygon points="100,100 132,120 160,160" fill="#4d7c0f" />
-                              <polygon points="100,100 120,132 160,160" fill="#84cc16" />
+                            {/* SE Point (Lime Green - 135°) */}
+                            <polygon points="200,200 250,230 299,299" fill="#4d7c0f" />
+                            <polygon points="200,200 230,250 299,299" fill="#84cc16" />
 
-                              {/* South Point (Yellow) */}
-                              <polygon points="100,100 88,125 100,185" fill="#a16207" />
-                              <polygon points="100,100 112,125 100,185" fill="#eab308" />
+                            {/* South Point (Yellow - 180°) */}
+                            <polygon points="200,200 180,255 200,340" fill="#a16207" />
+                            <polygon points="200,200 220,255 200,340" fill="#eab308" />
 
-                              {/* SW Point (Cyan / Light Blue) */}
-                              <polygon points="100,100 80,132 40,160" fill="#0e7490" />
-                              <polygon points="100,100 68,120 40,160" fill="#06b6d4" />
+                            {/* SW Point (Cyan - 225°) */}
+                            <polygon points="200,200 170,250 101,299" fill="#0e7490" />
+                            <polygon points="200,200 150,230 101,299" fill="#06b6d4" />
 
-                              {/* West Point (Red) */}
-                              <polygon points="100,100 75,88 15,100" fill="#b91c1c" />
-                              <polygon points="100,100 75,112 15,100" fill="#ef4444" />
+                            {/* West Point (Red - 270°) */}
+                            <polygon points="200,200 145,180 68,200" fill="#b91c1c" />
+                            <polygon points="200,200 145,220 68,200" fill="#ef4444" />
 
-                              {/* NW Point (Pink) */}
-                              <polygon points="100,100 68,80 40,40" fill="#be185d" />
-                              <polygon points="100,100 80,68 40,40" fill="#ec4899" />
+                            {/* NW Point (Pink - 315°) */}
+                            <polygon points="200,200 150,170 101,101" fill="#be185d" />
+                            <polygon points="200,200 170,150 101,101" fill="#ec4899" />
 
-                              {/* Center Golden Circle */}
-                              <circle cx="100" cy="100" r="14" fill="#fef08a" stroke="#ca8a04" strokeWidth="2.5" />
-                              <circle cx="100" cy="100" r="5" fill="#0f172a" />
-                            </svg>
-                          </div>
+                            {/* Center Golden Ring */}
+                            <circle cx="200" cy="200" r="22" fill="#fef08a" stroke="#ca8a04" strokeWidth="4" />
+                            <circle cx="200" cy="200" r="8" fill="#0f172a" />
 
-                          {/* 8 Direction White Pill Badges Positioned Directly Around Star Tips */}
-                          {/* 1. North (Top) */}
-                          <div className="absolute top-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 z-20">
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              ឧត្តរ
-                            </span>
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              ជើង
-                            </span>
-                          </div>
+                            {/* ════════ 8 DIRECTION TEXT BADGES TOUCHING STAR TIPS ════════ */}
+                            {/* 1. North Badges (Top) */}
+                            <g transform="translate(200, 32)">
+                              <rect x="-34" y="-22" width="68" height="44" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ឧត្តរ</text>
+                              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ជើង</text>
+                            </g>
 
-                          {/* 2. NE (Top-Right) */}
-                          <div className="absolute top-4 right-4 flex flex-col items-end z-20">
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              ឦសាន
-                            </span>
-                          </div>
+                            {/* 2. NE Badge (Top-Right) */}
+                            <g transform="translate(325, 75)">
+                              <rect x="-30" y="-14" width="60" height="28" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ឦសាន</text>
+                            </g>
 
-                          {/* 3. East (Right) */}
-                          <div className="absolute top-1/2 right-2 -translate-y-1/2 flex flex-col items-end gap-0.5 z-20">
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              បូព៌
-                            </span>
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              កើត
-                            </span>
-                          </div>
+                            {/* 3. East Badges (Right) */}
+                            <g transform="translate(366, 200)">
+                              <rect x="-32" y="-22" width="64" height="44" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">បូព៌</text>
+                              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">កើត</text>
+                            </g>
 
-                          {/* 4. SE (Bottom-Right) */}
-                          <div className="absolute bottom-4 right-4 flex flex-col items-end z-20">
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              អាគ្នេយ៍
-                            </span>
-                          </div>
+                            {/* 4. SE Badge (Bottom-Right) */}
+                            <g transform="translate(325, 325)">
+                              <rect x="-34" y="-14" width="68" height="28" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">អាគ្នេយ៍</text>
+                            </g>
 
-                          {/* 5. South (Bottom) */}
-                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 z-20">
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              ត្បូង
-                            </span>
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              ទក្សិណ
-                            </span>
-                          </div>
+                            {/* 5. South Badges (Bottom) */}
+                            <g transform="translate(200, 368)">
+                              <rect x="-34" y="-22" width="68" height="44" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ត្បូង</text>
+                              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ទក្សិណ</text>
+                            </g>
 
-                          {/* 6. SW (Bottom-Left) */}
-                          <div className="absolute bottom-4 left-4 flex flex-col items-start z-20">
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              និរតី
-                            </span>
-                          </div>
+                            {/* 6. SW Badge (Bottom-Left) */}
+                            <g transform="translate(75, 325)">
+                              <rect x="-30" y="-14" width="60" height="28" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">និរតី</text>
+                            </g>
 
-                          {/* 7. West (Left) */}
-                          <div className="absolute top-1/2 left-2 -translate-y-1/2 flex flex-row items-center gap-0.5 z-20">
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              លិច
-                            </span>
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              បស្ចឹម
-                            </span>
-                          </div>
+                            {/* 7. West Badges (Left) */}
+                            <g transform="translate(34, 200)">
+                              <rect x="-32" y="-22" width="64" height="44" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">លិច</text>
+                              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">បស្ចឹម</text>
+                            </g>
 
-                          {/* 8. NW (Top-Left) */}
-                          <div className="absolute top-4 left-4 flex flex-col items-start z-20">
-                            <span className="bg-white text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md whitespace-nowrap">
-                              ពាយ័ព្យ
-                            </span>
-                          </div>
+                            {/* 8. NW Badge (Top-Left) */}
+                            <g transform="translate(75, 75)">
+                              <rect x="-32" y="-14" width="64" height="28" rx="8" fill="#ffffff" stroke="#334155" strokeWidth="2.5" />
+                              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ពាយ័ព្យ</text>
+                            </g>
+                          </svg>
                         </div>
                       </div>
                     </div>
