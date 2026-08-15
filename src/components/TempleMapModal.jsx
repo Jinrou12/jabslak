@@ -780,18 +780,14 @@ export default function TempleMapModal({
       return;
     }
 
-    // Auto-fill location name from tag owner or tag number if user leaves it blank
+    // Auto-fill location name if user leaves it blank (never use tag owner name as location name)
     if (!name) {
-      const matchedTag = allTags.find((t) => String(t.tagNumber).trim() === id);
-      if (matchedTag && matchedTag.name) {
-        name = matchedTag.name;
-      } else {
-        name = `ស្លាកលេខ ${westernToKhmerDigits(id)}`;
-      }
+      name = `ទីតាំង ${id}`;
     }
 
-    // Check duplicate ID
-    const duplicate = currentLocations.find(
+    // Check duplicate ID (use raw base locations, not computed effectiveTab3Locations)
+    const rawBaseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+    const duplicate = rawBaseLocations.find(
       (l) => String(l.id || '').toLowerCase() === String(id || '').toLowerCase() && (!editingLoc || editingLoc.id !== l.id)
     );
     if (duplicate) {
@@ -801,11 +797,21 @@ export default function TempleMapModal({
 
     const { setter, saver } = getTabDataFunctions();
 
+    // IMPORTANT: Always use RAW base locations (not computed effectiveTab3Locations)
+    // to avoid baking computed tagOwnerName/tagNumber into saved data.
+    const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+
+    // Helper: strip computed-only properties before saving to state/Firebase
+    const stripComputed = (loc) => {
+      const { tagOwnerName, tagNumber, ...clean } = loc; // eslint-disable-line no-unused-vars
+      return clean;
+    };
+
     let updated;
     if (editingLoc && !editingLoc.isNew) {
-      updated = currentLocations.map((l) =>
+      updated = baseLocations.map((l) =>
         l.id === editingLoc.id
-          ? {
+          ? stripComputed({
               ...l,
               id: id,
               name: name,
@@ -813,8 +819,8 @@ export default function TempleMapModal({
               type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
               pos: modalForm.pos || 'R',
               category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
-            }
-          : l
+            })
+          : stripComputed(l)
       );
       if (selectedLocation?.id === editingLoc.id) {
         setSelectedLocation({
@@ -838,7 +844,7 @@ export default function TempleMapModal({
         pos: modalForm.pos || 'R',
         category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
       };
-      updated = [...currentLocations, newPoint];
+      updated = [...baseLocations.map(stripComputed), newPoint];
       setSelectedLocation(newPoint);
     }
 
@@ -859,7 +865,9 @@ export default function TempleMapModal({
   const handleDeleteLocation = (id) => {
     if (window.confirm(`តើអ្នកពិតជាចង់លុបទីតាំង #${id} នេះមែនទេ?`)) {
       const { setter, saver } = getTabDataFunctions();
-      const updated = currentLocations.filter((l) => l.id !== id);
+      // Use raw base locations (not computed effectiveTab3Locations) to avoid saving computed props
+      const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+      const updated = baseLocations.filter((l) => l.id !== id);
       setter(updated);
       saver(updated);
       // If Tab 2 delete, also propagate to Tab 3
@@ -936,11 +944,14 @@ export default function TempleMapModal({
     }
 
     const { setter, saver } = getTabDataFunctions();
-    const updated = currentLocations.map((loc) => {
+    // Use raw base locations to avoid saving computed tagOwnerName/tagNumber
+    const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+    const stripComputed2 = ({ tagOwnerName, tagNumber, ...clean }) => clean; // eslint-disable-line no-unused-vars
+    const updated = baseLocations.map((loc) => {
       if (selectedLocationIdsForGroup.includes(loc.id)) {
-        return { ...loc, category: name };
+        return { ...stripComputed2(loc), category: name };
       }
-      return loc;
+      return stripComputed2(loc);
     });
 
     setter(updated);
