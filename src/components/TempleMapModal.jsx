@@ -147,8 +147,9 @@ export default function TempleMapModal({
   onFilterByLocation,
   onAddTagForLocation,
   onSelectTag,
-  isModal = false
+  isModal = true
 }) {
+  const modalMode = isModal || Boolean(onClose);
   const canCustomizeMap = currentUser?.role === 'owner' || currentUser?.role === 'admin';
 
   // Tab 1 & Tab 2 share this state
@@ -161,6 +162,7 @@ export default function TempleMapModal({
   const currentLocations = activeTab === 'tagger' ? tab3Locations : locations;
   const [zoomScale, setZoomScale] = useState(1.0);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
+  const [isDragEnabled, setIsDragEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [openAccordions, setOpenAccordions] = useState({});
@@ -191,11 +193,15 @@ export default function TempleMapModal({
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedLocationIdsForGroup, setSelectedLocationIdsForGroup] = useState([]);
 
-  // Panning & dragging ref
+  // Panning, wheel zoom & dragging ref
   const viewportRef = useRef(null);
   const mapContainerRef = useRef(null);
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+  const hasPannedRef = useRef(false);
+  const touchStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+  const initialPinchDistRef = useRef(null);
+  const initialPinchScaleRef = useRef(1.0);
   const [draggingPinId, setDraggingPinId] = useState(null);
   const pinMovedFlagRef = useRef(false);
 
@@ -285,6 +291,24 @@ export default function TempleMapModal({
     }
   }, [highlightLocationName, locations]);
 
+  // Auto scroll to legend card when selected location changes
+  useEffect(() => {
+    if (selectedLocation) {
+      const catName = selectedLocation.category || (selectedLocation.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+      setOpenAccordions((prev) => ({
+        ...prev,
+        [catName]: true
+      }));
+
+      setTimeout(() => {
+        const el = document.getElementById(`legend-card-${selectedLocation.id}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }, 120);
+    }
+  }, [selectedLocation]);
+
   // Compute tag counts per temple location
   const tagCountsByLocation = useMemo(() => {
     const counts = {};
@@ -310,10 +334,10 @@ export default function TempleMapModal({
     return groups;
   }, [currentLocations]);
 
-  // Zoom handlers
+  // Zoom handlers (clamped between 0.4x and 5.0x)
   const handleZoom = (delta) => {
     setZoomScale((prev) => {
-      const next = Math.max(0.5, Math.min(3.0, parseFloat((prev + delta).toFixed(2))));
+      const next = Math.max(0.4, Math.min(5.0, parseFloat((prev + delta).toFixed(2))));
       return next;
     });
   };
@@ -326,55 +350,141 @@ export default function TempleMapModal({
     }
   };
 
-  // Viewport Panning (Mouse & Touch)
+  // Wheel zoom effect on map viewport box
+  useEffect(() => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+
+    const handleWheel = (e) => {
+      // If Ctrl key is held or zoomed in > 1.05x, handle map zoom
+      if (e.ctrlKey || e.metaKey || zoomScale > 1.05) {
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.15 : -0.15;
+        setZoomScale((prev) => {
+          const next = Math.max(0.4, Math.min(5.0, parseFloat((prev + delta).toFixed(2))));
+          return next;
+        });
+      }
+      // Otherwise allow default page/modal wheel scroll down to location list
+    };
+
+    vp.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      vp.removeEventListener('wheel', handleWheel);
+    };
+  }, [zoomScale]);
+
+  // Viewport Mouse Panning (Works in all tabs & zoom scales)
   const handleMouseDown = (e) => {
-    if (zoomScale <= 1.0 || activeTab === 'tagger') return;
-    if (e.target.closest('.map-pin-element') || e.target.closest('.zoom-toolbar')) return;
+    if (draggingPinId) return;
+    if (e.target.closest('.zoom-toolbar')) return;
+
+    const pinEl = e.target.closest('.map-pin-element');
+    if (pinEl && pinEl.getAttribute('data-draggable') === 'true') {
+      return; // Only draggable pins block map panning
+    }
+
     setIsPanning(true);
+    hasPannedRef.current = false;
     panStartRef.current = {
-      x: e.pageX - viewportRef.current.offsetLeft,
-      y: e.pageY - viewportRef.current.offsetTop,
-      scrollLeft: viewportRef.current.scrollLeft,
-      scrollTop: viewportRef.current.scrollTop
+      x: e.clientX,
+      y: e.clientY,
+      scrollLeft: viewportRef.current ? viewportRef.current.scrollLeft : 0,
+      scrollTop: viewportRef.current ? viewportRef.current.scrollTop : 0
     };
   };
 
   const handleMouseMove = (e) => {
-    if (!isPanning || draggingPinId || zoomScale <= 1.0) return;
-    e.preventDefault();
-    const x = e.pageX - viewportRef.current.offsetLeft;
-    const y = e.pageY - viewportRef.current.offsetTop;
-    const walkX = (x - panStartRef.current.x) * 1.5;
-    const walkY = (y - panStartRef.current.y) * 1.5;
-    viewportRef.current.scrollLeft = panStartRef.current.scrollLeft - walkX;
-    viewportRef.current.scrollTop = panStartRef.current.scrollTop - walkY;
+    if (!isPanning || draggingPinId || !viewportRef.current) return;
+
+    const dx = e.clientX - panStartRef.current.x;
+    const dy = e.clientY - panStartRef.current.y;
+
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+      hasPannedRef.current = true;
+      pinMovedFlagRef.current = true;
+    }
+
+    viewportRef.current.scrollLeft = panStartRef.current.scrollLeft - dx;
+    viewportRef.current.scrollTop = panStartRef.current.scrollTop - dy;
   };
 
   const handleMouseUp = () => {
-    setIsPanning(false);
+    if (isPanning) {
+      setIsPanning(false);
+      if (hasPannedRef.current) {
+        setTimeout(() => {
+          pinMovedFlagRef.current = false;
+        }, 100);
+      }
+    }
   };
 
-  // Touch Panning
-  const touchStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
+  // Touch Panning (1 finger) & Pinch Zooming (2 fingers)
   const handleTouchStart = (e) => {
-    if (zoomScale <= 1.0 || activeTab === 'tagger') return;
-    if (e.target.closest('.map-pin-element') || e.target.closest('.zoom-toolbar')) return;
-    const touch = e.touches[0];
-    touchStartRef.current = {
-      x: touch.pageX,
-      y: touch.pageY,
-      scrollLeft: viewportRef.current.scrollLeft,
-      scrollTop: viewportRef.current.scrollTop
-    };
+    if (draggingPinId) return;
+    if (e.target.closest('.zoom-toolbar')) return;
+
+    const pinEl = e.target.closest('.map-pin-element');
+    if (pinEl && pinEl.getAttribute('data-draggable') === 'true') {
+      return; // Only draggable pins block map panning
+    }
+
+    if (e.touches.length === 1) {
+      setIsPanning(true);
+      hasPannedRef.current = false;
+      const touch = e.touches[0];
+      touchStartRef.current = {
+        x: touch.clientX,
+        y: touch.clientY,
+        scrollLeft: viewportRef.current ? viewportRef.current.scrollLeft : 0,
+        scrollTop: viewportRef.current ? viewportRef.current.scrollTop : 0
+      };
+    } else if (e.touches.length === 2) {
+      setIsPanning(false);
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      initialPinchDistRef.current = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      initialPinchScaleRef.current = zoomScale;
+    }
   };
 
   const handleTouchMove = (e) => {
-    if (!touchStartRef.current.x || draggingPinId || zoomScale <= 1.0) return;
-    const touch = e.touches[0];
-    const dx = touch.pageX - touchStartRef.current.x;
-    const dy = touch.pageY - touchStartRef.current.y;
-    viewportRef.current.scrollLeft = touchStartRef.current.scrollLeft - dx;
-    viewportRef.current.scrollTop = touchStartRef.current.scrollTop - dy;
+    if (draggingPinId || !viewportRef.current) return;
+
+    if (e.touches.length === 1 && touchStartRef.current.x) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStartRef.current.x;
+      const dy = touch.clientY - touchStartRef.current.y;
+
+      if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+        hasPannedRef.current = true;
+        pinMovedFlagRef.current = true;
+      }
+
+      if (zoomScale > 1.0) {
+        viewportRef.current.scrollLeft = touchStartRef.current.scrollLeft - dx;
+        viewportRef.current.scrollTop = touchStartRef.current.scrollTop - dy;
+      }
+    } else if (e.touches.length === 2 && initialPinchDistRef.current) {
+      if (e.cancelable) e.preventDefault();
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+      const scaleFactor = dist / initialPinchDistRef.current;
+      const nextScale = Math.max(0.4, Math.min(5.0, parseFloat((initialPinchScaleRef.current * scaleFactor).toFixed(2))));
+      setZoomScale(nextScale);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    setIsPanning(false);
+    initialPinchDistRef.current = null;
+    if (hasPannedRef.current) {
+      setTimeout(() => {
+        pinMovedFlagRef.current = false;
+      }, 100);
+    }
   };
 
   // Map Click in Tab 2 or Tab 3 (Add new pin)
@@ -428,8 +538,7 @@ export default function TempleMapModal({
 
   // Ultra-Precise Pin Dragging (Synchronizes to Cloud on End)
   const handlePinDragStart = (e, loc) => {
-    if (!canCustomizeMap) return;
-    if (activeTab !== 'tagger' && activeTab !== 'interactive') return;
+    if (!isDragEnabled) return;
 
     e.stopPropagation();
     pinMovedFlagRef.current = false;
@@ -740,12 +849,12 @@ export default function TempleMapModal({
         selectedCategory === 'all' || (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === selectedCategory;
       return matchesSearch && matchesCat;
     });
-  }, [locations, searchQuery, selectedCategory]);
+  }, [currentLocations, searchQuery, selectedCategory]);
 
   const mainContainer = (
     <div
       className={`w-full max-w-7xl mx-auto bg-slate-900 border border-amber-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100 font-kantumruy ${
-        isModal ? 'max-h-[96vh] sm:max-h-[92vh]' : 'min-h-[75vh] my-2'
+        modalMode ? 'max-h-[96vh] sm:max-h-[92vh] h-full' : 'min-h-[75vh] my-2'
       }`}
       onClick={(e) => e.stopPropagation()}
       style={{
@@ -823,12 +932,44 @@ export default function TempleMapModal({
             </button>
           </div>
 
-          {/* Eye Toggle & Zoom Indicator */}
-          <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 text-xs">
-            <div className="flex items-center gap-1 text-[11px] text-slate-400">
-              <Move className="w-3 h-3 text-amber-400" />
-              <span>{zoomScale > 1.0 ? 'អូស Pan ផែនទី' : 'ចុច + ដើម្បី Zoom'}</span>
+          {/* Eye Toggle & Zoom Controls Indicator */}
+          <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 text-xs flex-wrap">
+            {/* Quick Zoom Preset Buttons */}
+            <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+              <span className="text-[11px] text-slate-400 font-bold px-1 hidden sm:inline">Zoom:</span>
+              {[0.5, 0.75, 1.0, 1.5, 2.0, 3.0].map((scaleVal) => (
+                <button
+                  key={scaleVal}
+                  onClick={() => setZoomScale(scaleVal)}
+                  className={`px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
+                    zoomScale === scaleVal
+                      ? 'bg-amber-500 text-slate-950 shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                  }`}
+                >
+                  {Math.round(scaleVal * 100)}%
+                </button>
+              ))}
             </div>
+
+            <div className="flex items-center gap-1 text-[11px] text-slate-400 hidden md:flex">
+              <Move className="w-3 h-3 text-amber-400" />
+              <span>អូស Pan ផែនទី | Wheel/Pinch Zoom</span>
+            </div>
+
+            {/* Drag Mode Toggle Button */}
+            <button
+              onClick={() => setIsDragEnabled(!isDragEnabled)}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-xl border text-xs font-bold transition-all shadow-sm ${
+                isDragEnabled
+                  ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-amber-500/20 ring-1 ring-amber-400'
+                  : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+              }`}
+              title={isDragEnabled ? 'ចុចដើម្បីបិទការរំកិល Pin' : 'ចុចដើម្បីបើកសិទ្ធិរំកិល Pin ដោយដៃ'}
+            >
+              <Move className="w-3.5 h-3.5" />
+              <span>{isDragEnabled ? '🖐️ រំកិល Pin ៖ បើក (ON)' : '🖐️ រំកិល Pin ៖ បិទ (OFF)'}</span>
+            </button>
 
             <button
               onClick={() => setIsPinsVisible(!isPinsVisible)}
@@ -885,7 +1026,7 @@ export default function TempleMapModal({
         <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3">
           
           {/* MAP CANVAS CONTAINER */}
-          <div className="relative rounded-2xl border-2 border-slate-700 bg-white overflow-hidden shadow-inner">
+          <div className="relative rounded-2xl border-2 border-slate-700 bg-slate-950 overflow-hidden shadow-inner">
             
             {/* Viewport Box */}
             <div
@@ -893,21 +1034,24 @@ export default function TempleMapModal({
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
-              className={`relative w-full select-none ${
-                zoomScale > 1.0 ? (isPanning ? 'overflow-auto cursor-grabbing' : 'overflow-auto cursor-grab') : 'overflow-hidden cursor-default'
+              onTouchEnd={handleTouchEnd}
+              className={`relative w-full overflow-auto select-none ${
+                isPanning ? 'cursor-grabbing' : 'cursor-grab'
               }`}
               style={{
-                maxHeight: zoomScale > 1.0 ? 'min(65vh, 580px)' : 'none',
-                scrollBehavior: 'smooth'
+                height: 'min(62vh, 600px)',
+                minHeight: '380px',
+                touchAction: zoomScale > 1.0 ? 'none' : 'pan-y'
               }}
             >
-              {/* Scalable Map Box: Fits 100% at 1x */}
+              {/* Scalable Map Box */}
               <div
                 ref={mapContainerRef}
                 onClick={handleMapClick}
-                className="relative w-full mx-auto transition-transform duration-150 origin-center"
+                className="relative w-full mx-auto origin-top-left transition-[width] duration-150"
                 style={{
                   width: `${zoomScale * 100}%`,
                   minWidth: '100%'
@@ -956,7 +1100,7 @@ export default function TempleMapModal({
 
                       const isGate = loc.type === 'gate';
                       const isCurrentlyDragging = draggingPinId === loc.id;
-                      const canDragThisPin = (activeTab === 'interactive' || activeTab === 'tagger') && !isCategoryLocked;
+                      const canDragThisPin = isDragEnabled && !isCategoryLocked;
                       
                       const pos = loc.pos || (loc.x > 75 ? 'L' : 'R');
 
@@ -972,6 +1116,7 @@ export default function TempleMapModal({
                         >
                           {/* Central Anchor Wrapper: Center is locked exactly at (loc.x, loc.y) */}
                           <div
+                            data-draggable={canDragThisPin ? 'true' : 'false'}
                             onMouseDown={(e) => canDragThisPin && handlePinDragStart(e, loc)}
                             onTouchStart={(e) => canDragThisPin && handlePinDragStart(e, loc)}
                             onClick={(e) => {
@@ -984,7 +1129,7 @@ export default function TempleMapModal({
                             className={`map-pin-element relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 transition-transform duration-100 ${
                               canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-125' : 'cursor-pointer hover:scale-115'
                             } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-40' : 'z-20'}`}
-                            style={{ touchAction: 'none' }}
+                            style={{ touchAction: canDragThisPin ? 'none' : 'auto' }}
                           >
                             {/* Exact Mathematical Pin Badge Center (Rendered in ALL Tabs) */}
                             <div
@@ -1048,27 +1193,31 @@ export default function TempleMapModal({
             </div>
 
             {/* ════════ FLOATING ZOOM CONTROLS ════════ */}
-            <div className="zoom-toolbar absolute bottom-3 right-3 flex flex-col gap-1.5 z-30">
+            <div className="zoom-toolbar absolute bottom-3 right-3 flex flex-col items-center gap-1.5 z-30 font-kantumruy">
+              <div className="bg-slate-950/90 text-amber-400 border border-amber-500/50 px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-bold text-center shadow-lg backdrop-blur-md">
+                {Math.round(zoomScale * 100)}%
+              </div>
+
               <button
                 onClick={() => handleZoom(0.25)}
-                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95"
-                title="ពង្រីក (Zoom In)"
+                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95 backdrop-blur-md"
+                title="ពង្រីក (Zoom In +)"
               >
                 <ZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
               <button
                 onClick={() => handleZoom(-0.25)}
-                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95"
-                title="បង្រួម (Zoom Out)"
+                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95 backdrop-blur-md"
+                title="បង្រួម (Zoom Out -)"
               >
                 <ZoomOut className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
               <button
                 onClick={handleResetZoom}
-                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95"
-                title="កំណត់ដើម (Reset Scale)"
+                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95 backdrop-blur-md"
+                title="កំណត់ដើម 100% (Reset)"
               >
                 <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
@@ -1412,6 +1561,7 @@ export default function TempleMapModal({
 
                           return (
                             <div
+                              id={`legend-card-${loc.id}`}
                               key={loc.id}
                               onClick={() => {
                                 setSelectedLocation(loc);
@@ -1751,7 +1901,7 @@ export default function TempleMapModal({
       </div>
   );
 
-  if (isModal) {
+  if (modalMode) {
     return (
       <div
         className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-200"
