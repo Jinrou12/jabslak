@@ -149,6 +149,8 @@ export function getPinSizeClasses(size) {
     default:
       return 'w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6 text-[8px] sm:text-[9px] md:text-[10px] sm:border-2';
   }
+}
+
 export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger') {
   if (!loc) return '';
   if (activeTab === 'labeled') return loc.name;
