@@ -404,47 +404,32 @@ export default function TempleMapModal({
     if (highlightLocationName) {
       setActiveTab('tagger');
       const searchTarget = String(highlightLocationName).toLowerCase().trim();
-      const khmerTarget = westernToKhmerDigits(searchTarget);
+      const westernTarget = khmerToWesternDigits(searchTarget);
 
-      // Search in tab3Locations by matching tag owner name, tag number, or location name/id
-      const match = tab3Locations.find((l) => {
-        const pinIdStr = String(l.id || '').toLowerCase().trim();
+      // Search in effectiveTab3Locations (which has person names)
+      const match = effectiveTab3Locations.find((l) => {
+        const pinIdStr = String(l.id || '').trim();
         const pinNameStr = String(l.name || '').toLowerCase().trim();
-
-        // Check if any tag in allTags matches this pin AND matches searchTarget
-        const matchedTag = allTags.find((t) => {
-          const tName = String(t.name || '').toLowerCase().trim();
-          const tNoStr = String(t.tagNumber || '').trim();
-          const tKhmerNo = westernToKhmerDigits(t.tagNumber);
-          const tLoc = String(t.baseLocation || t.location || '').toLowerCase().trim();
-
-          const isThisPin = (tNoStr === pinIdStr || tKhmerNo === pinIdStr || tLoc === pinIdStr || tLoc === pinNameStr);
-          const matchesSearch = (tName.includes(searchTarget) || searchTarget.includes(tName) || tNoStr === searchTarget || tKhmerNo === searchTarget || searchTarget === tLoc);
-
-          return isThisPin && matchesSearch;
-        });
-
-        if (matchedTag) return true;
 
         return (
           pinNameStr === searchTarget ||
-          searchTarget.includes(pinNameStr) ||
           pinNameStr.includes(searchTarget) ||
+          searchTarget.includes(pinNameStr) ||
           pinIdStr === searchTarget ||
-          pinIdStr === khmerTarget
+          pinIdStr === westernTarget
         );
       }) || locations.find((l) => {
-        const pinIdStr = String(l.id || '').toLowerCase().trim();
+        const pinIdStr = String(l.id || '').trim();
         const pinNameStr = String(l.name || '').toLowerCase().trim();
-        return pinIdStr === searchTarget || pinIdStr === khmerTarget || pinNameStr.includes(searchTarget);
+        return pinNameStr.includes(searchTarget) || pinIdStr === searchTarget;
       });
 
-      const targetLoc = match || tab3Locations[0] || locations[0];
+      const targetLoc = match || effectiveTab3Locations[0] || locations[0];
       if (targetLoc) {
         setSelectedLocation(targetLoc);
       }
     }
-  }, [highlightLocationName, tab3Locations, locations, allTags]);
+  }, [highlightLocationName, effectiveTab3Locations, locations]);
 
   // Auto scroll to legend card & smooth zoom camera to target location on map
   useEffect(() => {
@@ -1596,7 +1581,7 @@ export default function TempleMapModal({
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs text-amber-400 font-bold font-moul truncate">
-                        {selectedLocation.name}
+                        {getDisplayPinName(selectedLocation, allTags, activeTab)}
                       </div>
                       <div className="text-[10px] text-slate-400 truncate">
                         {selectedLocation.category || '🏢 ក្រុមអគារ និង កុដិ'}
