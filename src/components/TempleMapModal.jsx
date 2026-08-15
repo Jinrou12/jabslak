@@ -1024,26 +1024,21 @@ export default function TempleMapModal({
                   className="w-full h-auto block pointer-events-none"
                 />
 
-                {/* ════════ TRANSPARENT PNG-STYLE KHMER COMPASS ROSE ════════ */}
+                {/* ════════ PURE TRANSPARENT PNG KHMER COMPASS ROSE ════════ */}
                 <div className="absolute inset-0 pointer-events-none z-10">
                   {isCompassVisible && (
                     <div className="absolute top-3 right-3 pointer-events-auto z-30 transition-all hover:scale-[1.02]">
-                      <div className="bg-slate-950/60 border border-amber-500/40 rounded-3xl p-2 sm:p-2.5 shadow-2xl backdrop-blur-md flex flex-col items-center select-none text-white font-kantumruy">
-                        {/* Header Bar */}
-                        <div className="flex items-center justify-between w-full mb-1 border-b border-amber-500/30 pb-1 gap-2">
-                          <span className="text-xs sm:text-sm font-moul font-bold text-amber-300 flex items-center gap-1.5 drop-shadow">
-                            🧭 ត្រីវិស័យទិសទាំង ៨
-                          </span>
-                          <button
-                            onClick={() => setIsCompassExpanded(!isCompassExpanded)}
-                            className="text-[10px] sm:text-xs bg-slate-800/80 hover:bg-slate-700 text-amber-200 font-bold px-2 py-0.5 rounded-lg transition-all border border-amber-500/40 shadow-sm"
-                          >
-                            {isCompassExpanded ? '➖ បង្រួម' : '🔍 ពង្រីក'}
-                          </button>
-                        </div>
+                      <div className="flex flex-col items-center select-none bg-transparent font-kantumruy">
+                        {/* Compact Expand/Collapse Button */}
+                        <button
+                          onClick={() => setIsCompassExpanded(!isCompassExpanded)}
+                          className="self-end mb-1 text-[10px] sm:text-xs bg-slate-900/80 hover:bg-slate-800 text-amber-300 font-bold px-2 py-0.5 rounded-full transition-all border border-amber-500/50 shadow-md backdrop-blur-sm"
+                        >
+                          {isCompassExpanded ? '➖ បង្រួម' : '🔍 ពង្រីកត្រីវិស័យ'}
+                        </button>
 
-                        {/* Transparent PNG-Style Compass Canvas */}
-                        <div className={`relative flex items-center justify-center transition-all overflow-hidden bg-transparent ${
+                        {/* Pure 100% Transparent PNG Compass Canvas */}
+                        <div className={`relative flex items-center justify-center transition-all bg-transparent ${
                           isCompassExpanded ? 'w-64 h-64 sm:w-80 sm:h-80' : 'w-48 h-48 sm:w-56 sm:h-56'
                         }`}>
                           <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-2xl select-none">
