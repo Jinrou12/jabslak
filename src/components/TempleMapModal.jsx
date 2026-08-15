@@ -773,48 +773,12 @@ export default function TempleMapModal({
             </div>
           </div>
 
-          {/* Quick Header Actions (Customize Map - Owner & Admin Only) */}
+          {/* Quick Header Actions (Close Button) */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {canCustomizeMap && (
-              <>
-                <button
-                  onClick={handleOpenAddModal}
-                  className="p-1.5 sm:px-2.5 sm:py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl border border-emerald-400/50 shadow-md shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-1"
-                  title="បន្ថែមទីតាំងថ្មីលើផែនទី"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">បន្ថែមទីតាំង</span>
-                </button>
-
-                <button
-                  onClick={handleResetLocations}
-                  className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 transition-all active:scale-95 flex items-center gap-1"
-                  title="កំណត់ទីតាំងដើមឡើងវិញ"
-                >
-                  <RotateCcw className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="hidden md:inline">Reset ដើម</span>
-                </button>
-
-                <button
-                  onClick={handleExportJSON}
-                  className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 transition-all active:scale-95 flex items-center gap-1"
-                  title="ទាញយក File JSON នៃទីតាំង"
-                >
-                  <Download className="w-3.5 h-3.5 text-sky-400" />
-                  <span className="hidden md:inline">នាំចេញ</span>
-                </button>
-
-                <label className="p-1.5 sm:px-2.5 sm:py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium rounded-xl border border-slate-700 cursor-pointer transition-all active:scale-95 flex items-center gap-1">
-                  <Upload className="w-3.5 h-3.5 text-emerald-400" />
-                  <span className="hidden md:inline">នាំចូល</span>
-                  <input type="file" accept=".json" onChange={handleImportJSON} className="hidden" />
-                </label>
-              </>
-            )}
-
             <button
               onClick={onClose}
               className="p-1.5 sm:p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full transition-all ml-0.5"
+              title="បិទផែនទី"
             >
               <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
