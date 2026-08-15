@@ -45,7 +45,7 @@ import {
   subscribeToGroupSettings,
   saveGroupSettingsToFirebase
 } from '../utils/firebase';
-import { westernToKhmerDigits } from '../utils/khmerSearch';
+import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
 
 const PIN_COLOR_GRADIENTS = [
   'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60',       // 1: Cyan Sky
