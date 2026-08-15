@@ -1329,20 +1329,18 @@ export default function TempleMapModal({
                             } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-50' : 'z-20'}`}
                             style={{ touchAction: canDragThisPin ? 'none' : 'auto' }}
                           >
-                            {/* Mathematically Scaled Pin Badge (Dynamic Circle Size & Proportional Centered Khmer Digits) */}
+                            {/* Pure Vector SVG Pin Badge - 100% Mathematically Centered on PC, iPhone & Android */}
                             {(() => {
                               const idStr = String(loc.id || '');
-                              const fontRatio = idStr.length > 2 ? 0.35 : idStr.length > 1 ? 0.44 : 0.55;
-                              const computedFontSize = Math.max(4.0, Math.round(currentPinSize * fontRatio));
+                              const svgFontSize = idStr.length > 2 ? 10 : idStr.length > 1 ? 12.5 : 16.5;
 
                               return (
                                 <div
                                   style={{
                                     width: `${currentPinSize}px`,
-                                    height: `${currentPinSize}px`,
-                                    fontSize: `${computedFontSize}px`
+                                    height: `${currentPinSize}px`
                                   }}
-                                  className={`rounded-full flex items-center justify-center font-sans font-black leading-none text-center border border-white/90 shrink-0 z-10 overflow-hidden select-none ${getPinBadgeColorClass(
+                                  className={`rounded-full flex items-center justify-center border border-white/90 shrink-0 z-10 overflow-hidden select-none shadow-md ${getPinBadgeColorClass(
                                     loc,
                                     locIdx
                                   )} ${
@@ -1351,9 +1349,22 @@ export default function TempleMapModal({
                                       : ''
                                   }`}
                                 >
-                                  <span className="flex items-center justify-center leading-none text-center transform translate-y-[0.5px]">
-                                    {loc.id}
-                                  </span>
+                                  <svg viewBox="0 0 32 32" className="w-full h-full overflow-hidden block">
+                                    <text
+                                      x="16"
+                                      y="16.5"
+                                      textAnchor="middle"
+                                      dominantBaseline="central"
+                                      fontSize={svgFontSize}
+                                      fontWeight="900"
+                                      fill="currentColor"
+                                      style={{
+                                        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                      }}
+                                    >
+                                      {loc.id}
+                                    </text>
+                                  </svg>
                                 </div>
                               );
                             })()}
