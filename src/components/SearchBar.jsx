@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, Filter, LayoutGrid, List, UserCheck } from 'lucide-react';
+import { Search, X, Filter, LayoutGrid, List, UserCheck, Map as MapIcon } from 'lucide-react';
 import { locationsList } from '../data/sampleData';
 
 export default function SearchBar({
@@ -11,7 +11,7 @@ export default function SearchBar({
   setViewMode
 }) {
   return (
-    <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 md:p-4 shadow-xl backdrop-blur-md">
+    <div className="sticky top-0 sm:top-2 z-30 bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 md:p-4 shadow-2xl backdrop-blur-xl transition-all">
       
       {/* Search Input Box & View Switcher */}
       <div className="flex items-center gap-2">
@@ -79,6 +79,19 @@ export default function SearchBar({
           >
             <UserCheck className="w-4 h-4" />
             <span className="hidden sm:inline">របាយការណ៍</span>
+          </button>
+
+          <button
+            onClick={() => setViewMode('map')}
+            className={`p-2 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all ${
+              viewMode === 'map'
+                ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
+                : 'text-amber-400 hover:text-amber-200'
+            }`}
+            title="ទម្រង់ផែនទីវត្ត (Temple Map)"
+          >
+            <MapIcon className="w-4 h-4" />
+            <span className="hidden sm:inline">ផែនទី</span>
           </button>
         </div>
       </div>

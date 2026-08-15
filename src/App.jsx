@@ -119,7 +119,7 @@ export default function App() {
   // Handle open map focused on a location
   const handleOpenMapWithLocation = (locName) => {
     setTempleMapTargetLoc(locName);
-    setIsTempleMapOpen(true);
+    setViewMode('map');
   };
 
   // Attendance Toggle Handler ("គ្រីសអ្នកបានមកដល់")
@@ -317,7 +317,7 @@ export default function App() {
         onOpenMobileConnect={() => setIsMobileConnectOpen(true)}
         onOpenTempleMap={() => {
           setTempleMapTargetLoc(null);
-          setIsTempleMapOpen(true);
+          setViewMode('map');
         }}
         onOpenRoleManagement={() => setIsRoleManagementOpen(true)}
         onOpenLoginModal={() => setIsLoginModalOpen(true)}
@@ -338,8 +338,39 @@ export default function App() {
           setViewMode={setViewMode}
         />
 
-        {/* Main View Mode (Report Inline View vs Grid vs Table) */}
-        {viewMode === 'report' ? (
+        {/* Main View Mode (Map Inline View vs Report Inline View vs Grid vs Table) */}
+        {viewMode === 'map' ? (
+          <div className="pb-12">
+            <TempleMapModal
+              allTags={tags}
+              currentUser={currentUser}
+              highlightLocationName={templeMapTargetLoc}
+              onClose={() => {
+                setViewMode('grid');
+                setTempleMapTargetLoc(null);
+              }}
+              onFilterByLocation={(locName) => {
+                setSelectedLocation(locName);
+                setViewMode('grid');
+                showToast(`បានច្រោះបញ្ជីស្លាកលេខតាម៖ ${locName}`);
+              }}
+              onAddTagForLocation={(locName) => {
+                if (currentUser?.role === 'assistant' || currentUser?.role === 'guest') {
+                  alert('សិទ្ធិ Assistant និង Guest មិនអាចបន្ថែមស្លាកលេខថ្មីបានទេ!');
+                  return;
+                }
+                setEditingTag({
+                  locationPreset: locName,
+                  location: locName,
+                  tagNumber: nextAvailableTagNumber
+                });
+                setIsFormOpen(true);
+              }}
+              onSelectTag={(t) => setSelectedTag(t)}
+              isModal={false}
+            />
+          </div>
+        ) : viewMode === 'report' ? (
           <div className="pb-12">
             <AttendanceReportView
               allTags={tags}
@@ -445,7 +476,7 @@ export default function App() {
           onSave={handleSaveTag}
           nextAvailableNumber={nextAvailableTagNumber}
           onOpenTempleMap={() => {
-            setIsTempleMapOpen(true);
+            setViewMode('map');
           }}
           onOpenImportExport={() => {
             setIsFormOpen(false);

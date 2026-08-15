@@ -145,7 +145,9 @@ export default function TempleMapModal({
   currentUser,
   highlightLocationName = null,
   onFilterByLocation,
-  onAddTagForLocation
+  onAddTagForLocation,
+  onSelectTag,
+  isModal = false
 }) {
   const canCustomizeMap = currentUser?.role === 'owner' || currentUser?.role === 'admin';
 
@@ -740,18 +742,16 @@ export default function TempleMapModal({
     });
   }, [locations, searchQuery, selectedCategory]);
 
-  return (
+  const mainContainer = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-200"
-      onClick={onClose}
+      className={`w-full max-w-7xl mx-auto bg-slate-900 border border-amber-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100 font-kantumruy ${
+        isModal ? 'max-h-[96vh] sm:max-h-[92vh]' : 'min-h-[75vh] my-2'
+      }`}
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        boxShadow: '0 0 80px rgba(245,158,11,0.12), 0 25px 50px -12px rgba(0,0,0,0.8)'
+      }}
     >
-      <div
-        className="w-full max-w-5xl max-h-[96vh] sm:max-h-[92vh] bg-slate-900 border border-amber-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100 font-kantumruy"
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          boxShadow: '0 0 80px rgba(245,158,11,0.12), 0 25px 50px -12px rgba(0,0,0,0.8)'
-        }}
-      >
         {/* ═══════════════ MODAL HEADER ═══════════════ */}
         <div className="px-4 sm:px-5 py-3 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 flex items-center justify-between gap-2 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
@@ -881,29 +881,21 @@ export default function TempleMapModal({
         </div>
 
         {/* ════════ TAB 3 ADMIN / OWNER STATUS BANNER ════════ */}
-        {activeTab === 'tagger' && (
+        {activeTab === 'tagger' && canCustomizeMap && (
           <div className="px-3 sm:px-5 py-2 bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/15 border-b border-amber-500/30 flex items-center justify-between gap-2 shrink-0 flex-wrap">
             <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-amber-300">
               <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
-              {canCustomizeMap ? (
-                <span>
-                  👑 <strong className="text-amber-400 font-moul">សិទ្ធិ Admin & Owner</strong> ៖ ចុចលើរូបភាពផែនទី ឬ អូស Pin ដើម្បីដៅទីតាំងស្លាកលេខដោយដៃផ្ទាល់ ( Realtime Cloud Sync )
-                </span>
-              ) : (
-                <span>
-                  🔒 <strong className="text-amber-400 font-moul">របៀបមើល</strong> ៖ មានតែ Admin & Owner ទើបអាចដៅ ឬកែប្រែទីតាំងស្លាកលេខលើ Map ដោយដៃផ្ទាល់
-                </span>
-              )}
+              <span>
+                👑 <strong className="text-amber-400 font-moul">សិទ្ធិ Admin & Owner</strong> ៖ ចុចលើរូបភាពផែនទី ឬ អូស Pin ដើម្បីដៅទីតាំងស្លាកលេខដោយដៃផ្ទាល់
+              </span>
             </div>
-            {canCustomizeMap && (
-              <button
-                onClick={handleOpenAddModal}
-                className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center gap-1"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>ដៅទីតាំងថ្មីដោយដៃ</span>
-              </button>
-            )}
+            <button
+              onClick={handleOpenAddModal}
+              className="px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all shrink-0 flex items-center gap-1"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>ដៅទីតាំងថ្មីដោយដៃ</span>
+            </button>
           </div>
         )}
 
@@ -1793,6 +1785,18 @@ export default function TempleMapModal({
           </div>
         )}
       </div>
-    </div>
   );
+
+  if (isModal) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-xl animate-in fade-in duration-200"
+        onClick={onClose}
+      >
+        {mainContainer}
+      </div>
+    );
+  }
+
+  return mainContainer;
 }
