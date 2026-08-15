@@ -1332,7 +1332,7 @@ export default function TempleMapModal({
                             {/* Pure Vector SVG Pin Badge - 100% Mathematically Centered on PC, iPhone & Android */}
                             {(() => {
                               const idStr = String(loc.id || '');
-                              const svgFontSize = idStr.length > 2 ? 10 : idStr.length > 1 ? 12.5 : 16.5;
+                              const svgFontSize = idStr.length > 2 ? 9.5 : idStr.length > 1 ? 11.5 : 15.5;
 
                               return (
                                 <div
@@ -1352,14 +1352,14 @@ export default function TempleMapModal({
                                   <svg viewBox="0 0 32 32" className="w-full h-full overflow-hidden block">
                                     <text
                                       x="16"
-                                      y="16.5"
+                                      y="16.2"
                                       textAnchor="middle"
                                       dominantBaseline="central"
                                       fontSize={svgFontSize}
-                                      fontWeight="900"
+                                      fontWeight="700"
                                       fill="currentColor"
                                       style={{
-                                        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
+                                        fontFamily: '"Kantumruy Pro", "Battambang", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
                                       }}
                                     >
                                       {loc.id}
