@@ -139,6 +139,18 @@ export function getPinBadgeColorClass(loc, idx = 0) {
   return PIN_COLOR_GRADIENTS[colorIdx];
 }
 
+export function getPinSizeClasses(size) {
+  switch (size) {
+    case 'small':
+      return 'w-3.5 h-3.5 sm:w-4 sm:h-4 text-[7px] sm:text-[8px] sm:border';
+    case 'large':
+      return 'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-[10px] sm:text-[11px] md:text-[12px] border-2';
+    case 'normal':
+    default:
+      return 'w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6 text-[8px] sm:text-[9px] md:text-[10px] sm:border-2';
+  }
+}
+
 export default function TempleMapModal({
   onClose,
   allTags = [],
@@ -161,6 +173,10 @@ export default function TempleMapModal({
   // Computed: which locations array to use based on active tab
   const currentLocations = activeTab === 'tagger' ? tab3Locations : locations;
   const [zoomScale, setZoomScale] = useState(1.0);
+  const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin size in px
+  const [selectedSizeGroup, setSelectedSizeGroup] = useState('all'); // 'all' | categoryName
+  const [groupPinSizes, setGroupPinSizes] = useState({}); // { [catName]: sizeInPx }
+  const [isLabelsVisible, setIsLabelsVisible] = useState(true);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
   const [isCompassVisible, setIsCompassVisible] = useState(true);
   const [isCompassExpanded, setIsCompassExpanded] = useState(false);
@@ -206,6 +222,16 @@ export default function TempleMapModal({
   const initialPinchScaleRef = useRef(1.0);
   const [draggingPinId, setDraggingPinId] = useState(null);
   const pinMovedFlagRef = useRef(false);
+
+  // Mobile Responsiveness Auto-Tuning: Default zoom & compact view for mobile screens
+  useEffect(() => {
+    const isMobile = window.innerWidth < 640;
+    if (isMobile) {
+      setZoomScale(1.35); // Expand map to fill phone screen edge-to-edge
+      setPinSizePx(12);   // Sleek compact 12px pins for mobile
+      setIsLabelsVisible(false); // Hide text clutter by default on mobile so map stays super clean
+    }
+  }, []);
 
   // ════════ REAL-TIME CLOUD SYNC FOR PC & PHONE ════════
   // Tab 1 & Tab 2 share this subscription
@@ -311,6 +337,7 @@ export default function TempleMapModal({
     }
   }, [selectedLocation]);
 
+
   // Compute tag counts per temple location
   const tagCountsByLocation = useMemo(() => {
     const counts = {};
@@ -345,7 +372,8 @@ export default function TempleMapModal({
   };
 
   const handleResetZoom = () => {
-    setZoomScale(1.0);
+    const isMobile = window.innerWidth < 640;
+    setZoomScale(isMobile ? 1.35 : 1.0);
     if (viewportRef.current) {
       viewportRef.current.scrollLeft = 0;
       viewportRef.current.scrollTop = 0;
@@ -897,45 +925,158 @@ export default function TempleMapModal({
         </div>
 
         {/* ═══════════════ TAB CONTROLS & SUB-NAV ═══════════════ */}
-        <div className="px-3 sm:px-5 py-2 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2 shrink-0">
-          {/* Tab buttons */}
-          <div className="flex items-center bg-slate-900 p-0.5 sm:p-1 rounded-2xl border border-slate-800 w-full sm:w-auto justify-between sm:justify-start">
+        <div className="px-2 sm:px-5 py-1.5 sm:py-2 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 shrink-0">
+          {/* Tab buttons (Scrollable on small mobile screens) */}
+          <div className="flex items-center bg-slate-900 p-0.5 sm:p-1 rounded-2xl border border-slate-800 w-full sm:w-auto overflow-x-auto no-scrollbar justify-start">
             <button
               onClick={() => setActiveTab('labeled')}
-              className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all ${
+              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap ${
                 activeTab === 'labeled'
                   ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🖼️ ផ្ទាំងទី១ ៖ ប្លង់មានឈ្មោះ</span>
+              <span className="sm:hidden">🖼️ ផ្ទាំងទី១</span>
+              <span className="hidden sm:inline">🖼️ ផ្ទាំងទី១ ៖ ប្លង់មានឈ្មោះ</span>
             </button>
 
             <button
               onClick={() => setActiveTab('interactive')}
-              className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all ${
+              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap ${
                 activeTab === 'interactive'
                   ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>📍 ផ្ទាំងទី២ ៖ អន្តរកម្ម</span>
+              <span className="sm:hidden">📍 ផ្ទាំងទី២</span>
+              <span className="hidden sm:inline">📍 ផ្ទាំងទី២ ៖ អន្តរកម្ម</span>
             </button>
 
             <button
               onClick={() => setActiveTab('tagger')}
-              className={`flex-1 sm:flex-initial px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all ${
+              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap ${
                 activeTab === 'tagger'
                   ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <span>🏷️ ផ្ទាំងទី៣ ៖ ដៅស្លាកលេខលើ Map</span>
+              <span className="sm:hidden">🏷️ ផ្ទាំងទី៣</span>
+              <span className="hidden sm:inline">🏷️ ផ្ទាំងទី៣ ៖ ដៅស្លាកលេខលើ Map</span>
             </button>
           </div>
 
-          {/* Eye & Compass Toggle Indicator */}
-          <div className="flex items-center justify-end w-full sm:w-auto gap-2 text-xs">
+          {/* Eye & Compass & Customizable Group Size Controls */}
+          <div className="flex flex-wrap items-center justify-end w-full sm:w-auto gap-2 text-xs">
+            {/* Custom Group Selector & Pin Size Control (ONLY VISIBLE ON TAB 3) */}
+            {activeTab === 'tagger' && (
+              <div className="flex flex-wrap items-center gap-1.5 bg-slate-900 px-2.5 py-1 rounded-xl border border-slate-800 shadow-sm">
+                <div className="flex items-center gap-1">
+                  <span className="text-[11px] text-amber-400 font-bold whitespace-nowrap">
+                    📁 ក្រុម ៖
+                  </span>
+                  <select
+                    value={selectedSizeGroup}
+                    onChange={(e) => setSelectedSizeGroup(e.target.value)}
+                    className="bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-0.5 text-xs text-amber-300 font-bold focus:outline-none focus:border-amber-400 font-kantumruy max-w-[140px] sm:max-w-[180px] truncate cursor-pointer"
+                  >
+                    <option value="all">🌐 គ្រប់ Group ទាំងអស់</option>
+                    {Object.keys(categoryGroups).map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat} ({categoryGroups[cat].length})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="h-4 w-px bg-slate-800 hidden sm:block"></div>
+
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] text-amber-400 font-bold whitespace-nowrap">
+                    📏 ទំហំ ៖{' '}
+                    <span className="font-sans-en font-black text-amber-300">
+                      {selectedSizeGroup === 'all'
+                        ? `${pinSizePx}px`
+                        : `${groupPinSizes[selectedSizeGroup] || pinSizePx}px`}
+                    </span>
+                  </span>
+
+                  <input
+                    type="range"
+                    min="8"
+                    max="32"
+                    step="1"
+                    value={
+                      selectedSizeGroup === 'all'
+                        ? pinSizePx
+                        : groupPinSizes[selectedSizeGroup] || pinSizePx
+                    }
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      if (selectedSizeGroup === 'all') {
+                        setPinSizePx(val);
+                      } else {
+                        setGroupPinSizes((prev) => ({ ...prev, [selectedSizeGroup]: val }));
+                      }
+                    }}
+                    className="w-14 sm:w-20 accent-amber-400 cursor-pointer h-1.5 bg-slate-950 rounded-lg"
+                    title="កែប្រែទំហំ Pin"
+                  />
+
+                  <div className="flex items-center gap-0.5">
+                    {[
+                      { label: 'តូច', size: 10 },
+                      { label: 'មធ្យម', size: 14 },
+                      { label: 'ធំ', size: 20 },
+                      { label: 'ធំខ្លាំង', size: 26 }
+                    ].map((p) => {
+                      const currentActiveSize =
+                        selectedSizeGroup === 'all'
+                          ? pinSizePx
+                          : groupPinSizes[selectedSizeGroup] || pinSizePx;
+                      return (
+                        <button
+                          key={p.size}
+                          onClick={() => {
+                            if (selectedSizeGroup === 'all') {
+                              setPinSizePx(p.size);
+                            } else {
+                              setGroupPinSizes((prev) => ({ ...prev, [selectedSizeGroup]: p.size }));
+                            }
+                          }}
+                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
+                            currentActiveSize === p.size
+                              ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
+                              : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                          }`}
+                          title={`កំណត់ទំហំ ${p.label} (${p.size}px)`}
+                        >
+                          {p.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Toggle Name Labels in Tab 1 */}
+
+            {/* Toggle Name Labels in Tab 1 */}
+            {activeTab === 'labeled' && (
+              <button
+                onClick={() => setIsLabelsVisible(!isLabelsVisible)}
+                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm ${
+                  isLabelsVisible
+                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30'
+                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
+                }`}
+                title={isLabelsVisible ? 'លាក់ឈ្មោះទីតាំង (បង្ហាញតែលេខលើ Pin ដើម្បកុំឲ្យជាន់គ្នា)' : 'បង្ហាញឈ្មោះទីតាំងទាំងអស់'}
+              >
+                <Tag className="w-4 h-4 text-emerald-400" />
+                <span>{isLabelsVisible ? 'ឈ្មោះ' : 'លាក់ឈ្មោះ'}</span>
+              </button>
+            )}
+
             <button
               onClick={() => setIsCompassVisible(!isCompassVisible)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm ${
@@ -1002,8 +1143,8 @@ export default function TempleMapModal({
                 isPanning ? 'cursor-grabbing' : 'cursor-grab'
               }`}
               style={{
-                maxHeight: 'min(65vh, 600px)',
-                height: zoomScale > 1.0 ? 'min(65vh, 600px)' : 'auto',
+                maxHeight: 'min(48vh, 550px)',
+                height: zoomScale > 1.0 ? 'min(48vh, 550px)' : 'auto',
                 touchAction: zoomScale > 1.0 ? 'none' : 'pan-y'
               }}
             >
@@ -1039,7 +1180,7 @@ export default function TempleMapModal({
 
                         {/* Pure 100% Transparent PNG Compass Canvas */}
                         <div className={`relative flex items-center justify-center transition-all bg-transparent ${
-                          isCompassExpanded ? 'w-64 h-64 sm:w-80 sm:h-80' : 'w-48 h-48 sm:w-56 sm:h-56'
+                          isCompassExpanded ? 'w-48 h-48 sm:w-80 sm:h-80' : 'w-28 h-28 sm:w-52 sm:h-52'
                         }`}>
                           <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-2xl select-none">
                             {/* ════════ 8 COLOR STAR POINTS ════════ */}
@@ -1145,6 +1286,7 @@ export default function TempleMapModal({
                       const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
                       if (hiddenCategories[locCat]) return null;
 
+                      const currentPinSize = groupPinSizes[locCat] || pinSizePx;
                       const isCategoryLocked = lockedCategories[locCat];
                       const isHighlighted =
                         selectedLocation?.id === loc.id ||
@@ -1168,7 +1310,7 @@ export default function TempleMapModal({
                           }}
                           className="pointer-events-auto"
                         >
-                          {/* Central Anchor Wrapper: Center is locked exactly at (loc.x, loc.y) */}
+                          {/* Central Anchor Wrapper */}
                           <div
                             data-draggable={canDragThisPin ? 'true' : 'false'}
                             onMouseDown={(e) => canDragThisPin && handlePinDragStart(e, loc)}
@@ -1182,31 +1324,37 @@ export default function TempleMapModal({
                             onMouseLeave={() => setHoveredLocation(null)}
                             className={`map-pin-element relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 transition-transform duration-100 ${
                               canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-125' : 'cursor-pointer hover:scale-115'
-                            } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-40' : 'z-20'}`}
+                            } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-50' : 'z-20'}`}
                             style={{ touchAction: canDragThisPin ? 'none' : 'auto' }}
                           >
-                            {/* Exact Mathematical Pin Badge Center (Rendered in ALL Tabs) */}
+                            {/* Customizable Pin Badge (Dynamic Pixel Size & Font Size) */}
                             <div
-                              className={`w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center font-moul text-[8px] sm:text-[9px] md:text-[10px] font-black border sm:border-2 shadow-md shrink-0 z-10 ${getPinBadgeColorClass(
+                              style={{
+                                width: `${currentPinSize}px`,
+                                height: `${currentPinSize}px`,
+                                fontSize: `${Math.max(6.5, Math.round(currentPinSize * 0.48))}px`,
+                                lineHeight: `${currentPinSize}px`
+                              }}
+                              className={`rounded-full flex items-center justify-center font-moul font-black border shadow-md shrink-0 z-10 ${getPinBadgeColorClass(
                                 loc,
                                 locIdx
                               )} ${
                                 isHighlighted
-                                  ? 'ring-2 sm:ring-4 ring-amber-400 ring-offset-1 animate-pulse'
+                                  ? 'ring-2 ring-amber-400 ring-offset-1 animate-pulse scale-110 z-50'
                                   : ''
                               }`}
                             >
                               {loc.id}
                             </div>
 
-                            {/* Floating Name Label: RENDERED ONLY IN TAB 1 (ប្លង់មានឈ្មោះ) */}
-                            {activeTab === 'labeled' && (
+                            {/* Floating Name Label: RENDERED IN TAB 1 when isLabelsVisible is true, OR when highlighted */}
+                            {activeTab === 'labeled' && (isLabelsVisible || isHighlighted) && (
                               <div
                                 className={`absolute text-[7.5px] sm:text-[9px] md:text-[10.5px] font-bold py-0.5 px-1.5 rounded-lg border shadow-lg whitespace-nowrap pointer-events-none z-0 ${
                                   isGate
                                     ? 'bg-slate-950/92 border-amber-400/90 text-amber-200'
                                     : 'bg-slate-950/92 border-sky-400/90 text-sky-100'
-                                } ${isHighlighted ? 'ring-1.5 ring-amber-400 bg-slate-950' : ''} ${
+                                } ${isHighlighted ? 'ring-1.5 ring-amber-400 bg-slate-950 z-50' : ''} ${
                                   pos === 'L'
                                     ? 'right-full mr-1 top-1/2 -translate-y-1/2'
                                     : pos === 'T'
@@ -1551,8 +1699,36 @@ export default function TempleMapModal({
                         </span>
                       </div>
 
-                      {/* Eye (Show/Hide) & Lock (Lock/Unlock Dragging) Controls for this Group */}
+                      {/* Eye (Show/Hide), Lock (Lock/Unlock Dragging), & Pin Size Controls for this Group */}
                       <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                        {/* Group-specific Pin Size Quick Selector (ONLY VISIBLE ON TAB 3) */}
+                        {activeTab === 'tagger' && (
+                          <div className="flex items-center gap-1 bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800" title={`ទំហំ Pin ក្រុម «${catName}»`}>
+                            <span className="text-[10px] text-amber-400 font-bold font-sans-en">
+                              📏 {groupPinSizes[catName] || pinSizePx}px
+                            </span>
+                            <div className="flex items-center gap-0.5">
+                              {[10, 14, 18, 24].map((sz) => (
+                                <button
+                                  key={sz}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setGroupPinSizes((prev) => ({ ...prev, [catName]: sz }));
+                                  }}
+                                  className={`px-1 py-0.2 rounded text-[9px] font-bold transition-all ${
+                                    (groupPinSizes[catName] || pinSizePx) === sz
+                                      ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
+                                      : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                                  }`}
+                                  title={`កំណត់ទំហំ Pin ក្រុម «${catName}» មក ${sz}px`}
+                                >
+                                  {sz}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1799,6 +1975,33 @@ export default function TempleMapModal({
                     placeholder="ឧ. កុដិថ្មី, អាហារដ្ឋាន..."
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    ទិសដៅបង្ហាញឈ្មោះស្លាក (Label Position) ៖
+                  </label>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    {[
+                      { key: 'R', label: '👉 ស្តាំ' },
+                      { key: 'L', label: '👈 ឆ្វេង' },
+                      { key: 'T', label: '👆 លើ' },
+                      { key: 'B', label: '👇 ក្រោម' }
+                    ].map((p) => (
+                      <button
+                        key={p.key}
+                        type="button"
+                        onClick={() => setModalForm((prev) => ({ ...prev, pos: p.key }))}
+                        className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all ${
+                          (modalForm.pos || 'R') === p.key
+                            ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md'
+                            : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
