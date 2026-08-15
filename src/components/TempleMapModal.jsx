@@ -1289,7 +1289,6 @@ export default function TempleMapModal({
                       if (hiddenCategories[locCat]) return null;
 
                       const currentPinSize = groupPinSizes[locCat] || pinSizePx;
-                      const currentFontSize = groupPinFontSizes[locCat] || pinFontSizePx;
                       const isCategoryLocked = lockedCategories[locCat];
                       const isHighlighted =
                         selectedLocation?.id === loc.id ||
