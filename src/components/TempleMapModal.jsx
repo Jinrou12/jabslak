@@ -149,6 +149,27 @@ export function getPinSizeClasses(size) {
     default:
       return 'w-4.5 h-4.5 sm:w-5 sm:h-5 md:w-6 md:h-6 text-[8px] sm:text-[9px] md:text-[10px] sm:border-2';
   }
+export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger') {
+  if (!loc) return '';
+  if (activeTab === 'labeled') return loc.name;
+
+  const locIdStr = String(loc.id || '').trim();
+  const locNameStr = String(loc.name || '').trim();
+
+  const matchedTag = allTags.find((t) => {
+    const tNoStr = String(t.tagNumber || '').trim();
+    const tKhmerNo = westernToKhmerDigits(t.tagNumber);
+    const tBase = String(t.baseLocation || t.location || '').trim();
+
+    return (
+      tNoStr === locIdStr ||
+      tKhmerNo === locIdStr ||
+      tBase === locIdStr ||
+      tBase === locNameStr
+    );
+  });
+
+  return matchedTag ? matchedTag.name : loc.name;
 }
 
 export default function TempleMapModal({
@@ -349,25 +370,48 @@ export default function TempleMapModal({
   useEffect(() => {
     if (highlightLocationName) {
       setActiveTab('tagger');
-      const searchTarget = highlightLocationName.toLowerCase().trim();
-      const match = tab3Locations.find(
-        (l) =>
-          l.name.toLowerCase().trim() === searchTarget ||
-          searchTarget.includes(l.name.toLowerCase().trim()) ||
-          l.name.toLowerCase().trim().includes(searchTarget)
-      ) || locations.find(
-        (l) =>
-          l.name.toLowerCase().trim() === searchTarget ||
-          searchTarget.includes(l.name.toLowerCase().trim()) ||
-          l.name.toLowerCase().trim().includes(searchTarget)
-      );
+      const searchTarget = String(highlightLocationName).toLowerCase().trim();
+      const khmerTarget = westernToKhmerDigits(searchTarget);
+
+      // Search in tab3Locations by matching tag owner name, tag number, or location name/id
+      const match = tab3Locations.find((l) => {
+        const pinIdStr = String(l.id || '').toLowerCase().trim();
+        const pinNameStr = String(l.name || '').toLowerCase().trim();
+
+        // Check if any tag in allTags matches this pin AND matches searchTarget
+        const matchedTag = allTags.find((t) => {
+          const tName = String(t.name || '').toLowerCase().trim();
+          const tNoStr = String(t.tagNumber || '').trim();
+          const tKhmerNo = westernToKhmerDigits(t.tagNumber);
+          const tLoc = String(t.baseLocation || t.location || '').toLowerCase().trim();
+
+          const isThisPin = (tNoStr === pinIdStr || tKhmerNo === pinIdStr || tLoc === pinIdStr || tLoc === pinNameStr);
+          const matchesSearch = (tName.includes(searchTarget) || searchTarget.includes(tName) || tNoStr === searchTarget || tKhmerNo === searchTarget || searchTarget === tLoc);
+
+          return isThisPin && matchesSearch;
+        });
+
+        if (matchedTag) return true;
+
+        return (
+          pinNameStr === searchTarget ||
+          searchTarget.includes(pinNameStr) ||
+          pinNameStr.includes(searchTarget) ||
+          pinIdStr === searchTarget ||
+          pinIdStr === khmerTarget
+        );
+      }) || locations.find((l) => {
+        const pinIdStr = String(l.id || '').toLowerCase().trim();
+        const pinNameStr = String(l.name || '').toLowerCase().trim();
+        return pinIdStr === searchTarget || pinIdStr === khmerTarget || pinNameStr.includes(searchTarget);
+      });
 
       const targetLoc = match || tab3Locations[0] || locations[0];
       if (targetLoc) {
         setSelectedLocation(targetLoc);
       }
     }
-  }, [highlightLocationName, tab3Locations, locations]);
+  }, [highlightLocationName, tab3Locations, locations, allTags]);
 
   // Auto scroll to legend card & smooth zoom camera to target location on map
   useEffect(() => {
@@ -1462,7 +1506,7 @@ export default function TempleMapModal({
                                     : 'opacity-0 scale-90 pointer-events-none'
                                 }`}
                               >
-                                <span>{loc.name}</span>
+                                <span>{getDisplayPinName(loc, allTags, activeTab)}</span>
                               </div>
                             )}
                           </div>
@@ -1898,7 +1942,7 @@ export default function TempleMapModal({
                                 </div>
                                 <div className="min-w-0">
                                   <div className="text-xs font-bold text-slate-200 truncate">
-                                    {loc.name}
+                                    {getDisplayPinName(loc, allTags, activeTab)}
                                   </div>
                                   <div className="text-[10px] text-slate-400">
                                     {tagCount > 0 ? (

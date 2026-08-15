@@ -139,7 +139,7 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
           <div
             onClick={() => {
               if (onViewOnMap) {
-                onViewOnMap(tag.baseLocation || tag.location);
+                onViewOnMap(tag.name || tag.baseLocation || tag.location);
               }
             }}
             className="rounded-2xl p-4 flex items-start gap-3.5 group transition-all duration-200 hover:scale-[1.01] cursor-pointer"

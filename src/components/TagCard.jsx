@@ -68,7 +68,7 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
         onClick={(e) => {
           if (onViewOnMap) {
             e.stopPropagation();
-            onViewOnMap(tag.baseLocation || tag.location);
+            onViewOnMap(tag.name || tag.baseLocation || tag.location);
           }
         }}
         className="bg-gradient-to-r from-amber-500/20 via-amber-500/10 to-slate-900 border border-amber-500/40 rounded-xl p-2.5 flex items-center justify-between gap-2.5 shadow-sm group-hover:border-amber-400 transition-all hover:scale-[1.01]"

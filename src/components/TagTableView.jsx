@@ -53,7 +53,7 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                       onClick={(e) => {
                         if (onViewOnMap) {
                           e.stopPropagation();
-                          onViewOnMap(tag.baseLocation || tag.location);
+                          onViewOnMap(tag.name || tag.baseLocation || tag.location);
                         }
                       }}
                       className="inline-flex items-center gap-1.5 bg-amber-500/15 hover:bg-amber-500 hover:text-slate-950 border border-amber-500/30 text-amber-300 px-3 py-1 rounded-xl text-xs font-extrabold transition-all"
