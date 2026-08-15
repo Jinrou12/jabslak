@@ -303,6 +303,48 @@ export default function TempleMapModal({
     saveGroupSettingsToFirebase(payload);
   };
 
+  // Smoothly center map viewport and zoom in bit by bit (from current scale up to 2.5x)
+  const smoothZoomToPin = (loc) => {
+    if (!loc || typeof loc.x !== 'number' || typeof loc.y !== 'number') return;
+
+    const targetZoom = 2.5; // 250% zoom scale as requested by user
+    const startZoom = zoomScale < 1.2 ? 1.0 : zoomScale;
+    const durationMs = 850; // 850ms smooth animation
+    const startTime = performance.now();
+
+    const animateFrame = (now) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(1.0, elapsed / durationMs);
+
+      // Smooth ease-out cubic
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      const currentZoom = parseFloat((startZoom + (targetZoom - startZoom) * easeProgress).toFixed(2));
+
+      setZoomScale(currentZoom);
+
+      // Adjust viewport scroll position to keep target pin centered
+      setTimeout(() => {
+        if (viewportRef.current && mapContainerRef.current) {
+          const vp = viewportRef.current;
+          const containerWidth = mapContainerRef.current.offsetWidth || (vp.clientWidth * currentZoom);
+          const containerHeight = mapContainerRef.current.offsetHeight || 500;
+
+          const pinX = (loc.x / 100) * containerWidth;
+          const pinY = (loc.y / 100) * containerHeight;
+
+          vp.scrollLeft = Math.max(0, pinX - vp.clientWidth / 2);
+          vp.scrollTop = Math.max(0, pinY - vp.clientHeight / 2);
+        }
+      }, 0);
+
+      if (progress < 1.0) {
+        requestAnimationFrame(animateFrame);
+      }
+    };
+
+    requestAnimationFrame(animateFrame);
+  };
+
   // Focus on highlighted location if passed from parent
   useEffect(() => {
     if (highlightLocationName) {
@@ -319,13 +361,15 @@ export default function TempleMapModal({
           searchTarget.includes(l.name.toLowerCase().trim()) ||
           l.name.toLowerCase().trim().includes(searchTarget)
       );
-      if (match) {
-        setSelectedLocation(match);
+
+      const targetLoc = match || tab3Locations[0] || locations[0];
+      if (targetLoc) {
+        setSelectedLocation(targetLoc);
       }
     }
   }, [highlightLocationName, tab3Locations, locations]);
 
-  // Auto scroll to legend card when selected location changes
+  // Auto scroll to legend card & smooth zoom camera to target location on map
   useEffect(() => {
     if (selectedLocation) {
       const catName = selectedLocation.category || (selectedLocation.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
@@ -340,6 +384,9 @@ export default function TempleMapModal({
           el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
       }, 120);
+
+      // Smooth zoom bit by bit to the target pin on the map
+      smoothZoomToPin(selectedLocation);
     }
   }, [selectedLocation]);
 
@@ -1335,6 +1382,11 @@ export default function TempleMapModal({
                             } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-50' : 'z-20'}`}
                             style={{ touchAction: canDragThisPin ? 'none' : 'auto' }}
                           >
+                            {/* Animated Pulse Beacon Aura Ring for Highlighted/Selected Target Location */}
+                            {isHighlighted && (
+                              <div className="absolute -inset-3 rounded-full bg-amber-400/50 animate-ping pointer-events-none z-0"></div>
+                            )}
+
                             {/* Pure Vector SVG Pin Badge - 100% Mathematically Centered on PC, iPhone & Android */}
                             {(() => {
                               const idStr = String(loc.id || '');
@@ -1351,7 +1403,7 @@ export default function TempleMapModal({
                                     locIdx
                                   )} ${
                                     isHighlighted
-                                      ? 'ring-2 ring-amber-400 ring-offset-1 animate-pulse scale-125 z-50'
+                                      ? 'ring-4 ring-amber-400 ring-offset-2 animate-bounce scale-125 z-50 shadow-2xl'
                                       : ''
                                   }`}
                                 >
