@@ -48,18 +48,18 @@ import {
 import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
 
 const PIN_COLOR_GRADIENTS = [
-  'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60',       // 1: Cyan Sky
-  'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60', // 2: Emerald Green
-  'bg-gradient-to-br from-purple-300 via-purple-400 to-indigo-500 text-slate-950 border-white ring-1 ring-purple-400/60', // 3: Purple Violet
-  'bg-gradient-to-br from-rose-300 via-rose-400 to-pink-500 text-slate-950 border-white ring-1 ring-rose-400/60',       // 4: Rose Pink
-  'bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 text-slate-950 border-white ring-1 ring-amber-400/60',   // 5: Amber Orange
-  'bg-gradient-to-br from-fuchsia-300 via-fuchsia-400 to-pink-600 text-slate-950 border-white ring-1 ring-fuchsia-400/60', // 6: Fuchsia Magenta
-  'bg-gradient-to-br from-lime-300 via-lime-400 to-emerald-500 text-slate-950 border-white ring-1 ring-lime-400/60',     // 7: Lime Green
-  'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white border-white ring-1 ring-indigo-400/60',     // 8: Indigo Blue
-  'bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 text-slate-950 border-white ring-1 ring-yellow-400/60', // 9: Bright Gold
-  'bg-gradient-to-br from-teal-300 via-teal-400 to-cyan-600 text-slate-950 border-white ring-1 ring-teal-400/60',       // 10: Teal Cyan
-  'bg-gradient-to-br from-orange-300 via-orange-400 to-rose-500 text-slate-950 border-white ring-1 ring-orange-400/60',  // 11: Bright Orange
-  'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950 border-white ring-1 ring-violet-400/60',   // 12: Deep Violet
+  'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950',       // 1: Cyan Sky
+  'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950', // 2: Emerald Green
+  'bg-gradient-to-br from-purple-300 via-purple-400 to-indigo-500 text-slate-950', // 3: Purple Violet
+  'bg-gradient-to-br from-rose-300 via-rose-400 to-pink-500 text-slate-950',       // 4: Rose Pink
+  'bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 text-slate-950',   // 5: Amber Orange
+  'bg-gradient-to-br from-fuchsia-300 via-fuchsia-400 to-pink-600 text-slate-950', // 6: Fuchsia Magenta
+  'bg-gradient-to-br from-lime-300 via-lime-400 to-emerald-500 text-slate-950',     // 7: Lime Green
+  'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white',     // 8: Indigo Blue
+  'bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 text-slate-950', // 9: Bright Gold
+  'bg-gradient-to-br from-teal-300 via-teal-400 to-cyan-600 text-slate-950',       // 10: Teal Cyan
+  'bg-gradient-to-br from-orange-300 via-orange-400 to-rose-500 text-slate-950',  // 11: Bright Orange
+  'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950',   // 12: Deep Violet
 ];
 
 const STANDARD_GATES = ['A', 'B', 'C', 'D', 'E', 'a', 'b', 'c', 'd', 'e'];
@@ -69,22 +69,22 @@ const KHMER_STANDARD_LOCATIONS = [
 ];
 
 const WESTERN_TAG_COLORS = {
-  '1': 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60',       // 1: Cyan Sky
-  '2': 'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60', // 2: Emerald Green
-  '3': 'bg-gradient-to-br from-purple-300 via-purple-400 to-indigo-500 text-slate-950 border-white ring-1 ring-purple-400/60', // 3: Purple Violet
-  '4': 'bg-gradient-to-br from-rose-300 via-rose-400 to-pink-500 text-slate-950 border-white ring-1 ring-rose-400/60',       // 4: Rose Pink
-  '5': 'bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 text-slate-950 border-white ring-1 ring-amber-400/60',   // 5: Amber Orange
-  '6': 'bg-gradient-to-br from-fuchsia-300 via-fuchsia-400 to-pink-600 text-slate-950 border-white ring-1 ring-fuchsia-400/60', // 6: Fuchsia Magenta
-  '7': 'bg-gradient-to-br from-lime-300 via-lime-400 to-emerald-500 text-slate-950 border-white ring-1 ring-lime-400/60',     // 7: Lime Green
-  '8': 'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white border-white ring-1 ring-indigo-400/60',     // 8: Indigo Blue
-  '9': 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 text-slate-950 border-white ring-1 ring-yellow-400/60', // 9: Bright Gold
-  '10': 'bg-gradient-to-br from-teal-300 via-teal-400 to-cyan-600 text-slate-950 border-white ring-1 ring-teal-400/60',       // 10: Teal Cyan
-  '11': 'bg-gradient-to-br from-orange-300 via-orange-400 to-rose-500 text-slate-950 border-white ring-1 ring-orange-400/60',  // 11: Bright Orange
-  '12': 'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950 border-white ring-1 ring-violet-400/60',   // 12: Deep Violet
-  '13': 'bg-gradient-to-br from-sky-300 via-sky-400 to-indigo-600 text-slate-950 border-white ring-1 ring-sky-400/60',        // 13: Sky Blue
-  '14': 'bg-gradient-to-br from-red-400 via-rose-500 to-red-600 text-white border-white ring-1 ring-rose-400/60',             // 14: Crimson Red
-  '15': 'bg-gradient-to-br from-pink-300 via-fuchsia-400 to-purple-600 text-slate-950 border-white ring-1 ring-pink-400/60',   // 15: Bright Pink
-  '16': 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-700 text-white border-white ring-1 ring-emerald-400/60'       // 16: Deep Green
+  '1': 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950',       // 1: Cyan Sky
+  '2': 'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950', // 2: Emerald Green
+  '3': 'bg-gradient-to-br from-purple-300 via-purple-400 to-indigo-500 text-slate-950', // 3: Purple Violet
+  '4': 'bg-gradient-to-br from-rose-300 via-rose-400 to-pink-500 text-slate-950',       // 4: Rose Pink
+  '5': 'bg-gradient-to-br from-amber-300 via-amber-400 to-orange-500 text-slate-950',   // 5: Amber Orange
+  '6': 'bg-gradient-to-br from-fuchsia-300 via-fuchsia-400 to-pink-600 text-slate-950', // 6: Fuchsia Magenta
+  '7': 'bg-gradient-to-br from-lime-300 via-lime-400 to-emerald-500 text-slate-950',     // 7: Lime Green
+  '8': 'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white',     // 8: Indigo Blue
+  '9': 'bg-gradient-to-br from-yellow-300 via-yellow-400 to-amber-500 text-slate-950', // 9: Bright Gold
+  '10': 'bg-gradient-to-br from-teal-300 via-teal-400 to-cyan-600 text-slate-950',       // 10: Teal Cyan
+  '11': 'bg-gradient-to-br from-orange-300 via-orange-400 to-rose-500 text-slate-950',  // 11: Bright Orange
+  '12': 'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950',   // 12: Deep Violet
+  '13': 'bg-gradient-to-br from-sky-300 via-sky-400 to-indigo-600 text-slate-950',        // 13: Sky Blue
+  '14': 'bg-gradient-to-br from-red-400 via-rose-500 to-red-600 text-white',             // 14: Crimson Red
+  '15': 'bg-gradient-to-br from-pink-300 via-fuchsia-400 to-purple-600 text-slate-950',   // 15: Bright Pink
+  '16': 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-700 text-white'       // 16: Deep Green
 };
 
 export const COLOR_SWATCHES = [
@@ -173,7 +173,7 @@ export default function TempleMapModal({
   // Computed: which locations array to use based on active tab
   const currentLocations = activeTab === 'tagger' ? tab3Locations : locations;
   const [zoomScale, setZoomScale] = useState(1.0);
-  const [pinSizePx, setPinSizePx] = useState(8); // Default global Pin size in px (Ultra compact 8px)
+  const [pinSizePx, setPinSizePx] = useState(6); // Default global Pin size in px (Micro 6px dot)
   const [selectedSizeGroup, setSelectedSizeGroup] = useState('all'); // 'all' | categoryName
   const [groupPinSizes, setGroupPinSizes] = useState({}); // { [catName]: sizeInPx }
   const [isLabelsVisible, setIsLabelsVisible] = useState(true);
@@ -228,7 +228,7 @@ export default function TempleMapModal({
     const isMobile = window.innerWidth < 640;
     if (isMobile) {
       setZoomScale(1.35); // Expand map to fill phone screen edge-to-edge
-      setPinSizePx(8);    // Ultra compact 8px micro pins for mobile
+      setPinSizePx(6);    // Razor-sharp 6px micro dots for mobile
       setIsLabelsVisible(false); // Hide text clutter by default on mobile so map stays super clean
     }
   }, []);
@@ -1002,8 +1002,8 @@ export default function TempleMapModal({
 
                   <input
                     type="range"
-                    min="6"
-                    max="28"
+                    min="3"
+                    max="24"
                     step="1"
                     value={
                       selectedSizeGroup === 'all'
@@ -1024,10 +1024,10 @@ export default function TempleMapModal({
 
                   <div className="flex items-center gap-0.5">
                     {[
-                      { label: 'តូច', size: 10 },
-                      { label: 'មធ្យម', size: 14 },
-                      { label: 'ធំ', size: 20 },
-                      { label: 'ធំខ្លាំង', size: 26 }
+                      { label: 'តូចខ្លាំង', size: 4 },
+                      { label: 'តូច', size: 6 },
+                      { label: 'មធ្យម', size: 10 },
+                      { label: 'ធំ', size: 16 }
                     ].map((p) => {
                       const currentActiveSize =
                         selectedSizeGroup === 'all'
@@ -1331,8 +1331,8 @@ export default function TempleMapModal({
                             {(() => {
                               const displayId = khmerToWesternDigits(loc.id);
                               const idStr = String(displayId || '');
-                              const fontRatio = idStr.length > 2 ? 0.32 : idStr.length > 1 ? 0.40 : 0.50;
-                              const computedFontSize = Math.max(3.5, Math.round(currentPinSize * fontRatio));
+                              const fontRatio = idStr.length > 2 ? 0.30 : idStr.length > 1 ? 0.38 : 0.48;
+                              const computedFontSize = Math.max(3.0, Math.round(currentPinSize * fontRatio));
                               return (
                                 <div
                                   style={{
@@ -1341,12 +1341,12 @@ export default function TempleMapModal({
                                     fontSize: `${computedFontSize}px`,
                                     lineHeight: `${currentPinSize}px`
                                   }}
-                                  className={`rounded-full flex items-center justify-center font-sans font-black leading-none text-center border shadow-md shrink-0 z-10 overflow-hidden select-none ${getPinBadgeColorClass(
+                                  className={`rounded-full flex items-center justify-center font-sans font-black leading-none text-center border border-white/90 shrink-0 z-10 overflow-hidden select-none ${getPinBadgeColorClass(
                                     loc,
                                     locIdx
                                   )} ${
                                     isHighlighted
-                                      ? 'ring-2 ring-amber-400 ring-offset-1 animate-pulse scale-110 z-50'
+                                      ? 'ring-2 ring-amber-400 ring-offset-1 animate-pulse scale-125 z-50'
                                       : ''
                                   }`}
                                 >
@@ -1716,7 +1716,7 @@ export default function TempleMapModal({
                               📏 {groupPinSizes[catName] || pinSizePx}px
                             </span>
                             <div className="flex items-center gap-0.5">
-                              {[6, 8, 12, 18].map((sz) => (
+                              {[4, 6, 10, 16].map((sz) => (
                                 <button
                                   key={sz}
                                   onClick={(e) => {
