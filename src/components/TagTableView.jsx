@@ -86,7 +86,7 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                             e.stopPropagation();
                             onToggleAttendance(tag);
                           }}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-bold transition-all active:scale-95 border ${
+                          className={`p-1 rounded-xl transition-all active:scale-95 border inline-flex items-center justify-center ${
                             isArrived
                               ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
                               : 'bg-slate-800 text-slate-400 hover:text-emerald-300 border-slate-700'
@@ -94,15 +94,9 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                           title={isArrived ? 'បានមកដល់ (ចុចដើម្បីលុប)' : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកមកដល់'}
                         >
                           {isArrived ? (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />
-                              <span>បានមកដល់</span>
-                            </>
+                            <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
                           ) : (
-                            <>
-                              <Circle className="w-3.5 h-3.5 text-slate-400" />
-                              <span>គ្រីសមកដល់</span>
-                            </>
+                            <Circle className="w-4 h-4 text-slate-400" />
                           )}
                         </button>
                       )}

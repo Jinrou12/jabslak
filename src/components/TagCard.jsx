@@ -47,23 +47,17 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
               e.stopPropagation();
               onToggleAttendance(tag);
             }}
-            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-extrabold font-kantumruy transition-all active:scale-95 border shrink-0 animate-in zoom-in-50 duration-200 ${
+            className={`p-1.5 rounded-xl transition-all active:scale-95 border shrink-0 animate-in zoom-in-50 duration-200 flex items-center justify-center ${
               isArrived
                 ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
                 : 'bg-slate-800/90 text-slate-400 hover:text-emerald-300 border-slate-700 hover:border-emerald-500/50'
             }`}
-            title={isArrived ? 'បានមកដល់រួចរាល់ (ចុចដើម្បីលុបការគ្រីស)' : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកបានមកដល់'}
+            title={isArrived ? 'បានមកដល់រួចរាល់ (ចុចដើម្បីដកការគ្រីស)' : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកបានមកដល់'}
           >
             {isArrived ? (
-              <>
-                <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
-                <span className="hidden sm:inline">បានមកដល់</span>
-              </>
+              <CheckCircle2 className="w-5 h-5 text-slate-950 stroke-[3]" />
             ) : (
-              <>
-                <Circle className="w-4 h-4 text-slate-400" />
-                <span>គ្រីសមកដល់</span>
-              </>
+              <Circle className="w-5 h-5 text-slate-400" />
             )}
           </button>
         )}
