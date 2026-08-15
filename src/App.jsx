@@ -154,14 +154,8 @@ export default function App() {
       try {
         confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
       } catch (e) {}
-      // Auto-navigate to Report view → Panel 1 (Arrived) to see the newly ticked person
-      setReportActiveTab('arrived');
-      setViewMode('report');
     } else {
       showToast(`បានដកការគ្រីសវត្តមានស្លាកលេខ ${westernToKhmerDigits(tagToToggle.tagNumber)}!`);
-      // Auto-navigate to Report view → Panel 2 (Not Arrived) since person moved back
-      setReportActiveTab('notArrived');
-      setViewMode('report');
     }
   };
 
@@ -319,7 +313,7 @@ export default function App() {
         onOpenImportExport={() => setIsImportExportOpen(true)}
         onResetData={handleResetData}
         onOpenLocationStats={() => setIsLocationStatsOpen(true)}
-        onOpenAttendanceReport={() => setViewMode('report')}
+        onOpenAttendanceReport={() => { setReportActiveTab('arrived'); setViewMode('report'); }}
         onOpenCloudConfig={() => setIsCloudConfigOpen(true)}
         onOpenMobileConnect={() => setIsMobileConnectOpen(true)}
         onOpenTempleMap={() => {
