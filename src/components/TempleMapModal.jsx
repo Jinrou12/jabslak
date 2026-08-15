@@ -150,7 +150,7 @@ export default function TempleMapModal({
   isModal = true
 }) {
   const modalMode = isModal || Boolean(onClose);
-  const canCustomizeMap = currentUser?.role === 'owner' || currentUser?.role === 'admin';
+  const canCustomizeMap = true; // Enable pin editing and customizing in Tab 2 and Tab 3 for all users
 
   // Tab 1 & Tab 2 share this state
   const [locations, setLocations] = useState(getSavedTempleLocations());
