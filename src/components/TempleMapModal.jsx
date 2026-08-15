@@ -191,8 +191,39 @@ export default function TempleMapModal({
   const [tab3Locations, setTab3Locations] = useState(getSavedTab3Locations());
   const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ នៅស្លាកលើ Map)
 
+  // Auto-sync Tab 3 pin names with Person/Owner names from allTags
+  const effectiveTab3Locations = useMemo(() => {
+    return tab3Locations.map((loc) => {
+      const locIdStr = String(loc.id || '').trim();
+      const locNameStr = String(loc.name || '').trim();
+
+      const matchedTag = allTags.find((t) => {
+        const tNoStr = String(t.tagNumber || '').trim();
+        const tKhmerNo = westernToKhmerDigits(t.tagNumber);
+        const tBase = String(t.baseLocation || t.location || '').trim();
+
+        return (
+          tNoStr === locIdStr ||
+          tKhmerNo === locIdStr ||
+          tBase === locIdStr ||
+          tBase === locNameStr
+        );
+      });
+
+      if (matchedTag && matchedTag.name) {
+        return {
+          ...loc,
+          name: matchedTag.name,
+          tagOwnerName: matchedTag.name,
+          tagNumber: matchedTag.tagNumber
+        };
+      }
+      return loc;
+    });
+  }, [tab3Locations, allTags]);
+
   // Computed: which locations array to use based on active tab
-  const currentLocations = activeTab === 'tagger' ? tab3Locations : locations;
+  const currentLocations = activeTab === 'tagger' ? effectiveTab3Locations : locations;
   const [zoomScale, setZoomScale] = useState(1.0);
   const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin circle size in px (14px)
   const [selectedSizeGroup, setSelectedSizeGroup] = useState('all'); // 'all' | categoryName
