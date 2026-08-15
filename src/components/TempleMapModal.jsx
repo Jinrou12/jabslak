@@ -948,51 +948,7 @@ export default function TempleMapModal({
           </div>
         </div>
 
-        {/* ════════ TAB ROLE STATUS BANNERS ════════ */}
-        {activeTab === 'labeled' && (
-          <div className="px-3 sm:px-5 py-1.5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between gap-2 text-xs text-sky-300 shrink-0">
-            <span className="flex items-center gap-1.5">
-              <Eye className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-              <span>ℹ️ <strong>ផ្ទាំងទី១ (សម្រាប់តែមើល)</strong> ៖ បង្ហាញប្លង់វត្ត និងឈ្មោះទីតាំង មិនអាចកែប្រែ ឬ រំកិល Pin ឡើយ</span>
-            </span>
-          </div>
-        )}
 
-        {activeTab === 'interactive' && (
-          <div className="px-3 sm:px-5 py-1.5 bg-amber-500/10 border-b border-amber-500/30 flex items-center justify-between gap-2 text-xs text-amber-300 shrink-0 flex-wrap">
-            <span className="flex items-center gap-1.5 font-bold">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              <span>👑 <strong>ផ្ទាំងទី២ (Master Customize)</strong> ៖ ការបន្ថែម/កែប្រែ/រំកិល Pin ក្នុងផ្ទាំងនេះ នឹង Update ទៅ ផ្ទាំងទី១ & ទី៣ ទាំងអស់</span>
-            </span>
-            {canCustomizeMap && (
-              <button
-                onClick={handleOpenAddModal}
-                className="px-2.5 py-0.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-[11px] rounded-lg transition-all shrink-0 flex items-center gap-1 shadow-sm"
-              >
-                <Plus className="w-3 h-3" />
-                <span>បន្ថែមទីតាំងថ្មី</span>
-              </button>
-            )}
-          </div>
-        )}
-
-        {activeTab === 'tagger' && (
-          <div className="px-3 sm:px-5 py-1.5 bg-emerald-500/10 border-b border-emerald-500/30 flex items-center justify-between gap-2 text-xs text-emerald-300 shrink-0 flex-wrap">
-            <span className="flex items-center gap-1.5 font-bold">
-              <Tag className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span>🏷️ <strong>ផ្ទាំងទី៣ (Customize តាមចិត្ត)</strong> ៖ ដៅ ឬ រំកិលស្លាកលេខតាមចិត្ត មិនប៉ះពាល់ផ្ទាំងទី១ និង ទី២ ឡើយ</span>
-            </span>
-            {canCustomizeMap && (
-              <button
-                onClick={handleOpenAddModal}
-                className="px-2.5 py-0.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] rounded-lg transition-all shrink-0 flex items-center gap-1 shadow-sm"
-              >
-                <Plus className="w-3 h-3" />
-                <span>ដៅទីតាំងថ្មី</span>
-              </button>
-            )}
-          </div>
-        )}
 
         {/* ════════ PENDING PIN TAG NOTIFICATION ════════ */}
         {pendingPinTag && (
