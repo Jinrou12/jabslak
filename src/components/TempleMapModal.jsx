@@ -1016,7 +1016,7 @@ export default function TempleMapModal({
         <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3">
           
           {/* MAP CANVAS CONTAINER */}
-          <div className="relative rounded-2xl border-2 border-slate-700 bg-slate-950 overflow-hidden shadow-inner">
+          <div className="relative rounded-2xl border-2 border-slate-700 bg-white overflow-hidden shadow-inner">
             
             {/* Viewport Box */}
             <div
@@ -1028,12 +1028,12 @@ export default function TempleMapModal({
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
-              className={`relative w-full overflow-auto select-none ${
+              className={`relative w-full overflow-auto select-none bg-white ${
                 isPanning ? 'cursor-grabbing' : 'cursor-grab'
               }`}
               style={{
-                height: 'min(62vh, 600px)',
-                minHeight: '380px',
+                maxHeight: 'min(65vh, 600px)',
+                height: zoomScale > 1.0 ? 'min(65vh, 600px)' : 'auto',
                 touchAction: zoomScale > 1.0 ? 'none' : 'pan-y'
               }}
             >
