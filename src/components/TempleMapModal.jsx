@@ -225,7 +225,6 @@ export default function TempleMapModal({
       if (matchedTag && matchedTag.name) {
         return {
           ...loc,
-          name: matchedTag.name,
           tagOwnerName: matchedTag.name,
           tagNumber: matchedTag.tagNumber
         };
