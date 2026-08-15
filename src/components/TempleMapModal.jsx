@@ -278,6 +278,7 @@ export default function TempleMapModal({
   // Panning, wheel zoom & dragging ref
   const viewportRef = useRef(null);
   const mapContainerRef = useRef(null);
+  const modalBodyRef = useRef(null);
   const [isPanning, setIsPanning] = useState(false);
   const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
   const hasPannedRef = useRef(false);
@@ -441,7 +442,7 @@ export default function TempleMapModal({
     }
   }, [highlightLocationName, effectiveTab3Locations, locations]);
 
-  // Auto scroll to legend card & smooth zoom camera to target location on map
+  // Auto scroll modal body UP to Map section & smooth zoom camera to target location on map
   useEffect(() => {
     if (selectedLocation) {
       const catName = selectedLocation.category || (selectedLocation.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
@@ -450,12 +451,10 @@ export default function TempleMapModal({
         [catName]: true
       }));
 
-      setTimeout(() => {
-        const el = document.getElementById(`legend-card-${selectedLocation.id}`);
-        if (el) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }, 120);
+      // Scroll outer modal body UP to top so Map Canvas is 100% visible!
+      if (modalBodyRef.current) {
+        modalBodyRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      }
 
       // Smooth zoom bit by bit to the target pin on the map
       smoothZoomToPin(selectedLocation);
@@ -1251,7 +1250,7 @@ export default function TempleMapModal({
         )}
 
         {/* ═══════════════ MAIN CONTENT BODY (MAP & LEGEND) ═══════════════ */}
-        <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3">
+        <div ref={modalBodyRef} className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3">
           
           {/* MAP CANVAS CONTAINER */}
           <div className="relative rounded-2xl border-2 border-slate-700 bg-white overflow-hidden shadow-inner">
