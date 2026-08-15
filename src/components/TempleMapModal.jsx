@@ -1010,22 +1010,75 @@ export default function TempleMapModal({
                   className="w-full h-auto block pointer-events-none"
                 />
 
-                {/* ════════ 8 KHMER PALI COMPASS DIRECTIONS ════════ */}
+                {/* ════════ 8 KHMER PALI COMPASS DIRECTIONS (MATCHING UPLOADED PHOTO) ════════ */}
                 <div className="absolute inset-0 pointer-events-none z-10">
-                  {TEMPLE_PALI_DIRECTIONS.map((dir) => (
-                    <div
-                      key={dir.key}
-                      className={`absolute font-moul font-black text-[9px] sm:text-xs md:text-sm whitespace-nowrap drop-shadow-md ${dir.positionClass} ${
-                        dir.type === 'cardinal'
-                          ? 'text-sky-800 tracking-wider'
-                          : 'text-amber-800'
-                      }`}
-                      style={{
-                        textShadow:
-                          '0 1px 0 #fff, 0 -1px 0 #fff, 1px 0 0 #fff, -1px 0 0 #fff, 0 2px 4px rgba(0,0,0,0.3)'
-                      }}
-                    >
-                      {dir.name}
+                  {/* Floating 8-Color Compass Star in Top-Right Corner */}
+                  <div className="absolute top-10 right-4 pointer-events-auto opacity-90 hover:opacity-100 transition-all hover:scale-105">
+                    <div className="bg-slate-950/80 border border-amber-500/40 rounded-2xl p-1.5 shadow-2xl backdrop-blur-sm flex flex-col items-center">
+                      <div className="relative w-16 h-16 sm:w-24 sm:h-24">
+                        <svg viewBox="0 0 200 200" className="w-full h-full drop-shadow-lg">
+                          {/* North Point (Black / Dark Slate) */}
+                          <polygon points="100,100 88,75 100,15" fill="#0f172a" />
+                          <polygon points="100,100 112,75 100,15" fill="#334155" />
+
+                          {/* NE Point (Orange) */}
+                          <polygon points="100,100 120,68 160,40" fill="#ea580c" />
+                          <polygon points="100,100 132,80 160,40" fill="#f97316" />
+
+                          {/* East Point (Green) */}
+                          <polygon points="100,100 125,88 185,100" fill="#15803d" />
+                          <polygon points="100,100 125,112 185,100" fill="#22c55e" />
+
+                          {/* SE Point (Lime Green) */}
+                          <polygon points="100,100 132,120 160,160" fill="#4d7c0f" />
+                          <polygon points="100,100 120,132 160,160" fill="#84cc16" />
+
+                          {/* South Point (Yellow) */}
+                          <polygon points="100,100 88,125 100,185" fill="#a16207" />
+                          <polygon points="100,100 112,125 100,185" fill="#eab308" />
+
+                          {/* SW Point (Cyan / Light Blue) */}
+                          <polygon points="100,100 80,132 40,160" fill="#0e7490" />
+                          <polygon points="100,100 68,120 40,160" fill="#06b6d4" />
+
+                          {/* West Point (Red) */}
+                          <polygon points="100,100 75,88 15,100" fill="#b91c1c" />
+                          <polygon points="100,100 75,112 15,100" fill="#ef4444" />
+
+                          {/* NW Point (Pink) */}
+                          <polygon points="100,100 68,80 40,40" fill="#be185d" />
+                          <polygon points="100,100 80,68 40,40" fill="#ec4899" />
+
+                          {/* Center Emblem */}
+                          <circle cx="100" cy="100" r="14" fill="#fef08a" stroke="#ca8a04" strokeWidth="2" />
+                          <circle cx="100" cy="100" r="5" fill="#0f172a" />
+                        </svg>
+                      </div>
+                      <span className="text-[9px] font-moul font-bold text-amber-400 mt-0.5">ទិសទាំង ៨</span>
+                    </div>
+                  </div>
+
+                  {/* 8 Direction White Pill Badges Around Map Edges */}
+                  {[
+                    { key: 'N',  badges: ['ឧត្តរ', 'ជើង'],   pos: 'top-2 left-1/2 -translate-x-1/2 flex-col items-center' },
+                    { key: 'NE', badges: ['ឦសាន'],           pos: 'top-3 right-3 flex-col items-end' },
+                    { key: 'E',  badges: ['បូព៌', 'កើត'],   pos: 'top-1/2 right-2 -translate-y-1/2 flex-col items-end' },
+                    { key: 'SE', badges: ['អាគ្នេយ៍'],       pos: 'bottom-3 right-3 flex-col items-end' },
+                    { key: 'S',  badges: ['ត្បូង', 'ទក្សិណ'], pos: 'bottom-2 left-1/2 -translate-x-1/2 flex-col items-center' },
+                    { key: 'SW', badges: ['និរតី'],          pos: 'bottom-3 left-3 flex-col items-start' },
+                    { key: 'W',  badges: ['លិច', 'បស្ចឹម'],   pos: 'top-1/2 left-2 -translate-y-1/2 flex-row items-center' },
+                    { key: 'NW', badges: ['ពាយ័ព្យ'],        pos: 'top-3 left-3 flex-col items-start' }
+                  ].map((dir) => (
+                    <div key={dir.key} className={`absolute flex gap-1 ${dir.pos} pointer-events-none`}>
+                      {dir.badges.map((label, idx) => (
+                        <div
+                          key={idx}
+                          className="bg-white/95 text-slate-900 border-2 border-slate-700/80 font-moul font-bold text-[9px] sm:text-xs px-2 py-0.5 rounded-lg shadow-md tracking-wider whitespace-nowrap drop-shadow"
+                          style={{ boxShadow: '0 2px 6px rgba(0,0,0,0.25)' }}
+                        >
+                          {label}
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
