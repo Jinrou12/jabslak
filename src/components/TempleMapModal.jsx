@@ -173,7 +173,7 @@ export default function TempleMapModal({
   // Computed: which locations array to use based on active tab
   const currentLocations = activeTab === 'tagger' ? tab3Locations : locations;
   const [zoomScale, setZoomScale] = useState(1.0);
-  const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin size in px
+  const [pinSizePx, setPinSizePx] = useState(8); // Default global Pin size in px (Ultra compact 8px)
   const [selectedSizeGroup, setSelectedSizeGroup] = useState('all'); // 'all' | categoryName
   const [groupPinSizes, setGroupPinSizes] = useState({}); // { [catName]: sizeInPx }
   const [isLabelsVisible, setIsLabelsVisible] = useState(true);
@@ -228,7 +228,7 @@ export default function TempleMapModal({
     const isMobile = window.innerWidth < 640;
     if (isMobile) {
       setZoomScale(1.35); // Expand map to fill phone screen edge-to-edge
-      setPinSizePx(12);   // Sleek compact 12px pins for mobile
+      setPinSizePx(8);    // Ultra compact 8px micro pins for mobile
       setIsLabelsVisible(false); // Hide text clutter by default on mobile so map stays super clean
     }
   }, []);
@@ -1002,8 +1002,8 @@ export default function TempleMapModal({
 
                   <input
                     type="range"
-                    min="8"
-                    max="32"
+                    min="6"
+                    max="28"
                     step="1"
                     value={
                       selectedSizeGroup === 'all'
@@ -1708,7 +1708,7 @@ export default function TempleMapModal({
                               📏 {groupPinSizes[catName] || pinSizePx}px
                             </span>
                             <div className="flex items-center gap-0.5">
-                              {[10, 14, 18, 24].map((sz) => (
+                              {[6, 8, 12, 18].map((sz) => (
                                 <button
                                   key={sz}
                                   onClick={(e) => {
