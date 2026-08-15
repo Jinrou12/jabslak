@@ -151,7 +151,7 @@ export function getPinSizeClasses(size) {
   }
 }
 
-export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger') {
+export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3Locations = []) {
   if (!loc) return '';
   if (activeTab === 'labeled') return loc.name;
 
@@ -163,12 +163,16 @@ export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger') {
     const tKhmerNo = westernToKhmerDigits(t.tagNumber);
     const tBase = String(t.baseLocation || t.location || '').trim();
 
-    return (
-      tNoStr === locIdStr ||
-      tKhmerNo === locIdStr ||
-      tBase === locIdStr ||
-      tBase === locNameStr
-    );
+    if (tNoStr === locIdStr) return true;
+
+    if (tKhmerNo === locIdStr || tBase === locIdStr || tBase === locNameStr) {
+      const westernPinExists = tab3Locations.some(
+        (p) => String(p.id || '').trim() === tNoStr
+      );
+      if (!westernPinExists) return true;
+    }
+
+    return false;
   });
 
   return matchedTag ? matchedTag.name : loc.name;
@@ -204,12 +208,18 @@ export default function TempleMapModal({
         const tKhmerNo = westernToKhmerDigits(t.tagNumber);
         const tBase = String(t.baseLocation || t.location || '').trim();
 
-        return (
-          tNoStr === locIdStr ||
-          tKhmerNo === locIdStr ||
-          tBase === locIdStr ||
-          tBase === locNameStr
-        );
+        // 1. Direct exact match with Western pin ID (e.g. "1" === "1")
+        if (tNoStr === locIdStr) return true;
+
+        // 2. Khmer pin ID ("១") or base location name ONLY if no dedicated Western pin exists
+        if (tKhmerNo === locIdStr || tBase === locIdStr || tBase === locNameStr) {
+          const westernPinExists = tab3Locations.some(
+            (p) => String(p.id || '').trim() === tNoStr
+          );
+          if (!westernPinExists) return true;
+        }
+
+        return false;
       });
 
       if (matchedTag && matchedTag.name) {
