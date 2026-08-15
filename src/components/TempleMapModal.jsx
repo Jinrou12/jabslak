@@ -1329,7 +1329,8 @@ export default function TempleMapModal({
                           >
                             {/* Customizable Pin Badge (Dynamic Pixel Size & Proportional Font Size) */}
                             {(() => {
-                              const idStr = String(loc.id || '');
+                              const displayId = khmerToWesternDigits(loc.id);
+                              const idStr = String(displayId || '');
                               const fontRatio = idStr.length > 2 ? 0.32 : idStr.length > 1 ? 0.40 : 0.50;
                               const computedFontSize = Math.max(3.5, Math.round(currentPinSize * fontRatio));
                               return (
@@ -1349,7 +1350,7 @@ export default function TempleMapModal({
                                       : ''
                                   }`}
                                 >
-                                  {loc.id}
+                                  {displayId}
                                 </div>
                               );
                             })()}
