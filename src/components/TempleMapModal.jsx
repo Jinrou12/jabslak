@@ -2051,35 +2051,8 @@ export default function TempleMapModal({
                         </span>
                       </div>
 
-                      {/* Eye (Show/Hide), Lock (Lock/Unlock Dragging), & Pin Size Controls for this Group */}
+                      {/* Eye (Show/Hide), Lock (Lock/Unlock Dragging), & Edit Controls for this Group */}
                       <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-                        {/* Group-specific Pin Size Quick Selector (ONLY VISIBLE ON TAB 3) */}
-                        {activeTab === 'tagger' && (
-                          <div className="flex items-center gap-1 bg-slate-950 px-2 py-0.5 rounded-lg border border-slate-800" title={`ទំហំ Pin ក្រុម «${catName}»`}>
-                            <span className="text-[10px] text-amber-400 font-bold font-sans-en">
-                              📏 {groupPinSizes[catName] || pinSizePx}px
-                            </span>
-                            <div className="flex items-center gap-0.5">
-                              {[4, 6, 10, 16].map((sz) => (
-                                <button
-                                  key={sz}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setGroupPinSizes((prev) => ({ ...prev, [catName]: sz }));
-                                  }}
-                                  className={`px-1 py-0.2 rounded text-[9px] font-bold transition-all ${
-                                    (groupPinSizes[catName] || pinSizePx) === sz
-                                      ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                                      : 'bg-slate-800 text-slate-400 hover:text-slate-200'
-                                  }`}
-                                  title={`កំណត់ទំហំ Pin ក្រុម «${catName}» មក ${sz}px`}
-                                >
-                                  {sz}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
 
                         <button
                           onClick={(e) => {
