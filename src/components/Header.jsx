@@ -153,14 +153,11 @@ export default function Header({
           {/* 🗺️ Temple Map Button */}
           <button
             onClick={onOpenTempleMap}
-            className="px-2.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 active:scale-95 shadow-sm"
+            className="px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 active:scale-95 shadow-sm"
             title="មើលផែនទីទីតាំងក្នុងវត្ត"
           >
             <MapIcon className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="hidden sm:inline">ផែនទីវត្ត</span>
-            <span className="bg-amber-500 text-slate-950 px-1.5 py-0.2 rounded-md font-sans-en text-[10px] font-black">
-              ២១
-            </span>
+            <span className="whitespace-nowrap font-bold">ផែនទីវត្ត</span>
           </button>
 
           {/* Add Tag (Pops up for Owner & Admin only) */}
