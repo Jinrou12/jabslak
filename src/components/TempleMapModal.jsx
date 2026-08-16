@@ -1333,7 +1333,7 @@ export default function TempleMapModal({
                     onChange={(e) => setSelectedSizeGroup(e.target.value)}
                     className="bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-0.5 text-xs text-amber-300 font-bold focus:outline-none focus:border-amber-400 font-kantumruy max-w-[140px] sm:max-w-[180px] truncate cursor-pointer"
                   >
-                    <option value="all">🌐 គ្រប់ Group ទាំងអស់</option>
+                    <option value="all">🌐 All</option>
                     {Object.keys(categoryGroups).map((cat) => (
                       <option key={cat} value={cat}>
                         {cat} ({categoryGroups[cat].length})
