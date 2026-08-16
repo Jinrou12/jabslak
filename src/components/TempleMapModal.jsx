@@ -494,6 +494,12 @@ export default function TempleMapModal({
     return groups;
   }, [currentLocations]);
 
+  const availableCategories = useMemo(() => {
+    const cats = new Set(['🏢 ក្រុមអគារ និង កុដិ', '⛩️ ក្រុមខ្លោងទ្វារវត្ត']);
+    Object.keys(categoryGroups).forEach((c) => cats.add(c));
+    return Array.from(cats);
+  }, [categoryGroups]);
+
   // Zoom handlers (clamped between 0.4x and 5.0x with center focal preservation)
   const handleZoom = (delta) => {
     const vp = viewportRef.current;
@@ -2391,6 +2397,35 @@ export default function TempleMapModal({
                   />
                 </div>
 
+                {/* Group / Category Select Dropdown */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    📁 ជ្រើសរើស Group ទីតាំង (Category) ៖
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'}
+                      onChange={(e) => setModalForm((prev) => ({ ...prev, category: e.target.value }))}
+                      className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-400"
+                    >
+                      {availableCategories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsCategoryModalOpen(true)}
+                      className="px-3 py-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold rounded-xl transition-all shrink-0"
+                      title="បង្កើត Group ថ្មី"
+                    >
+                      + Group ថ្មី
+                    </button>
+                  </div>
+                </div>
+
                 {/* Label Position & Badge Color options (ONLY VISIBLE ON TAB 3) */}
                 {activeTab === 'tagger' && (
                   <>
@@ -2646,6 +2681,55 @@ export default function TempleMapModal({
                   >
                     កែឈ្មោះ
                   </button>
+                </div>
+              </div>
+
+              {/* Checkbox List of Pins in / to add to this Group */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-300 flex items-center justify-between">
+                  <span>📌 ជ្រើសរើស Pin ទីតាំង ដាក់ចូលក្នុង Group «{editingGroupName}» នេះ ៖</span>
+                  <span className="text-[10px] text-amber-400 font-normal">គ្រីក (✓) ដើម្បីដាក់ចូល Group</span>
+                </label>
+                <div className="max-h-48 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-2xl p-2">
+                  {currentLocations.map((loc) => {
+                    const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+                    const isInGroup = locCat === editingGroupName;
+
+                    return (
+                      <label
+                        key={loc.id}
+                        className={`flex items-center justify-between text-xs p-1.5 rounded-xl cursor-pointer transition-all ${
+                          isInGroup
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold'
+                            : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isInGroup}
+                            onChange={(e) => {
+                              const targetCategory = e.target.checked ? editingGroupName : '🏢 ក្រុមអគារ និង កុដិ';
+                              const { setter, saver } = getTabDataFunctions();
+                              const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+                              const updated = baseLocations.map((l) =>
+                                l.id === loc.id ? { ...l, category: targetCategory } : l
+                              );
+                              setter(updated);
+                              saver(updated);
+                            }}
+                            className="rounded border-slate-700 text-amber-500 focus:ring-0"
+                          />
+                          <span className="font-bold text-amber-400 font-moul shrink-0">#{loc.id}.</span>
+                          <span className="truncate">{loc.name}</span>
+                        </div>
+
+                        <span className="text-[10px] text-slate-400 shrink-0 font-sans-en">
+                          {isInGroup ? '✓ ក្នុង Group នេះ' : locCat}
+                        </span>
+                      </label>
+                    );
+                  })}
                 </div>
               </div>
 
