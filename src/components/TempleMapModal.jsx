@@ -1777,37 +1777,6 @@ export default function TempleMapModal({
               </div>
             </div>
 
-            {/* ════════ FLOATING ZOOM CONTROLS ════════ */}
-            <div className="zoom-toolbar absolute bottom-3 right-3 flex flex-col items-center gap-1.5 z-30 font-kantumruy">
-              <div className="bg-slate-950/90 text-amber-400 border border-amber-500/50 px-2 py-0.5 rounded-lg text-[10px] sm:text-xs font-bold text-center shadow-lg backdrop-blur-md">
-                {Math.round(zoomScale * 100)}%
-              </div>
-
-              <button
-                onClick={() => handleZoom(0.25)}
-                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95 backdrop-blur-md"
-                title="ពង្រីក (Zoom In +)"
-              >
-                <ZoomIn className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-
-              <button
-                onClick={() => handleZoom(-0.25)}
-                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95 backdrop-blur-md"
-                title="បង្រួម (Zoom Out -)"
-              >
-                <ZoomOut className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-
-              <button
-                onClick={handleResetZoom}
-                className="w-8 h-8 sm:w-9 sm:h-9 md:w-10 md:h-10 rounded-xl bg-slate-950/90 text-amber-400 border border-amber-500/50 flex items-center justify-center shadow-lg hover:bg-amber-500 hover:text-slate-950 transition-all active:scale-95 backdrop-blur-md"
-                title="កំណត់ដើម 100% (Reset)"
-              >
-                <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
-              </button>
-            </div>
-
             {/* Selected Location Banner Popover */}
             {selectedLocation && (
               <div className="absolute top-3 left-3 max-w-[280px] sm:max-w-sm bg-slate-950/95 border border-amber-500/60 rounded-2xl p-2.5 sm:p-3 shadow-2xl backdrop-blur-md z-40 animate-in fade-in slide-in-from-top-2">
