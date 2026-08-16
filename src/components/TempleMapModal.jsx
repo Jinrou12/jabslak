@@ -251,6 +251,7 @@ export default function TempleMapModal({
   const hasPannedRef = useRef(false);
   const touchStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
   const pinchRafRef = useRef(null);
+  const liveScaleRef = useRef(1.0); // Tracks real-time scale during pinch (no React re-render)
   const pinchStateRef = useRef({
     active: false,
     initialDist: 0,
@@ -577,17 +578,24 @@ export default function TempleMapModal({
     }
   };
 
-  // Touch Panning (1 finger) & Ultra-Smooth 120fps Focal Pinch Zooming (2 fingers)
+  // Touch Panning (1 finger) & GPU-Composited 120fps Focal Pinch Zoom (2 fingers)
+  // Key insight: during pinch we NEVER call setZoomScale (no React re-render).
+  // Instead we directly mutate mapContainerRef.current.style.transform on the GPU thread.
+  // On touchend we commit the final value to React state exactly once.
   const handleTouchStart = (e) => {
     if (draggingPinId) return;
     if (e.target.closest('.zoom-toolbar')) return;
 
     const pinEl = e.target.closest('.map-pin-element');
     if (pinEl && pinEl.getAttribute('data-draggable') === 'true') {
-      return; // Only draggable pins block map panning
+      return;
     }
 
     if (e.touches.length === 1) {
+      // Cancel any pending pinch
+      if (pinchStateRef.current.active) {
+        pinchStateRef.current.active = false;
+      }
       setIsPanning(true);
       hasPannedRef.current = false;
       const touch = e.touches[0];
@@ -608,6 +616,8 @@ export default function TempleMapModal({
       const midX = (t1.clientX + t2.clientX) / 2 - vpRect.left;
       const midY = (t1.clientY + t2.clientY) / 2 - vpRect.top;
 
+      liveScaleRef.current = zoomScale;
+
       pinchStateRef.current = {
         active: true,
         initialDist: dist,
@@ -623,7 +633,7 @@ export default function TempleMapModal({
   const handleTouchMove = (e) => {
     if (draggingPinId || !viewportRef.current) return;
 
-    if (e.touches.length === 1 && touchStartRef.current.x) {
+    if (e.touches.length === 1 && !pinchStateRef.current.active && touchStartRef.current.x) {
       const touch = e.touches[0];
       const dx = touch.clientX - touchStartRef.current.x;
       const dy = touch.clientY - touchStartRef.current.y;
@@ -633,7 +643,7 @@ export default function TempleMapModal({
         pinMovedFlagRef.current = true;
       }
 
-      if (zoomScale > 1.0) {
+      if (liveScaleRef.current > 1.0) {
         viewportRef.current.scrollLeft = touchStartRef.current.scrollLeft - dx;
         viewportRef.current.scrollTop = touchStartRef.current.scrollTop - dy;
       }
@@ -645,33 +655,51 @@ export default function TempleMapModal({
       const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
       if (!pinchStateRef.current.initialDist) return;
 
-      const scaleFactor = dist / pinchStateRef.current.initialDist;
-      const nextScale = Math.max(0.5, Math.min(5.0, parseFloat((pinchStateRef.current.initialScale * scaleFactor).toFixed(2))));
+      const { initialDist, initialScale, initialScrollLeft, initialScrollTop, midX, midY } = pinchStateRef.current;
+      const scaleFactor = dist / initialDist;
+      const nextScale = Math.max(0.4, Math.min(5.0, initialScale * scaleFactor));
 
-      if (pinchRafRef.current) {
-        cancelAnimationFrame(pinchRafRef.current);
+      liveScaleRef.current = nextScale;
+
+      // ✅ ZERO React re-renders: mutate DOM transform directly on GPU compositor thread
+      const mapEl = mapContainerRef.current;
+      if (mapEl) {
+        mapEl.style.width = `${initialScale * 100}%`; // hold initial layout
+        mapEl.style.transform = `scale(${nextScale / initialScale})`;
+        mapEl.style.transformOrigin = `${midX}px ${midY}px`;
       }
 
-      pinchRafRef.current = requestAnimationFrame(() => {
-        setZoomScale(nextScale);
-
-        const vp = viewportRef.current;
-        if (vp) {
-          const { initialScale, initialScrollLeft, initialScrollTop, midX, midY } = pinchStateRef.current;
-          const ratio = nextScale / (initialScale || 1);
-          vp.scrollLeft = Math.max(0, (initialScrollLeft + midX) * ratio - midX);
-          vp.scrollTop = Math.max(0, (initialScrollTop + midY) * ratio - midY);
-        }
-      });
+      // Adjust scroll to keep focal point stable
+      const vp = viewportRef.current;
+      if (vp) {
+        const ratio = nextScale / (initialScale || 1);
+        vp.scrollLeft = Math.max(0, (initialScrollLeft + midX) * ratio - midX);
+        vp.scrollTop = Math.max(0, (initialScrollTop + midY) * ratio - midY);
+      }
     }
   };
 
   const handleTouchEnd = () => {
     setIsPanning(false);
-    pinchStateRef.current.active = false;
-    if (pinchRafRef.current) {
-      cancelAnimationFrame(pinchRafRef.current);
+
+    if (pinchStateRef.current.active) {
+      pinchStateRef.current.active = false;
+
+      // Commit final scale to React state (only 1 re-render total for the whole gesture)
+      const finalScale = liveScaleRef.current;
+
+      // Clear inline transform before React re-renders with proper width
+      const mapEl = mapContainerRef.current;
+      if (mapEl) {
+        mapEl.style.transform = '';
+        mapEl.style.transformOrigin = '';
+      }
+
+      setZoomScale(parseFloat(finalScale.toFixed(2)));
     }
+
+    if (pinchRafRef.current) cancelAnimationFrame(pinchRafRef.current);
+
     if (hasPannedRef.current) {
       setTimeout(() => {
         pinMovedFlagRef.current = false;
