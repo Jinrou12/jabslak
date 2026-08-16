@@ -115,22 +115,12 @@ export function getPinBadgeColorClass(loc, idx = 0, activeTab = 'interactive') {
     return 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 border-white ring-1 ring-amber-400/60';
   }
 
-  // On Tab 1 and Tab 2, ALL location pins default 100% to BLUE (cyan)
-  if (activeTab !== 'tagger') {
-    return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
-  }
-
-  // Custom user-selected badge color on Tab 3
-  if (loc.badgeColor && COLOR_OPTION_GRADIENTS[loc.badgeColor]) {
+  // Custom user-selected badge color on Tab 3 (if specifically purple, rose, fuchsia, etc.)
+  if (activeTab === 'tagger' && loc.badgeColor && loc.badgeColor !== 'emerald' && COLOR_OPTION_GRADIENTS[loc.badgeColor]) {
     return COLOR_OPTION_GRADIENTS[loc.badgeColor];
   }
 
-  // On Tab 3: Western Tag Digits (1, 2, 3...) are Green (សម្រាប់ដៅស្លាកលេខ)
-  if (/^\d+$/.test(idStr)) {
-    return 'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60';
-  }
-
-  // Otherwise: Blue
+  // Default ALL location pins (including #18 សាលាសន្និសីទ) to 100% BLUE (cyan) across ALL tabs
   return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
 }
 
