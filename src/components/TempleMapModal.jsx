@@ -491,12 +491,31 @@ export default function TempleMapModal({
     return groups;
   }, [currentLocations]);
 
-  // Zoom handlers (clamped between 0.4x and 5.0x)
+  // Zoom handlers (clamped between 0.4x and 5.0x with center focal preservation)
   const handleZoom = (delta) => {
-    setZoomScale((prev) => {
-      const next = Math.max(0.4, Math.min(5.0, parseFloat((prev + delta).toFixed(2))));
-      return next;
-    });
+    const vp = viewportRef.current;
+    const currentScale = zoomScale;
+    const nextScale = Math.max(0.4, Math.min(5.0, parseFloat((currentScale + delta).toFixed(2))));
+    if (nextScale === currentScale) return;
+
+    if (vp && currentScale > 0) {
+      const ratio = nextScale / currentScale;
+      const focalX = vp.clientWidth / 2;
+      const focalY = vp.clientHeight / 2;
+
+      const targetScrollLeft = Math.max(0, (vp.scrollLeft + focalX) * ratio - focalX);
+      const targetScrollTop = Math.max(0, (vp.scrollTop + focalY) * ratio - focalY);
+
+      setZoomScale(nextScale);
+      requestAnimationFrame(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollLeft = targetScrollLeft;
+          viewportRef.current.scrollTop = targetScrollTop;
+        }
+      });
+    } else {
+      setZoomScale(nextScale);
+    }
   };
 
   const handleResetZoom = () => {
@@ -508,22 +527,35 @@ export default function TempleMapModal({
     }
   };
 
-  // Wheel zoom effect on map viewport box
+  // Wheel zoom effect on map viewport box (zooms into mouse cursor focal position)
   useEffect(() => {
     const vp = viewportRef.current;
     if (!vp) return;
 
     const handleWheel = (e) => {
-      // If Ctrl key is held or zoomed in > 1.05x, handle map zoom
       if (e.ctrlKey || e.metaKey || zoomScale > 1.05) {
         e.preventDefault();
         const delta = e.deltaY < 0 ? 0.15 : -0.15;
-        setZoomScale((prev) => {
-          const next = Math.max(0.4, Math.min(5.0, parseFloat((prev + delta).toFixed(2))));
-          return next;
+        const currentScale = zoomScale;
+        const nextScale = Math.max(0.4, Math.min(5.0, parseFloat((currentScale + delta).toFixed(2))));
+        if (nextScale === currentScale) return;
+
+        const vpRect = vp.getBoundingClientRect();
+        const focalX = e.clientX - vpRect.left;
+        const focalY = e.clientY - vpRect.top;
+        const ratio = nextScale / (currentScale || 1);
+
+        const targetScrollLeft = Math.max(0, (vp.scrollLeft + focalX) * ratio - focalX);
+        const targetScrollTop = Math.max(0, (vp.scrollTop + focalY) * ratio - focalY);
+
+        setZoomScale(nextScale);
+        requestAnimationFrame(() => {
+          if (viewportRef.current) {
+            viewportRef.current.scrollLeft = targetScrollLeft;
+            viewportRef.current.scrollTop = targetScrollTop;
+          }
         });
       }
-      // Otherwise allow default page/modal wheel scroll down to location list
     };
 
     vp.addEventListener('wheel', handleWheel, { passive: false });
@@ -685,17 +717,26 @@ export default function TempleMapModal({
     if (pinchStateRef.current.active) {
       pinchStateRef.current.active = false;
 
-      // Commit final scale to React state (only 1 re-render total for the whole gesture)
       const finalScale = liveScaleRef.current;
+      const vp = viewportRef.current;
+      const savedScrollLeft = vp ? vp.scrollLeft : 0;
+      const savedScrollTop = vp ? vp.scrollTop : 0;
 
-      // Clear inline transform before React re-renders with proper width
       const mapEl = mapContainerRef.current;
       if (mapEl) {
         mapEl.style.transform = '';
         mapEl.style.transformOrigin = '';
+        mapEl.style.width = `${finalScale * 100}%`;
       }
 
       setZoomScale(parseFloat(finalScale.toFixed(2)));
+
+      requestAnimationFrame(() => {
+        if (viewportRef.current) {
+          viewportRef.current.scrollLeft = savedScrollLeft;
+          viewportRef.current.scrollTop = savedScrollTop;
+        }
+      });
     }
 
     if (pinchRafRef.current) cancelAnimationFrame(pinchRafRef.current);
