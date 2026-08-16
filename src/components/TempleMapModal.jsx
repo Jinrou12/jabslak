@@ -273,7 +273,6 @@ export default function TempleMapModal({
     if (isMobile) {
       setZoomScale(1.35); // Expand map to fill phone screen edge-to-edge
       setPinSizePx(12);   // Compact 12px pin circle for mobile
-      setIsLabelsVisible(false); // Hide text clutter by default on mobile so map stays super clean
     }
   }, []);
 
@@ -1685,8 +1684,8 @@ export default function TempleMapModal({
                               );
                             })()}
 
-                            {/* Floating Name Label: RENDERED IN TAB 1 when isLabelsVisible is true, OR when highlighted */}
-                            {activeTab === 'labeled' && (isLabelsVisible || isHighlighted) && (
+                            {/* Floating Name Label: PERMANENTLY RENDERED IN TAB 1 */}
+                            {activeTab === 'labeled' && (
                               <div
                                 className={`absolute text-[7.5px] sm:text-[9px] md:text-[10.5px] font-bold py-0.5 px-1.5 rounded-lg border shadow-lg whitespace-nowrap pointer-events-none z-0 ${
                                   isGate
