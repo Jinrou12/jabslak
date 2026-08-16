@@ -693,20 +693,20 @@ export default function TempleMapModal({
 
       liveScaleRef.current = nextScale;
 
-      // ✅ ZERO React re-renders: mutate DOM transform directly on GPU compositor thread
       const mapEl = mapContainerRef.current;
-      if (mapEl) {
-        mapEl.style.width = `${initialScale * 100}%`; // hold initial layout
-        mapEl.style.transform = `scale(${nextScale / initialScale})`;
-        mapEl.style.transformOrigin = `${midX}px ${midY}px`;
-      }
-
-      // Adjust scroll to keep focal point stable
       const vp = viewportRef.current;
-      if (vp) {
+
+      if (mapEl && vp) {
+        // Expand map width in real-time so scrollWidth expands dynamically without clamping
+        mapEl.style.width = `${nextScale * 100}%`;
+
+        // Calculate exact scroll position to anchor focal point under 2 fingers
         const ratio = nextScale / (initialScale || 1);
-        vp.scrollLeft = Math.max(0, (initialScrollLeft + midX) * ratio - midX);
-        vp.scrollTop = Math.max(0, (initialScrollTop + midY) * ratio - midY);
+        const targetScrollLeft = Math.max(0, (initialScrollLeft + midX) * ratio - midX);
+        const targetScrollTop = Math.max(0, (initialScrollTop + midY) * ratio - midY);
+
+        vp.scrollLeft = targetScrollLeft;
+        vp.scrollTop = targetScrollTop;
       }
     }
   };
@@ -719,22 +719,17 @@ export default function TempleMapModal({
 
       const finalScale = liveScaleRef.current;
       const vp = viewportRef.current;
-      const savedScrollLeft = vp ? vp.scrollLeft : 0;
-      const savedScrollTop = vp ? vp.scrollTop : 0;
+      const finalScrollLeft = vp ? vp.scrollLeft : 0;
+      const finalScrollTop = vp ? vp.scrollTop : 0;
 
-      const mapEl = mapContainerRef.current;
-      if (mapEl) {
-        mapEl.style.transform = '';
-        mapEl.style.transformOrigin = '';
-        mapEl.style.width = `${finalScale * 100}%`;
-      }
-
+      // Commit final scale to React state
       setZoomScale(parseFloat(finalScale.toFixed(2)));
 
+      // Lock scroll position seamlessly
       requestAnimationFrame(() => {
         if (viewportRef.current) {
-          viewportRef.current.scrollLeft = savedScrollLeft;
-          viewportRef.current.scrollTop = savedScrollTop;
+          viewportRef.current.scrollLeft = finalScrollLeft;
+          viewportRef.current.scrollTop = finalScrollTop;
         }
       });
     }
