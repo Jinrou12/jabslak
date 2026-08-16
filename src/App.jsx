@@ -32,6 +32,7 @@ export default function App() {
   const [tags, setTags] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('ALL');
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table' | 'map' | 'report'
   const [attendanceFilter, setAttendanceFilter] = useState('ALL'); // 'ALL' | 'notArrived' | 'arrived'
   const [reportActiveTab, setReportActiveTab] = useState('arrived'); // 'arrived' | 'notArrived' | 'all'
   const [isCloudSyncing, setIsCloudSyncing] = useState(true);
