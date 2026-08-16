@@ -1,6 +1,5 @@
 import React from 'react';
-import { Search, X, Filter, LayoutGrid, List, Map as MapIcon, CheckCircle2, XCircle, Users } from 'lucide-react';
-import { locationsList } from '../data/sampleData';
+import { Search, X, Filter, LayoutGrid, List, Map as MapIcon, CheckCircle2, XCircle, Users, Calendar } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function SearchBar({
@@ -137,39 +136,14 @@ export default function SearchBar({
         </button>
       </div>
 
-      {/* Location Filter Badges / Chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 border-t border-slate-800/60 pt-2">
-        <span className="text-xs text-slate-400 font-medium flex items-center gap-1 shrink-0 mr-1">
-          <span>ទីតាំង:</span>
-        </span>
-
-        <button
-          onClick={() => setSelectedLocation('ALL')}
-          className={`px-3 py-1 rounded-xl text-xs font-semibold shrink-0 transition-all ${
-            selectedLocation === 'ALL'
-              ? 'bg-slate-200 text-slate-950 font-bold shadow-md'
-              : 'bg-slate-950/80 text-slate-400 hover:bg-slate-800 border border-slate-800'
-          }`}
-        >
-          គ្រប់ទីតាំង
-        </button>
-
-        {locationsList.map((loc) => {
-          const isSelected = selectedLocation === loc;
-          return (
-            <button
-              key={loc}
-              onClick={() => setSelectedLocation(loc)}
-              className={`px-3 py-1 rounded-xl text-xs font-medium shrink-0 transition-all ${
-                isSelected
-                  ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
-                  : 'bg-slate-950/80 text-slate-300 hover:bg-slate-800 border border-slate-800'
-              }`}
-            >
-              {loc}
-            </button>
-          );
-        })}
+      {/* 📅 Event Khmer Date Banner */}
+      <div className="flex items-center justify-center border-t border-slate-800/80 pt-2.5 text-center">
+        <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 border border-amber-500/30 rounded-xl px-3.5 py-1.5 shadow-inner max-w-full overflow-hidden">
+          <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
+          <span className="text-xs sm:text-sm font-bold text-amber-200 font-kantumruy leading-tight truncate">
+            ថ្ងៃសៅរ៍ ៨រោច ខែស្រាពណ៍ ឆ្នាំមមី អដ្ឋស័ក ពុទ្ធសករាជ ២៥៧០ ត្រូវនឹងថ្ងៃទី៥ ខែកញ្ញា ឆ្នាំ២០២៦
+          </span>
+        </div>
       </div>
 
     </div>
