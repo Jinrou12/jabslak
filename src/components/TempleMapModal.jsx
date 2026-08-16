@@ -1322,14 +1322,14 @@ export default function TempleMapModal({
             {/* Toggle Compass Button */}
             <button
               onClick={() => setIsCompassVisible(!isCompassVisible)}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+              className={`p-1.5 sm:p-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center transition-all ${
                 isCompassVisible
                   ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300'
-                  : 'text-slate-400 hover:text-slate-200'
+                  : 'text-slate-400 hover:text-slate-200 border border-transparent'
               }`}
+              title={isCompassVisible ? 'លាក់ត្រីវិស័យ' : 'បង្ហាញត្រីវិស័យ'}
             >
-              <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
-              <span>{isCompassVisible ? 'ត្រីវិស័យ' : 'លាក់ត្រីវិស័យ'}</span>
+              <Compass className="w-4 h-4 text-amber-400 shrink-0" />
             </button>
 
             {/* Toggle Pins Button */}
