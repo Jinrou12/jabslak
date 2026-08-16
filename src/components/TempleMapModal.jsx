@@ -1006,15 +1006,24 @@ export default function TempleMapModal({
       };
       updated = [...baseLocations.map(stripComputed), newPoint];
       setSelectedLocation(newPoint);
+
+      setIsPinsVisible(true);
+      if (newPoint.category) {
+        setHiddenCategories((prev) => ({ ...prev, [newPoint.category]: false }));
+      }
+      centerPinOnMap(newPoint);
     }
 
     setter(updated);
     saver(updated);
 
-    // If editing in Tab 2, also propagate to Tab 3
+    // Synchronize new pins across both Tab 2 and Tab 3 so pins are 100% visible on all tabs!
     if (activeTab === 'interactive') {
       setTab3Locations(updated);
       saveTab3LocationsToFirebase(updated);
+    } else if (activeTab === 'tagger') {
+      setLocations(updated);
+      saveTempleLocationsToFirebase(updated);
     }
 
     setIsEditModalOpen(false);
