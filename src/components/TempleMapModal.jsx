@@ -1335,18 +1335,18 @@ export default function TempleMapModal({
             {/* Toggle Pins Button */}
             <button
               onClick={() => setIsPinsVisible(!isPinsVisible)}
-              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+              className={`p-1.5 sm:p-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center transition-all ${
                 isPinsVisible
                   ? 'bg-sky-500/20 border border-sky-500/50 text-sky-300'
                   : 'bg-rose-500/20 border border-rose-500/50 text-rose-400'
               }`}
+              title={isPinsVisible ? 'លាក់ Pin' : 'បង្ហាញ Pin'}
             >
               {isPinsVisible ? (
-                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400 shrink-0" />
+                <Eye className="w-4 h-4 text-sky-400 shrink-0" />
               ) : (
-                <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-400 shrink-0" />
+                <EyeOff className="w-4 h-4 text-rose-400 shrink-0" />
               )}
-              <span>{isPinsVisible ? 'បង្ហាញ Pin' : 'លាក់ Pin'}</span>
             </button>
           </div>
 
