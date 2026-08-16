@@ -1412,21 +1412,6 @@ export default function TempleMapModal({
               </div>
             )}
 
-            {/* Toggle Name Labels in Tab 1 */}
-            {activeTab === 'labeled' && (
-              <button
-                onClick={() => setIsLabelsVisible(!isLabelsVisible)}
-                className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm ${
-                  isLabelsVisible
-                    ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-300 hover:bg-emerald-500/30'
-                    : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
-                }`}
-                title={isLabelsVisible ? 'លាក់ឈ្មោះទីតាំង (បង្ហាញតែលេខលើ Pin ដើម្បកុំឲ្យជាន់គ្នា)' : 'បង្ហាញឈ្មោះទីតាំងទាំងអស់'}
-              >
-                <Tag className="w-4 h-4 text-emerald-400" />
-                <span>{isLabelsVisible ? 'ឈ្មោះ' : 'លាក់ឈ្មោះ'}</span>
-              </button>
-            )}
           </div>
         </div>
 
