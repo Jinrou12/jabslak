@@ -179,7 +179,7 @@ export default function Header({
             title="មើលតារាងរបាយការណ៍អ្នកបានមកដល់ និងមិនទាន់មកដល់"
           >
             <UserCheck className="w-4 h-4 text-emerald-200 shrink-0" />
-            <span className="whitespace-nowrap font-bold">របាយការណ៍មកដល់</span>
+            <span className="whitespace-nowrap font-bold">របាយការណ៍</span>
           </button>
 
           {/* Excel Import / Export (PC/Desktop only - HIDDEN on Mobile phones) */}
