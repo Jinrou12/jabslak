@@ -159,7 +159,10 @@ export default function TempleMapModal({
   isModal = true
 }) {
   const modalMode = isModal || Boolean(onClose);
-  const canCustomizeMap = true; // Enable pin editing and customizing in Tab 2 and Tab 3 for all users
+  // Only admin & owner can customize (add/edit/delete pins, drag, create groups) on Tab 3
+  // Assistant and Guest can only VIEW the map
+  const userRole = currentUser?.role || 'guest';
+  const canCustomizeMap = userRole === 'admin' || userRole === 'owner';
 
   // Tab 1 & Tab 2 share this state
   const [locations, setLocations] = useState(getSavedTempleLocations());
@@ -608,6 +611,7 @@ export default function TempleMapModal({
   // Map Click (Add new pin on Tab 2 or Tab 3)
   const handleMapClick = (e) => {
     if (activeTab === 'labeled') return; // Read-only on Tab 1
+    if (activeTab === 'tagger' && !canCustomizeMap) return; // Tab 3: only admin/owner can add pins
     if (draggingPinId || pinMovedFlagRef.current) return;
     const rect = mapContainerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -657,6 +661,7 @@ export default function TempleMapModal({
   // Ultra-Precise Pin Dragging (Synchronizes to Cloud on End)
   const handlePinDragStart = (e, loc) => {
     if (activeTab === 'labeled') return; // Read-only on Tab 1
+    if (activeTab === 'tagger' && !canCustomizeMap) return; // Tab 3: only admin/owner can drag
 
     e.stopPropagation();
     pinMovedFlagRef.current = false;
