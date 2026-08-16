@@ -741,6 +741,22 @@ export default function TempleMapModal({
     }
   };
 
+  // Helper: calculate next default location ID in Khmer digits (e.g. ១៨, ១៩, ២០...)
+  const getNextDefaultLocationId = (locs = []) => {
+    let maxNum = 0;
+    locs.forEach((l) => {
+      const khmerToWestern = String(l.id || '')
+        .replace(/០/g, '0').replace(/១/g, '1').replace(/២/g, '2').replace(/៣/g, '3').replace(/៤/g, '4')
+        .replace(/៥/g, '5').replace(/៦/g, '6').replace(/៧/g, '7').replace(/៨/g, '8').replace(/៩/g, '9');
+      const num = parseInt(khmerToWestern, 10);
+      if (!isNaN(num) && num > maxNum) {
+        maxNum = num;
+      }
+    });
+    const nextNum = maxNum > 0 ? maxNum + 1 : locs.length + 1;
+    return westernToKhmerDigits(nextNum);
+  };
+
   // Map Click (Add new pin on Tab 2 or Tab 3)
   const handleMapClick = (e) => {
     if (activeTab === 'labeled') return; // Read-only on Tab 1
@@ -770,8 +786,9 @@ export default function TempleMapModal({
       setPendingPinTag(null);
     } else {
       setModalForm({
-        id: String(currentLocations.length + 1),
+        id: getNextDefaultLocationId(currentLocations),
         name: '',
+        badgeColor: 'cyan',
         type: 'building',
         pos: 'R',
         category: '🏢 ក្រុមអគារ និង កុដិ'
@@ -897,7 +914,7 @@ export default function TempleMapModal({
       y: 50
     });
     setModalForm({
-      id: String(currentLocations.length + 1),
+      id: getNextDefaultLocationId(currentLocations),
       name: '',
       badgeColor: 'cyan',
       type: 'building',
