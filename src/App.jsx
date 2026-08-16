@@ -32,7 +32,7 @@ export default function App() {
   const [tags, setTags] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('ALL');
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table' | 'map' | 'report'
+  const [attendanceFilter, setAttendanceFilter] = useState('ALL'); // 'ALL' | 'notArrived' | 'arrived'
   const [reportActiveTab, setReportActiveTab] = useState('arrived'); // 'arrived' | 'notArrived' | 'all'
   const [isCloudSyncing, setIsCloudSyncing] = useState(true);
 
@@ -102,12 +102,16 @@ export default function App() {
 
   // Filter tags in real-time
   const filteredTags = useMemo(() => {
-    return searchTags(tags, searchQuery, selectedLocation);
-  }, [tags, searchQuery, selectedLocation]);
+    return searchTags(tags, searchQuery, selectedLocation, attendanceFilter);
+  }, [tags, searchQuery, selectedLocation, attendanceFilter]);
 
-  // Arrived count calculation
+  // Arrived & Not Arrived count calculation
   const arrivedCount = useMemo(() => {
     return tags.filter((t) => !!t.arrived).length;
+  }, [tags]);
+
+  const notArrivedCount = useMemo(() => {
+    return tags.filter((t) => !t.arrived).length;
   }, [tags]);
 
   // Compute next available tag number
@@ -335,6 +339,11 @@ export default function App() {
           setSearchQuery={setSearchQuery}
           selectedLocation={selectedLocation}
           setSelectedLocation={setSelectedLocation}
+          attendanceFilter={attendanceFilter}
+          setAttendanceFilter={setAttendanceFilter}
+          totalCount={tags.length}
+          arrivedCount={arrivedCount}
+          notArrivedCount={notArrivedCount}
           viewMode={viewMode}
           setViewMode={setViewMode}
         />

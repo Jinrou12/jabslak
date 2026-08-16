@@ -33,15 +33,21 @@ export function westernToKhmerDigits(num) {
  * - Name matches follow
  * - Location / Phone matches follow
  */
-export function searchTags(tagList, searchQuery, selectedLocation = 'ALL') {
+export function searchTags(tagList, searchQuery, selectedLocation = 'ALL', attendanceFilter = 'ALL') {
   if (!tagList || !Array.isArray(tagList)) return [];
 
   const rawQuery = (searchQuery || '').trim();
   const normalizedQuery = khmerToWesternDigits(rawQuery).toLowerCase();
 
-  // 1. Filter by location first
+  // 1. Filter by location & attendance status
   const locationFiltered = tagList.filter((item) => {
     if (selectedLocation !== 'ALL' && item.location !== selectedLocation) {
+      return false;
+    }
+    if (attendanceFilter === 'notArrived' && item.arrived) {
+      return false;
+    }
+    if (attendanceFilter === 'arrived' && !item.arrived) {
       return false;
     }
     return true;

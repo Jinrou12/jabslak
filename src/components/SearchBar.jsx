@@ -1,17 +1,23 @@
 import React from 'react';
-import { Search, X, Filter, LayoutGrid, List, Map as MapIcon } from 'lucide-react';
+import { Search, X, Filter, LayoutGrid, List, Map as MapIcon, CheckCircle2, XCircle, Users } from 'lucide-react';
 import { locationsList } from '../data/sampleData';
+import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function SearchBar({
   searchQuery,
   setSearchQuery,
   selectedLocation,
   setSelectedLocation,
+  attendanceFilter = 'ALL',
+  setAttendanceFilter,
+  totalCount = 0,
+  arrivedCount = 0,
+  notArrivedCount = 0,
   viewMode,
   setViewMode
 }) {
   return (
-    <div className="sticky top-0 sm:top-2 z-30 bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 md:p-4 shadow-2xl backdrop-blur-xl transition-all">
+    <div className="sticky top-0 sm:top-2 z-30 bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 md:p-4 shadow-2xl backdrop-blur-xl transition-all space-y-3 font-kantumruy">
       
       {/* Search Input Box & View Switcher */}
       <div className="flex items-center gap-2">
@@ -83,22 +89,69 @@ export default function SearchBar({
         </div>
       </div>
 
-      {/* Location Filter Badges / Chips */}
-      <div className="mt-3 flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+      {/* 🟢 Status & Attendance Filter Tabs ( ទាំងអស់ | មិនទាន់មកដល់ | បានមកដល់ ) */}
+      <div className="flex flex-wrap items-center gap-1.5 pt-1">
         <span className="text-xs text-slate-400 font-medium flex items-center gap-1 shrink-0 mr-1">
           <Filter className="w-3.5 h-3.5 text-amber-400" />
-          <span>តម្រងទីតាំង:</span>
+          <span>តម្រងវត្តមាន:</span>
+        </span>
+
+        {/* Option 1: ALL (ទាំងអស់) */}
+        <button
+          onClick={() => setAttendanceFilter && setAttendanceFilter('ALL')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all flex items-center gap-1.5 ${
+            attendanceFilter === 'ALL'
+              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/40'
+              : 'bg-slate-950/80 text-slate-300 hover:bg-slate-800 border border-slate-800'
+          }`}
+        >
+          <Users className="w-3.5 h-3.5" />
+          <span>ទាំងអស់ ({westernToKhmerDigits(totalCount)})</span>
+        </button>
+
+        {/* Option 2: Not Arrived (មិនទាន់មកដល់ - Auto Hides Ticked) */}
+        <button
+          onClick={() => setAttendanceFilter && setAttendanceFilter('notArrived')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all flex items-center gap-1.5 ${
+            attendanceFilter === 'notArrived'
+              ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30 ring-2 ring-rose-400/40'
+              : 'bg-slate-950/80 text-rose-400 hover:bg-slate-800 border border-rose-500/30'
+          }`}
+          title="គ្រីសរាយការណ៍មកដល់ហើយ ឈ្មោះនោះនឹងត្រូវលាក់ចេញពីផ្ទាំងនេះដោយស្វ័យប្រវត្តិ"
+        >
+          <XCircle className="w-3.5 h-3.5" />
+          <span>មិនទាន់មកដល់ ({westernToKhmerDigits(notArrivedCount)})</span>
+        </button>
+
+        {/* Option 3: Arrived Only (បានមកដល់) */}
+        <button
+          onClick={() => setAttendanceFilter && setAttendanceFilter('arrived')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all flex items-center gap-1.5 ${
+            attendanceFilter === 'arrived'
+              ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 ring-2 ring-emerald-400/40'
+              : 'bg-slate-950/80 text-emerald-400 hover:bg-slate-800 border border-emerald-500/30'
+          }`}
+        >
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>បានមកដល់ ({westernToKhmerDigits(arrivedCount)})</span>
+        </button>
+      </div>
+
+      {/* Location Filter Badges / Chips */}
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 border-t border-slate-800/60 pt-2">
+        <span className="text-xs text-slate-400 font-medium flex items-center gap-1 shrink-0 mr-1">
+          <span>ទីតាំង:</span>
         </span>
 
         <button
           onClick={() => setSelectedLocation('ALL')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-all ${
+          className={`px-3 py-1 rounded-xl text-xs font-semibold shrink-0 transition-all ${
             selectedLocation === 'ALL'
-              ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-              : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/50'
+              ? 'bg-slate-200 text-slate-950 font-bold shadow-md'
+              : 'bg-slate-950/80 text-slate-400 hover:bg-slate-800 border border-slate-800'
           }`}
         >
-          ទាំងអស់
+          គ្រប់ទីតាំង
         </button>
 
         {locationsList.map((loc) => {
@@ -107,10 +160,10 @@ export default function SearchBar({
             <button
               key={loc}
               onClick={() => setSelectedLocation(loc)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium shrink-0 transition-all ${
+              className={`px-3 py-1 rounded-xl text-xs font-medium shrink-0 transition-all ${
                 isSelected
                   ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
-                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 border border-slate-700/50'
+                  : 'bg-slate-950/80 text-slate-300 hover:bg-slate-800 border border-slate-800'
               }`}
             >
               {loc}
