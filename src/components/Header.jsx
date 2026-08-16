@@ -209,40 +209,6 @@ export default function Header({
           )}
 
         </div>
-
-        {/* Third Row: Stats Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-0.5 text-xs text-slate-400 font-kantumruy">
-          <button
-            onClick={onOpenLocationStats}
-            className="flex items-center gap-1.5 bg-slate-900/90 hover:bg-slate-800 border border-slate-800 rounded-xl px-2.5 py-1 text-[11px] text-slate-300 transition-all shrink-0 active:scale-95"
-          >
-            <MapPin className="w-3 h-3 text-amber-400" />
-            <span>ទីតាំង ៖</span>
-            <span className="text-amber-400 font-bold">២១ ទីតាំង</span>
-          </button>
-
-          <div className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1 text-[11px] text-slate-300 shrink-0">
-            <Users className="w-3 h-3 text-sky-400" />
-            <span>ទិន្នន័យ ៖</span>
-            <span className="text-sky-300 font-bold font-sans-en">
-              {westernToKhmerDigits(filteredCount)} / {westernToKhmerDigits(totalCount)}
-            </span>
-          </div>
-
-          {/* Arrived Count Chip Button (Visible for EVERYONE!) */}
-          <button
-            onClick={onOpenAttendanceReport}
-            className="flex items-center gap-1.5 bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600/80 hover:border-emerald-400 rounded-xl px-2.5 py-1 text-[11px] text-emerald-300 shrink-0 transition-all active:scale-95 shadow-md shadow-emerald-950/40 cursor-pointer"
-            title="ចុចដើម្បីមើលតារាងរបាយការណ៍អ្នកមកដល់ និងមិនទាន់មកដល់"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-            <span>មកដល់ (Report) ៖</span>
-            <span className="text-emerald-400 font-bold font-sans-en">
-              {westernToKhmerDigits(arrivedCount || 0)} នាក់
-            </span>
-          </button>
-        </div>
-
       </div>
     </header>
   );
