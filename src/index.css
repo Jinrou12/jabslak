@@ -86,3 +86,24 @@
   background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
   box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.35);
 }
+
+/* Smooth Marquee Text Animation (Right-to-Left Loop) */
+@keyframes marquee {
+  0% {
+    transform: translateX(100%);
+  }
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+.animate-marquee {
+  display: inline-block;
+  white-space: nowrap;
+  animation: marquee 16s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
