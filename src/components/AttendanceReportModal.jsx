@@ -124,7 +124,7 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
                 </span>
               </h2>
               <p className="text-xs text-slate-400 mt-0.5">
-                ចុចស្វីច (Switch) រវាង ផ្ទាំងទី១ (អ្នកបានមកដល់) និង ផ្ទាំងទី២ (អ្នកមិនទាន់មកដល់)
+                ចុចស្វីច (Switch) រវាង បានមកដល់ និង មិនទាន់មកដល់
               </p>
             </div>
           </div>
@@ -148,10 +148,10 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
           </div>
         </div>
 
-        {/* 🔄 Primary Dual Panel Switch Buttons (ផ្ទាំងស្វីច ទី១ vs ទី២) */}
+        {/* 🔄 Primary Dual Panel Switch Buttons */}
         <div className="grid grid-cols-2 gap-3 mb-4 shrink-0">
           
-          {/* Panel 1 Switcher: Arrived List (ផ្ទាំងទី១) */}
+          {/* Panel 1 Switcher: Arrived List */}
           <button
             type="button"
             onClick={() => setActiveTab('arrived')}
@@ -170,7 +170,7 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
                 </div>
                 <div>
                   <span className="text-xs font-black text-emerald-400 block font-moul">
-                    ផ្ទាំងទី១ ៖ អ្នកបានមកដល់
+                    បានមកដល់
                   </span>
                   <span className="text-[11px] text-slate-400 block">
                     រាយនាមអ្នកដែលបានគ្រីសវត្តមាន
@@ -194,7 +194,7 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
             )}
           </button>
 
-          {/* Panel 2 Switcher: Not Arrived List (ផ្ទាំងទី២) */}
+          {/* Panel 2 Switcher: Not Arrived List */}
           <button
             type="button"
             onClick={() => setActiveTab('notArrived')}
@@ -213,7 +213,7 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
                 </div>
                 <div>
                   <span className="text-xs font-black text-rose-400 block font-moul">
-                    ផ្ទាំងទី២ ៖ អ្នកមិនទាន់មកដល់
+                    មិនទាន់មកដល់
                   </span>
                   <span className="text-[11px] text-slate-400 block">
                     រាយនាមអ្នកដែលមិនទាន់បានមកដល់
@@ -250,8 +250,8 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
             <h3 className={`text-sm font-bold font-moul ${
               activeTab === 'arrived' ? 'text-emerald-400' : activeTab === 'notArrived' ? 'text-rose-400' : 'text-amber-400'
             }`}>
-              {activeTab === 'arrived' && `🟢 ផ្ទាំងទី១ ៖ បញ្ជីរាយនាមអ្នកបានមកដល់ (${westernToKhmerDigits(arrivedCount)} នាក់)`}
-              {activeTab === 'notArrived' && `🔴 ផ្ទាំងទី២ ៖ បញ្ជីរាយនាមអ្នកមិនទាន់មកដល់ (${westernToKhmerDigits(notArrivedCount)} នាក់)`}
+              {activeTab === 'arrived' && `🟢 បញ្ជីរាយនាមបានមកដល់ (${westernToKhmerDigits(arrivedCount)} នាក់)`}
+              {activeTab === 'notArrived' && `🔴 បញ្ជីរាយនាមមិនទាន់មកដល់ (${westernToKhmerDigits(notArrivedCount)} នាក់)`}
               {activeTab === 'all' && `📋 ទិន្នន័យស្លាកលេខសរុប (${westernToKhmerDigits(totalCount)} នាក់)`}
             </h3>
 

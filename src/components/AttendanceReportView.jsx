@@ -83,8 +83,8 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'អ្នកបានមកដល់');
-    XLSX.writeFile(workbook, `បញ្ជីអ្នកបានមកដល់_${arrivedCount}នាក់_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'បានមកដល់');
+    XLSX.writeFile(workbook, `បញ្ជីបានមកដល់_${arrivedCount}នាក់_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   // Export Not Arrived List to Excel
@@ -100,8 +100,8 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
 
     const worksheet = XLSX.utils.json_to_sheet(data);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'អ្នកមិនទាន់មកដល់');
-    XLSX.writeFile(workbook, `បញ្ជីអ្នកមិនទាន់មកដល់_${notArrivedCount}នាក់_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'មិនទាន់មកដល់');
+    XLSX.writeFile(workbook, `បញ្ជីមិនទាន់មកដល់_${notArrivedCount}នាក់_${new Date().toISOString().slice(0, 10)}.xlsx`);
   };
 
   return (
@@ -129,7 +129,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
               </div>
               <div className="min-w-0">
                 <span className="text-[11px] sm:text-sm font-black text-emerald-400 block font-moul truncate">
-                  ផ្ទាំងទី១ ៖ អ្នកបានមកដល់
+                  បានមកដល់
                 </span>
                 <span className="text-[10px] sm:text-xs text-slate-400 hidden sm:block mt-0.5">
                   រាយនាមអ្នកដែលបានគ្រីសវត្តមានរួចរាល់
@@ -157,7 +157,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
           )}
         </button>
 
-        {/* Panel 2 Switcher: Not Arrived List (ផ្ទាំងទី២) */}
+        {/* Panel 2 Switcher: Not Arrived List */}
         <button
           type="button"
           onClick={() => setActiveTab('notArrived')}
@@ -176,7 +176,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
               </div>
               <div className="min-w-0">
                 <span className="text-[11px] sm:text-sm font-black text-rose-400 block font-moul truncate">
-                  ផ្ទាំងទី២ ៖ អ្នកមិនទាន់មកដល់
+                  មិនទាន់មកដល់
                 </span>
                 <span className="text-[10px] sm:text-xs text-slate-400 hidden sm:block mt-0.5">
                   រាយនាមអ្នកដែលមិនទាន់បានមកដល់
@@ -218,8 +218,8 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
             <h3 className={`text-sm sm:text-base font-bold font-moul ${
               activeTab === 'arrived' ? 'text-emerald-400' : activeTab === 'notArrived' ? 'text-rose-400' : 'text-amber-400'
             }`}>
-              {activeTab === 'arrived' && `🟢 ផ្ទាំងទី១ ៖ បញ្ជីរាយនាមអ្នកបានមកដល់ (${westernToKhmerDigits(arrivedCount)} នាក់)`}
-              {activeTab === 'notArrived' && `🔴 ផ្ទាំងទី២ ៖ បញ្ជីរាយនាមអ្នកមិនទាន់មកដល់ (${westernToKhmerDigits(notArrivedCount)} នាក់)`}
+              {activeTab === 'arrived' && `🟢 បញ្ជីរាយនាមបានមកដល់ (${westernToKhmerDigits(arrivedCount)} នាក់)`}
+              {activeTab === 'notArrived' && `🔴 បញ្ជីរាយនាមមិនទាន់មកដល់ (${westernToKhmerDigits(notArrivedCount)} នាក់)`}
               {activeTab === 'all' && `📋 បញ្ជីរាយនាមសរុបទាំងអស់ (${westernToKhmerDigits(totalCount)} នាក់)`}
             </h3>
           </div>
