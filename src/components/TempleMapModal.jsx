@@ -240,6 +240,11 @@ export default function TempleMapModal({
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedLocationIdsForGroup, setSelectedLocationIdsForGroup] = useState([]);
 
+  // Group Edit Modal State
+  const [isGroupEditModalOpen, setIsGroupEditModalOpen] = useState(false);
+  const [editingGroupName, setEditingGroupName] = useState('');
+  const [renameGroupInput, setRenameGroupInput] = useState('');
+
   // Panning, wheel zoom & dragging ref
   const viewportRef = useRef(null);
   const mapContainerRef = useRef(null);
@@ -1118,6 +1123,87 @@ export default function TempleMapModal({
     setIsCategoryModalOpen(false);
     setNewCategoryName('');
     setSelectedLocationIdsForGroup([]);
+  };
+
+  // Group Batch Actions (Batch change direction / color / rename / delete)
+  const handleOpenGroupEditModal = (catName) => {
+    setEditingGroupName(catName);
+    setRenameGroupInput(catName);
+    setIsGroupEditModalOpen(true);
+  };
+
+  const handleApplyGroupPos = (newPos) => {
+    if (!editingGroupName) return;
+    const { setter, saver } = getTabDataFunctions();
+    const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+
+    const updated = baseLocations.map((loc) => {
+      const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
+      if (catMatches) {
+        return { ...loc, pos: newPos };
+      }
+      return loc;
+    });
+
+    setter(updated);
+    saver(updated);
+  };
+
+  const handleApplyGroupColor = (newColor) => {
+    if (!editingGroupName) return;
+    const { setter, saver } = getTabDataFunctions();
+    const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+
+    const updated = baseLocations.map((loc) => {
+      const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
+      if (catMatches) {
+        return { ...loc, badgeColor: newColor };
+      }
+      return loc;
+    });
+
+    setter(updated);
+    saver(updated);
+  };
+
+  const handleRenameGroupSubmit = () => {
+    const trimmedNew = renameGroupInput.trim();
+    if (!trimmedNew || trimmedNew === editingGroupName) return;
+
+    const { setter, saver } = getTabDataFunctions();
+    const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+
+    const updated = baseLocations.map((loc) => {
+      const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
+      if (catMatches) {
+        return { ...loc, category: trimmedNew };
+      }
+      return loc;
+    });
+
+    setter(updated);
+    saver(updated);
+    setEditingGroupName(trimmedNew);
+  };
+
+  const handleDeleteGroup = () => {
+    if (!editingGroupName) return;
+    if (!window.confirm(`តើអ្នកប្រាកដជាចង់លុប Group «${editingGroupName}» នេះមែនទេ?`)) return;
+
+    const { setter, saver } = getTabDataFunctions();
+    const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+
+    const updated = baseLocations.map((loc) => {
+      const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
+      if (catMatches) {
+        return { ...loc, category: '🏢 ក្រុមអគារ និង កុដិ' };
+      }
+      return loc;
+    });
+
+    setter(updated);
+    saver(updated);
+    setIsGroupEditModalOpen(false);
   };
 
   // Filtered locations for legend list
@@ -2061,6 +2147,17 @@ export default function TempleMapModal({
                           )}
                         </button>
 
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenGroupEditModal(catName);
+                          }}
+                          className="p-1.5 rounded-lg border bg-slate-800 text-amber-400 border-slate-700 hover:bg-slate-700 hover:text-amber-300 transition-all"
+                          title={`កែប្រែទិសដៅ ឬព័ត៌មានក្រុម «${catName}»`}
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+
                         <ChevronDown
                           className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
                             isOpen ? 'rotate-180 text-amber-400' : ''
@@ -2448,7 +2545,120 @@ export default function TempleMapModal({
             </div>
           </div>
         )}
-      </div>
+
+        {/* ═══════════════ MODAL: EDIT GROUP SETTINGS ═══════════════ */}
+        {isGroupEditModalOpen && (
+          <div
+            className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in font-kantumruy"
+            onClick={() => setIsGroupEditModalOpen(false)}
+          >
+            <div
+              className="w-full max-w-md bg-slate-900 border border-amber-500/40 rounded-3xl p-4 sm:p-5 shadow-2xl text-slate-100 space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold shrink-0">
+                    <Edit2 className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-moul text-xs sm:text-sm text-amber-400 truncate">
+                    កែប្រែ Group ៖ «{editingGroupName}»
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setIsGroupEditModalOpen(false)}
+                  className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Rename Group */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-300">
+                  ឈ្មោះ Group ៖
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={renameGroupInput}
+                    onChange={(e) => setRenameGroupInput(e.target.value)}
+                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400"
+                  />
+                  <button
+                    onClick={handleRenameGroupSubmit}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-md transition-all shrink-0"
+                  >
+                    កែឈ្មោះ
+                  </button>
+                </div>
+              </div>
+
+              {/* Set Label Position for ALL items in Group */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-300">
+                  ទិសដៅបង្ហាញឈ្មោះស្លាក សម្រាប់គ្រប់ទីតាំងក្នុង Group នេះ ៖
+                </label>
+                <div className="grid grid-cols-4 gap-1.5">
+                  {[
+                    { key: 'R', label: '👉 ស្តាំ' },
+                    { key: 'L', label: '👈 ឆ្វេង' },
+                    { key: 'T', label: '👆 លើ' },
+                    { key: 'B', label: '👇 ក្រោម' }
+                  ].map((p) => (
+                    <button
+                      key={p.key}
+                      type="button"
+                      onClick={() => handleApplyGroupPos(p.key)}
+                      className="py-1.5 px-2 rounded-xl text-xs font-bold border border-slate-700 bg-slate-950 text-amber-300 hover:bg-amber-500 hover:text-slate-950 hover:border-amber-400 transition-all shadow-sm active:scale-95"
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Set Badge Color for ALL items in Group (ONLY VISIBLE ON TAB 3) */}
+              {activeTab === 'tagger' && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-300">
+                    🎨 ជ្រើសរើសពណ៌ សម្រាប់គ្រប់ទីតាំងក្នុង Group នេះ ៖
+                  </label>
+                  <div className="grid grid-cols-5 gap-2 p-2 bg-slate-950 border border-slate-800 rounded-2xl">
+                    {COLOR_SWATCHES.map((swatch) => (
+                      <button
+                        key={swatch.key}
+                        type="button"
+                        onClick={() => handleApplyGroupColor(swatch.key)}
+                        className={`h-8 rounded-xl flex items-center justify-center transition-all ${swatch.bg} opacity-80 hover:opacity-100 hover:scale-105 shadow-md`}
+                        title={`កំណត់ពណ៌ ${swatch.label} សម្រាប់គ្រប់ទីតាំងក្នុង Group នេះ`}
+                      >
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Delete Group button */}
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                <button
+                  onClick={handleDeleteGroup}
+                  className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold rounded-xl transition-all"
+                >
+                  🗑️ លុប Group នេះ
+                </button>
+
+                <button
+                  onClick={() => setIsGroupEditModalOpen(false)}
+                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition-all"
+                >
+                  រួចរាល់
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+    </div>
   );
 
   if (modalMode) {
