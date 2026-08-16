@@ -1279,8 +1279,8 @@ export default function TempleMapModal({
 
         {/* ═══════════════ TAB CONTROLS & SUB-NAV ═══════════════ */}
         <div className="px-2 sm:px-5 py-1.5 sm:py-2 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 shrink-0">
-          {/* Tab buttons (Scrollable on small mobile screens) */}
-          <div className="flex items-center bg-slate-900 p-0.5 sm:p-1 rounded-2xl border border-slate-800 w-full sm:w-auto overflow-x-auto no-scrollbar justify-start">
+          {/* Tab buttons & Toggle buttons (Scrollable on small mobile screens) */}
+          <div className="flex items-center gap-1 bg-slate-900 p-0.5 sm:p-1 rounded-2xl border border-slate-800 w-full sm:w-auto overflow-x-auto no-scrollbar justify-start">
             <button
               onClick={() => setActiveTab('labeled')}
               className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap ${
@@ -1315,6 +1315,38 @@ export default function TempleMapModal({
             >
               <span className="sm:hidden">🏷️ ផ្ទាំងទី៣</span>
               <span className="hidden sm:inline">🏷️ ផ្ទាំងទី៣ ៖ ដៅស្លាកលេខលើ Map</span>
+            </button>
+
+            <div className="h-4 w-px bg-slate-800 mx-0.5 shrink-0"></div>
+
+            {/* Toggle Compass Button */}
+            <button
+              onClick={() => setIsCompassVisible(!isCompassVisible)}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+                isCompassVisible
+                  ? 'bg-amber-500/20 border border-amber-500/50 text-amber-300'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
+              <span>{isCompassVisible ? 'ត្រីវិស័យ' : 'លាក់ត្រីវិស័យ'}</span>
+            </button>
+
+            {/* Toggle Pins Button */}
+            <button
+              onClick={() => setIsPinsVisible(!isPinsVisible)}
+              className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 transition-all whitespace-nowrap ${
+                isPinsVisible
+                  ? 'bg-sky-500/20 border border-sky-500/50 text-sky-300'
+                  : 'bg-rose-500/20 border border-rose-500/50 text-rose-400'
+              }`}
+            >
+              {isPinsVisible ? (
+                <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-400 shrink-0" />
+              ) : (
+                <EyeOff className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-rose-400 shrink-0" />
+              )}
+              <span>{isPinsVisible ? 'បង្ហាញ Pin' : 'លាក់ Pin'}</span>
             </button>
           </div>
 
@@ -1381,8 +1413,6 @@ export default function TempleMapModal({
             )}
 
             {/* Toggle Name Labels in Tab 1 */}
-
-            {/* Toggle Name Labels in Tab 1 */}
             {activeTab === 'labeled' && (
               <button
                 onClick={() => setIsLabelsVisible(!isLabelsVisible)}
@@ -1397,30 +1427,6 @@ export default function TempleMapModal({
                 <span>{isLabelsVisible ? 'ឈ្មោះ' : 'លាក់ឈ្មោះ'}</span>
               </button>
             )}
-
-            <button
-              onClick={() => setIsCompassVisible(!isCompassVisible)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm ${
-                isCompassVisible
-                  ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 hover:bg-amber-500/30'
-                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <Compass className="w-4 h-4 text-amber-400" />
-              <span>{isCompassVisible ? 'ត្រីវិស័យ' : 'លាក់ត្រីវិស័យ'}</span>
-            </button>
-
-            <button
-              onClick={() => setIsPinsVisible(!isPinsVisible)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-sm ${
-                isPinsVisible
-                  ? 'bg-sky-500/15 border-sky-500/40 text-sky-300 hover:bg-sky-500/25'
-                  : 'bg-rose-500/15 border-rose-500/40 text-rose-300 hover:bg-rose-500/25'
-              }`}
-            >
-              {isPinsVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              <span>{isPinsVisible ? 'បង្ហាញ Pin' : 'លាក់ Pin'}</span>
-            </button>
           </div>
         </div>
 
