@@ -1376,40 +1376,6 @@ export default function TempleMapModal({
                     className="w-14 sm:w-20 accent-amber-400 cursor-pointer h-1.5 bg-slate-950 rounded-lg"
                     title="កែប្រែទំហំ Pin"
                   />
-
-                  <div className="flex items-center gap-0.5">
-                    {[
-                      { label: 'តូច', size: 10 },
-                      { label: 'មធ្យម', size: 14 },
-                      { label: 'ធំ', size: 18 },
-                      { label: 'ធំខ្លាំង', size: 24 }
-                    ].map((p) => {
-                      const currentActiveSize =
-                        selectedSizeGroup === 'all'
-                          ? pinSizePx
-                          : groupPinSizes[selectedSizeGroup] || pinSizePx;
-                      return (
-                        <button
-                          key={p.size}
-                          onClick={() => {
-                            if (selectedSizeGroup === 'all') {
-                              setPinSizePx(p.size);
-                            } else {
-                              setGroupPinSizes((prev) => ({ ...prev, [selectedSizeGroup]: p.size }));
-                            }
-                          }}
-                          className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-all ${
-                            currentActiveSize === p.size
-                              ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                              : 'bg-slate-800 text-slate-400 hover:text-slate-200'
-                          }`}
-                          title={`កំណត់ទំហំ ${p.label} (${p.size}px)`}
-                        >
-                          {p.label}
-                        </button>
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
             )}
