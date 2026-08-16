@@ -250,8 +250,16 @@ export default function TempleMapModal({
   const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
   const hasPannedRef = useRef(false);
   const touchStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
-  const initialPinchDistRef = useRef(null);
-  const initialPinchScaleRef = useRef(1.0);
+  const pinchRafRef = useRef(null);
+  const pinchStateRef = useRef({
+    active: false,
+    initialDist: 0,
+    initialScale: 1.0,
+    initialScrollLeft: 0,
+    initialScrollTop: 0,
+    midX: 0,
+    midY: 0
+  });
   const [draggingPinId, setDraggingPinId] = useState(null);
   const pinMovedFlagRef = useRef(false);
 
@@ -569,7 +577,7 @@ export default function TempleMapModal({
     }
   };
 
-  // Touch Panning (1 finger) & Pinch Zooming (2 fingers)
+  // Touch Panning (1 finger) & Ultra-Smooth 120fps Focal Pinch Zooming (2 fingers)
   const handleTouchStart = (e) => {
     if (draggingPinId) return;
     if (e.target.closest('.zoom-toolbar')) return;
@@ -593,8 +601,22 @@ export default function TempleMapModal({
       setIsPanning(false);
       const t1 = e.touches[0];
       const t2 = e.touches[1];
-      initialPinchDistRef.current = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      initialPinchScaleRef.current = zoomScale;
+      const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+
+      const vp = viewportRef.current;
+      const vpRect = vp ? vp.getBoundingClientRect() : { left: 0, top: 0 };
+      const midX = (t1.clientX + t2.clientX) / 2 - vpRect.left;
+      const midY = (t1.clientY + t2.clientY) / 2 - vpRect.top;
+
+      pinchStateRef.current = {
+        active: true,
+        initialDist: dist,
+        initialScale: zoomScale,
+        initialScrollLeft: vp ? vp.scrollLeft : 0,
+        initialScrollTop: vp ? vp.scrollTop : 0,
+        midX,
+        midY
+      };
     }
   };
 
@@ -615,20 +637,41 @@ export default function TempleMapModal({
         viewportRef.current.scrollLeft = touchStartRef.current.scrollLeft - dx;
         viewportRef.current.scrollTop = touchStartRef.current.scrollTop - dy;
       }
-    } else if (e.touches.length === 2 && initialPinchDistRef.current) {
+    } else if (e.touches.length === 2 && pinchStateRef.current.active) {
       if (e.cancelable) e.preventDefault();
+
       const t1 = e.touches[0];
       const t2 = e.touches[1];
       const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-      const scaleFactor = dist / initialPinchDistRef.current;
-      const nextScale = Math.max(0.4, Math.min(5.0, parseFloat((initialPinchScaleRef.current * scaleFactor).toFixed(2))));
-      setZoomScale(nextScale);
+      if (!pinchStateRef.current.initialDist) return;
+
+      const scaleFactor = dist / pinchStateRef.current.initialDist;
+      const nextScale = Math.max(0.5, Math.min(5.0, parseFloat((pinchStateRef.current.initialScale * scaleFactor).toFixed(2))));
+
+      if (pinchRafRef.current) {
+        cancelAnimationFrame(pinchRafRef.current);
+      }
+
+      pinchRafRef.current = requestAnimationFrame(() => {
+        setZoomScale(nextScale);
+
+        const vp = viewportRef.current;
+        if (vp) {
+          const { initialScale, initialScrollLeft, initialScrollTop, midX, midY } = pinchStateRef.current;
+          const ratio = nextScale / (initialScale || 1);
+          vp.scrollLeft = Math.max(0, (initialScrollLeft + midX) * ratio - midX);
+          vp.scrollTop = Math.max(0, (initialScrollTop + midY) * ratio - midY);
+        }
+      });
     }
   };
 
   const handleTouchEnd = () => {
     setIsPanning(false);
-    initialPinchDistRef.current = null;
+    pinchStateRef.current.active = false;
+    if (pinchRafRef.current) {
+      cancelAnimationFrame(pinchRafRef.current);
+    }
     if (hasPannedRef.current) {
       setTimeout(() => {
         pinMovedFlagRef.current = false;
