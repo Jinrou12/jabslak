@@ -2246,67 +2246,72 @@ export default function TempleMapModal({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    ទិសដៅបង្ហាញឈ្មោះស្លាក (Label Position) ៖
-                  </label>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[
-                      { key: 'R', label: '👉 ស្តាំ' },
-                      { key: 'L', label: '👈 ឆ្វេង' },
-                      { key: 'T', label: '👆 លើ' },
-                      { key: 'B', label: '👇 ក្រោម' }
-                    ].map((p) => (
-                      <button
-                        key={p.key}
-                        type="button"
-                        onClick={() => setModalForm((prev) => ({ ...prev, pos: p.key }))}
-                        className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all ${
-                          (modalForm.pos || 'R') === p.key
-                            ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md'
-                            : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
-                        }`}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* Label Position & Badge Color options (ONLY VISIBLE ON TAB 3) */}
+                {activeTab === 'tagger' && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">
+                        ទិសដៅបង្ហាញឈ្មោះស្លាក (Label Position) ៖
+                      </label>
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {[
+                          { key: 'R', label: '👉 ស្តាំ' },
+                          { key: 'L', label: '👈 ឆ្វេង' },
+                          { key: 'T', label: '👆 លើ' },
+                          { key: 'B', label: '👇 ក្រោម' }
+                        ].map((p) => (
+                          <button
+                            key={p.key}
+                            type="button"
+                            onClick={() => setModalForm((prev) => ({ ...prev, pos: p.key }))}
+                            className={`py-1.5 px-2 rounded-xl text-xs font-bold border transition-all ${
+                              (modalForm.pos || 'R') === p.key
+                                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md'
+                                : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
-                    <span>🎨 ជ្រើសរើសពណ៌ស្លាកលេខ (Badge Color) ៖</span>
-                    <span className="text-[10px] text-amber-400 font-normal">ចុចលើពណ៌ដែលពេញចិត្ត</span>
-                  </label>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                        <span>🎨 ជ្រើសរើសពណ៌ស្លាកលេខ (Badge Color) ៖</span>
+                        <span className="text-[10px] text-amber-400 font-normal">ចុចលើពណ៌ដែលពេញចិត្ត</span>
+                      </label>
 
-                  {/* Visual Color Swatch Grid */}
-                  <div className="grid grid-cols-5 gap-2 p-2.5 bg-slate-950 border border-slate-800 rounded-2xl">
-                    {COLOR_SWATCHES.map((swatch) => {
-                      const isSelected = (modalForm.badgeColor || 'cyan') === swatch.key;
-                      return (
-                        <button
-                          key={swatch.key}
-                          type="button"
-                          onClick={() =>
-                            setModalForm((prev) => ({
-                              ...prev,
-                              badgeColor: swatch.key,
-                              type: swatch.key === 'gold' ? 'gate' : 'building'
-                            }))
-                          }
-                          className={`h-9 rounded-xl flex items-center justify-center transition-all ${swatch.bg} ${
-                            isSelected
-                              ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105 shadow-lg'
-                              : 'opacity-70 hover:opacity-100 hover:scale-100'
-                          }`}
-                          title={swatch.label}
-                        >
-                          {isSelected && <span className="text-slate-950 font-bold text-xs">✓</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                      {/* Visual Color Swatch Grid */}
+                      <div className="grid grid-cols-5 gap-2 p-2.5 bg-slate-950 border border-slate-800 rounded-2xl">
+                        {COLOR_SWATCHES.map((swatch) => {
+                          const isSelected = (modalForm.badgeColor || 'cyan') === swatch.key;
+                          return (
+                            <button
+                              key={swatch.key}
+                              type="button"
+                              onClick={() =>
+                                setModalForm((prev) => ({
+                                  ...prev,
+                                  badgeColor: swatch.key,
+                                  type: swatch.key === 'gold' ? 'gate' : 'building'
+                                }))
+                              }
+                              className={`h-9 rounded-xl flex items-center justify-center transition-all ${swatch.bg} ${
+                                isSelected
+                                  ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105 shadow-lg'
+                                  : 'opacity-70 hover:opacity-100 hover:scale-100'
+                              }`}
+                              title={swatch.label}
+                            >
+                              {isSelected && <span className="text-slate-950 font-bold text-xs">✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
