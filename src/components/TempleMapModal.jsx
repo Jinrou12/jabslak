@@ -165,8 +165,8 @@ export default function TempleMapModal({
   const [tab3Locations, setTab3Locations] = useState(getSavedTab3Locations());
   const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ នៅស្លាកលើ Map)
 
-  // Tab 1 = Read only. Tab 2 = Editing location coordinates & adding/editing location names. Tab 3 = Restricted to Admin & Owner.
-  const canCustomizeTab = activeTab === 'interactive' || (activeTab === 'tagger' && canCustomizeMap);
+  // Tab 1 = Read only for all. Tab 2 & Tab 3 = Restricted to Admin & Owner ONLY!
+  const canCustomizeTab = (activeTab === 'interactive' || activeTab === 'tagger') && canCustomizeMap;
 
   // Sync Tab 3 metadata with allTags while preserving Location Names (ឈ្មោះទីតាំង)
   const effectiveTab3Locations = useMemo(() => {
@@ -770,8 +770,7 @@ export default function TempleMapModal({
 
   // Map Click (Add new pin on Tab 2 or Tab 3)
   const handleMapClick = (e) => {
-    if (activeTab === 'labeled') return; // Read-only on Tab 1
-    if (activeTab === 'tagger' && !canCustomizeMap) return; // Tab 3: only admin/owner can add pins
+    if (!canCustomizeTab) return; // Only Admin & Owner can add pins on Tab 2 & Tab 3
     if (draggingPinId || pinMovedFlagRef.current) return;
     const rect = mapContainerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -821,8 +820,7 @@ export default function TempleMapModal({
 
   // Ultra-Precise Pin Dragging (Synchronizes to Cloud on End)
   const handlePinDragStart = (e, loc) => {
-    if (activeTab === 'labeled') return; // Read-only on Tab 1
-    if (activeTab === 'tagger' && !canCustomizeMap) return; // Tab 3: only admin/owner can drag
+    if (!canCustomizeTab) return; // Only Admin & Owner can drag pins on Tab 2 & Tab 3
 
     e.stopPropagation();
     pinMovedFlagRef.current = false;
