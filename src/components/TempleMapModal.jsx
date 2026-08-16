@@ -2166,8 +2166,8 @@ export default function TempleMapModal({
                 </div>
               )}
 
-              {/* Tag selector dropdown for manual tagging */}
-              {allTags && allTags.length > 0 && (
+              {/* Tag selector dropdown for manual tagging (ONLY VISIBLE ON TAB 3) */}
+              {activeTab === 'tagger' && allTags && allTags.length > 0 && (
                 <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-2.5 mb-3">
                   <label className="block text-xs font-bold text-amber-300 mb-1 flex items-center gap-1">
                     <Tag className="w-3.5 h-3.5 text-amber-400" />
