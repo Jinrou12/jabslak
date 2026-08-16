@@ -335,15 +335,18 @@ export default function TempleMapModal({
     saveGroupSettingsToFirebase(payload);
   };
 
-  // 🎯 Ultra-Smooth 100% Accurate Centering Camera for Map Pins
+  // 🎯 Ultra-Fluid 120fps Native Camera Centering (Zero Jitter, Zero Stutter)
   const centerPinOnMap = (loc) => {
     if (!loc || typeof loc.x !== 'number' || typeof loc.y !== 'number') return;
 
-    // 1. Set optimal zoom scale (2.2x) for perfect view clarity on Mobile & PC
-    setZoomScale(2.2);
+    const isMobile = window.innerWidth < 640;
+    const targetZoom = isMobile ? 1.8 : 2.2;
 
-    // 2. Perform smooth GPU-accelerated scrollTo centering after DOM layout calculation
-    const performCenterScroll = () => {
+    // 1. Immediately set zoom scale
+    setZoomScale(targetZoom);
+
+    // 2. Perform smooth 120fps lerp camera glide directly to target pin
+    const performScrollGlide = () => {
       if (!viewportRef.current || !mapContainerRef.current) return;
 
       const vp = viewportRef.current;
@@ -354,27 +357,51 @@ export default function TempleMapModal({
 
       if (!containerWidth || !containerHeight) return;
 
-      // Calculate exact pixel coordinate of target pin
+      // Pin coordinates on map
       const pinX = (loc.x / 100) * containerWidth;
       const pinY = (loc.y / 100) * containerHeight;
 
-      // Center target pin in the exact middle of screen viewport
-      const targetScrollLeft = pinX - (vp.clientWidth / 2);
-      const targetScrollTop = pinY - (vp.clientHeight / 2);
+      // Center of viewport
+      const targetLeft = Math.max(0, pinX - vp.clientWidth / 2);
+      const targetTop = Math.max(0, pinY - vp.clientHeight / 2);
 
-      vp.scrollTo({
-        left: Math.max(0, targetScrollLeft),
-        top: Math.max(0, targetScrollTop),
-        behavior: 'smooth'
-      });
+      const startLeft = vp.scrollLeft;
+      const startTop = vp.scrollTop;
+
+      const distance = Math.hypot(targetLeft - startLeft, targetTop - startTop);
+      if (distance < 10) {
+        vp.scrollLeft = targetLeft;
+        vp.scrollTop = targetTop;
+        return;
+      }
+
+      const startTime = performance.now();
+      const duration = 380; // Crisp 380ms camera motion
+
+      const animateStep = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(1.0, elapsed / duration);
+
+        // Smooth cubic ease-out curve (Native Apple/Google Maps feel)
+        const ease = 1 - Math.pow(1 - progress, 3);
+
+        vp.scrollLeft = startLeft + (targetLeft - startLeft) * ease;
+        vp.scrollTop = startTop + (targetTop - startTop) * ease;
+
+        if (progress < 1.0) {
+          requestAnimationFrame(animateStep);
+        } else {
+          vp.scrollLeft = targetLeft;
+          vp.scrollTop = targetTop;
+        }
+      };
+
+      requestAnimationFrame(animateStep);
     };
 
-    // Double-pass layout calculation for 100% dead-center accuracy
+    // Trigger frame right after DOM scale update
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        performCenterScroll();
-        setTimeout(performCenterScroll, 180);
-      });
+      requestAnimationFrame(performScrollGlide);
     });
   };
 
@@ -1259,7 +1286,7 @@ export default function TempleMapModal({
               <div
                 ref={mapContainerRef}
                 onClick={handleMapClick}
-                className="relative w-full mx-auto origin-top-left transition-[width] duration-150"
+                className="relative w-full mx-auto origin-top-left"
                 style={{
                   width: `${zoomScale * 100}%`,
                   minWidth: '100%'
