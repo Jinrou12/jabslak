@@ -2156,6 +2156,30 @@ export default function TempleMapModal({
                           )}
                         </button>
 
+                        {canCustomizeTab && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingLoc({ isNew: true, x: 50, y: 50 });
+                              setModalForm({
+                                id: getNextDefaultLocationId(currentLocations),
+                                name: '',
+                                badgeColor: activeTab === 'interactive' ? 'cyan' : 'cyan',
+                                type: 'building',
+                                pos: 'R',
+                                category: catName
+                              });
+                              setFormError('');
+                              setIsEditModalOpen(true);
+                            }}
+                            className="p-1.5 rounded-lg border bg-emerald-600/30 text-emerald-300 border-emerald-500/50 hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1"
+                            title={`បន្ថែម Pin ទីតាំងថ្មីចូលក្នុង Group «${catName}» នេះ`}
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span className="text-[10px] font-bold hidden sm:inline">+ Pin</span>
+                          </button>
+                        )}
+
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -2582,6 +2606,28 @@ export default function TempleMapModal({
                 </button>
               </div>
 
+              {/* Add Pin Into This Group Button */}
+              <button
+                onClick={() => {
+                  setIsGroupEditModalOpen(false);
+                  setEditingLoc({ isNew: true, x: 50, y: 50 });
+                  setModalForm({
+                    id: getNextDefaultLocationId(currentLocations),
+                    name: '',
+                    badgeColor: activeTab === 'interactive' ? 'cyan' : 'cyan',
+                    type: 'building',
+                    pos: 'R',
+                    category: editingGroupName
+                  });
+                  setFormError('');
+                  setIsEditModalOpen(true);
+                }}
+                className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95"
+              >
+                <Plus className="w-4 h-4" />
+                <span>➕ បន្ថែម Pin ទីតាំងថ្មីចូលក្នុង Group «{editingGroupName}» នេះ</span>
+              </button>
+
               {/* Rename Group */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-300">
@@ -2627,26 +2673,24 @@ export default function TempleMapModal({
                 </div>
               </div>
 
-              {/* Set Badge Color for ALL items in Group (ONLY VISIBLE ON TAB 3) */}
-              {activeTab === 'tagger' && (
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-bold text-slate-300">
-                    🎨 ជ្រើសរើសពណ៌ សម្រាប់គ្រប់ទីតាំងក្នុង Group នេះ ៖
-                  </label>
-                  <div className="grid grid-cols-5 gap-2 p-2 bg-slate-950 border border-slate-800 rounded-2xl">
-                    {COLOR_SWATCHES.map((swatch) => (
-                      <button
-                        key={swatch.key}
-                        type="button"
-                        onClick={() => handleApplyGroupColor(swatch.key)}
-                        className={`h-8 rounded-xl flex items-center justify-center transition-all ${swatch.bg} opacity-80 hover:opacity-100 hover:scale-105 shadow-md`}
-                        title={`កំណត់ពណ៌ ${swatch.label} សម្រាប់គ្រប់ទីតាំងក្នុង Group នេះ`}
-                      >
-                      </button>
-                    ))}
-                  </div>
+              {/* Set Badge Color for ALL items in Group */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-300">
+                  🎨 ជ្រើសរើសពណ៌ សម្រាប់គ្រប់ទីតាំងក្នុង Group នេះ ៖
+                </label>
+                <div className="grid grid-cols-5 gap-2 p-2 bg-slate-950 border border-slate-800 rounded-2xl">
+                  {COLOR_SWATCHES.map((swatch) => (
+                    <button
+                      key={swatch.key}
+                      type="button"
+                      onClick={() => handleApplyGroupColor(swatch.key)}
+                      className={`h-8 rounded-xl flex items-center justify-center transition-all ${swatch.bg} opacity-80 hover:opacity-100 hover:scale-105 shadow-md`}
+                      title={`កំណត់ពណ៌ ${swatch.label} សម្រាប់គ្រប់ទីតាំងក្នុង Group នេះ`}
+                    >
+                    </button>
+                  ))}
                 </div>
-              )}
+              </div>
 
               {/* Delete Group button */}
               <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
