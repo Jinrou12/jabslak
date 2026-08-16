@@ -90,7 +90,7 @@ export default function SearchBar({
       </div>
 
       {/* 🟢 Status & Attendance Filter Tabs ( ទាំងអស់ | មិនទាន់មកដល់ | បានមកដល់ ) */}
-      <div className="flex flex-wrap items-center gap-1.5 pt-1">
+      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 pt-1">
         <span className="text-xs text-slate-400 font-medium flex items-center gap-1 shrink-0 mr-1">
           <Filter className="w-3.5 h-3.5 text-amber-400" />
           <span>តម្រងវត្តមាន:</span>

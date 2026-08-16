@@ -289,117 +289,205 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
 
       </div>
 
-      {/* Main Inline Attendance Table */}
+      {/* Main Inline Attendance List (Cards on Mobile, Table on Desktop) */}
       <div className="border border-slate-800 rounded-2xl bg-slate-900/90 overflow-hidden shadow-xl">
         {filteredTags.length === 0 ? (
-          <div className="p-16 text-center text-slate-400 font-kantumruy">
+          <div className="p-12 text-center text-slate-400 font-kantumruy">
             <UserCheck className="w-12 h-12 text-slate-600 mx-auto mb-3 opacity-50" />
             <p className="text-base font-semibold">មិនមានទិន្នន័យក្នុងផ្ទាំងនេះឡើយ</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 font-semibold font-kantumruy">
-                <tr>
-                  <th className="py-3.5 px-4 w-20 text-center">លេខស្លាក</th>
-                  <th className="py-3.5 px-4">ឈ្មោះម្ចាស់ស្លាក</th>
-                  <th className="py-3.5 px-4">ទីតាំងស្នាក់នៅ</th>
-                  <th className="py-3.5 px-4">លេខទូរស័ព្ទ</th>
-                  <th className="py-3.5 px-4">ស្ថានភាពវត្តមាន</th>
-                  <th className="py-3.5 px-4 text-center w-32">សកម្មភាព</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/80 font-kantumruy">
-                {filteredTags.map((tag) => {
-                  const isArrived = !!tag.arrived;
-                  return (
-                    <tr
-                      key={tag.id}
-                      className={`hover:bg-slate-800/80 transition-colors ${
-                        isArrived ? 'bg-emerald-950/20' : 'bg-rose-950/10'
-                      }`}
-                    >
-                      {/* Tag Badge */}
-                      <td className="py-3.5 px-4 text-center">
-                        <span className="inline-block px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 font-black font-sans-en text-xs border border-amber-500/40 shadow-sm">
+          <>
+            {/* 📱 Mobile Card List View (Visible on Mobile screens) */}
+            <div className="block sm:hidden divide-y divide-slate-800/80">
+              {filteredTags.map((tag) => {
+                const isArrived = !!tag.arrived;
+                return (
+                  <div
+                    key={tag.id}
+                    className={`p-3.5 flex flex-col gap-2.5 transition-colors ${
+                      isArrived ? 'bg-emerald-950/20' : 'bg-rose-950/10'
+                    }`}
+                  >
+                    {/* Header Row: Tag Badge + Owner Name + Check-in Button */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-black font-sans-en text-xs border border-amber-500/40 shrink-0">
                           #{westernToKhmerDigits(tag.tagNumber)}
                         </span>
-                      </td>
-
-                      {/* Name */}
-                      <td className="py-3.5 px-4 font-bold text-slate-100 text-sm">
-                        {tag.name}
-                        {tag.notes && (
-                          <span className="block text-[11px] font-normal text-slate-400 mt-0.5 truncate max-w-xs">
-                            {tag.notes}
-                          </span>
-                        )}
-                      </td>
-
-                      {/* Location */}
-                      <td className="py-3.5 px-4">
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-950 border border-slate-700/80 text-amber-300 font-semibold text-xs">
-                          <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                          <span className="truncate max-w-[200px]">{tag.location}</span>
+                        <span className="font-bold text-slate-100 text-sm truncate font-kantumruy">
+                          {tag.name}
                         </span>
-                      </td>
+                      </div>
 
-                      {/* Phone */}
-                      <td className="py-3.5 px-4 font-sans-en text-slate-300">
-                        {tag.phone ? (
-                          <a
-                            href={`tel:${tag.phone}`}
-                            className="inline-flex items-center gap-1.5 hover:text-emerald-400 transition-colors font-semibold"
-                          >
-                            <Phone className="w-3.5 h-3.5 text-sky-400" />
-                            <span>{tag.phone}</span>
-                          </a>
-                        ) : (
-                          <span className="text-slate-600 italic">-</span>
-                        )}
-                      </td>
+                      <button
+                        onClick={() => onToggleAttendance(tag)}
+                        disabled={!isAdminOrOwner && currentUser?.role === 'guest'}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all active:scale-95 shadow-sm font-kantumruy ${
+                          isArrived
+                            ? 'bg-slate-950 text-rose-300 border border-slate-700 hover:border-rose-700'
+                            : 'bg-emerald-600 text-white shadow-emerald-950/60'
+                        }`}
+                      >
+                        {isArrived ? 'ដកការគ្រីស' : '✔️ គ្រីសមកដល់'}
+                      </button>
+                    </div>
 
-                      {/* Arrival Status */}
-                      <td className="py-3.5 px-4">
-                        {isArrived ? (
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 font-bold text-xs shadow-sm">
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                            <span>បានមកដល់</span>
-                            {tag.arrivedAt && (
-                              <span className="text-[10px] text-emerald-400/80 font-sans-en font-normal ml-1">
-                                ({new Date(tag.arrivedAt).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })})
-                              </span>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-950/60 border border-rose-800/80 text-rose-300 font-semibold text-xs">
-                            <XCircle className="w-4 h-4 text-rose-400" />
-                            <span>មិនទាន់មកដល់</span>
-                          </div>
-                        )}
-                      </td>
+                    {/* Meta Row: Location & Phone */}
+                    <div className="flex items-center justify-between gap-2 text-xs pt-1 border-t border-slate-800/60">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-amber-300 font-semibold text-[11px] min-w-0 max-w-[60%] truncate">
+                        <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span className="truncate">{tag.location || 'ទីតាំងមិនទាន់កំណត់'}</span>
+                      </span>
 
-                      {/* Action Button */}
-                      <td className="py-3.5 px-4 text-center">
-                        <button
-                          onClick={() => onToggleAttendance(tag)}
-                          disabled={!isAdminOrOwner && currentUser?.role === 'guest'}
-                          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm ${
-                            isArrived
-                              ? 'bg-slate-950 hover:bg-rose-950/90 text-rose-300 border border-slate-700 hover:border-rose-700'
-                              : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'
-                          }`}
-                          title={isArrived ? 'ដកការគ្រីសវត្តមាន' : 'គ្រីសរាយការណ៍មកដល់'}
+                      {tag.phone ? (
+                        <a
+                          href={`tel:${tag.phone}`}
+                          className="inline-flex items-center gap-1 text-sky-400 font-sans-en font-semibold text-xs hover:underline shrink-0"
                         >
-                          {isArrived ? 'ដកការគ្រីស' : '✔️ គ្រីសមកដល់'}
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                          <Phone className="w-3 h-3 text-sky-400" />
+                          <span>{tag.phone}</span>
+                        </a>
+                      ) : (
+                        <span className="text-slate-600 italic text-[11px] shrink-0">គ្មានទូរស័ព្ទ</span>
+                      )}
+                    </div>
+
+                    {/* Footer Row: Arrival Status & Notes */}
+                    <div className="flex items-center justify-between text-[11px]">
+                      {isArrived ? (
+                        <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>បានមកដល់</span>
+                          {tag.arrivedAt && (
+                            <span className="text-[10px] text-emerald-400/80 font-sans-en">
+                              ({new Date(tag.arrivedAt).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })})
+                            </span>
+                          )}
+                        </span>
+                      ) : (
+                        <span className="text-rose-400 font-semibold flex items-center gap-1">
+                          <XCircle className="w-3.5 h-3.5 text-rose-400" />
+                          <span>មិនទាន់មកដល់</span>
+                        </span>
+                      )}
+
+                      {tag.notes && (
+                        <span className="text-slate-400 truncate max-w-[160px]">
+                          {tag.notes}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* 💻 Desktop Table View (Visible on Desktop screens) */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 font-semibold font-kantumruy">
+                  <tr>
+                    <th className="py-3.5 px-4 w-20 text-center">លេខស្លាក</th>
+                    <th className="py-3.5 px-4">ឈ្មោះម្ចាស់ស្លាក</th>
+                    <th className="py-3.5 px-4">ទីតាំងស្នាក់នៅ</th>
+                    <th className="py-3.5 px-4">លេខទូរស័ព្ទ</th>
+                    <th className="py-3.5 px-4">ស្ថានភាពវត្តមាន</th>
+                    <th className="py-3.5 px-4 text-center w-32">សកម្មភាព</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/80 font-kantumruy">
+                  {filteredTags.map((tag) => {
+                    const isArrived = !!tag.arrived;
+                    return (
+                      <tr
+                        key={tag.id}
+                        className={`hover:bg-slate-800/80 transition-colors ${
+                          isArrived ? 'bg-emerald-950/20' : 'bg-rose-950/10'
+                        }`}
+                      >
+                        {/* Tag Badge */}
+                        <td className="py-3.5 px-4 text-center">
+                          <span className="inline-block px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 font-black font-sans-en text-xs border border-amber-500/40 shadow-sm">
+                            #{westernToKhmerDigits(tag.tagNumber)}
+                          </span>
+                        </td>
+
+                        {/* Name */}
+                        <td className="py-3.5 px-4 font-bold text-slate-100 text-sm">
+                          {tag.name}
+                          {tag.notes && (
+                            <span className="block text-[11px] font-normal text-slate-400 mt-0.5 truncate max-w-xs">
+                              {tag.notes}
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Location */}
+                        <td className="py-3.5 px-4">
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-950 border border-slate-700/80 text-amber-300 font-semibold text-xs">
+                            <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                            <span className="truncate max-w-[200px]">{tag.location}</span>
+                          </span>
+                        </td>
+
+                        {/* Phone */}
+                        <td className="py-3.5 px-4 font-sans-en text-slate-300">
+                          {tag.phone ? (
+                            <a
+                              href={`tel:${tag.phone}`}
+                              className="inline-flex items-center gap-1.5 hover:text-emerald-400 transition-colors font-semibold"
+                            >
+                              <Phone className="w-3.5 h-3.5 text-sky-400" />
+                              <span>{tag.phone}</span>
+                            </a>
+                          ) : (
+                            <span className="text-slate-600 italic">-</span>
+                          )}
+                        </td>
+
+                        {/* Arrival Status */}
+                        <td className="py-3.5 px-4">
+                          {isArrived ? (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 font-bold text-xs shadow-sm">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                              <span>បានមកដល់</span>
+                              {tag.arrivedAt && (
+                                <span className="text-[10px] text-emerald-400/80 font-sans-en font-normal ml-1">
+                                  ({new Date(tag.arrivedAt).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })})
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-950/60 border border-rose-800/80 text-rose-300 font-semibold text-xs">
+                              <XCircle className="w-4 h-4 text-rose-400" />
+                              <span>មិនទាន់មកដល់</span>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Action Button */}
+                        <td className="py-3.5 px-4 text-center">
+                          <button
+                            onClick={() => onToggleAttendance(tag)}
+                            disabled={!isAdminOrOwner && currentUser?.role === 'guest'}
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm ${
+                              isArrived
+                                ? 'bg-slate-950 hover:bg-rose-950/90 text-rose-300 border border-slate-700 hover:border-rose-700'
+                                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'
+                            }`}
+                            title={isArrived ? 'ដកការគ្រីសវត្តមាន' : 'គ្រីសរាយការណ៍មកដល់'}
+                          >
+                            {isArrived ? 'ដកការគ្រីស' : '✔️ គ្រីសមកដល់'}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
