@@ -107,45 +107,45 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
   return (
     <div className="w-full space-y-4 font-kantumruy animate-in fade-in duration-200">
       
-      {/* 🔄 Primary Dual Switch Cards (ផ្ទាំងស្វីច ទី១ vs ទី២) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+      {/* 🔄 Primary Dual Switch Cards (ផ្ទាំងស្វីច ទី១ vs ទី២ - 2 Columns on Mobile & PC) */}
+      <div className="grid grid-cols-2 gap-2 sm:gap-3.5">
         
         {/* Panel 1 Switcher: Arrived List (ផ្ទាំងទី១) */}
         <button
           type="button"
           onClick={() => setActiveTab('arrived')}
-          className={`p-4 rounded-2xl border transition-all text-left relative overflow-hidden group active:scale-[0.99] cursor-pointer ${
+          className={`p-2.5 sm:p-4 rounded-2xl border transition-all text-left relative overflow-hidden group active:scale-[0.99] cursor-pointer ${
             activeTab === 'arrived'
               ? 'bg-gradient-to-r from-emerald-950 via-emerald-900 to-slate-900 border-emerald-500 ring-2 ring-emerald-500/30 shadow-xl shadow-emerald-950/40'
               : 'bg-slate-900/90 border-slate-800 hover:border-emerald-700/60 opacity-85 hover:opacity-100'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl border ${
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className={`p-1.5 sm:p-2.5 rounded-xl border shrink-0 ${
                 activeTab === 'arrived' ? 'bg-emerald-500 text-slate-950 border-emerald-300' : 'bg-slate-800 text-emerald-400 border-slate-700'
               }`}>
-                <CheckCircle2 className="w-6 h-6 stroke-[2.5]" />
+                <CheckCircle2 className="w-4 h-4 sm:w-6 sm:h-6 stroke-[2.5]" />
               </div>
-              <div>
-                <span className="text-sm font-black text-emerald-400 block font-moul">
+              <div className="min-w-0">
+                <span className="text-[11px] sm:text-sm font-black text-emerald-400 block font-moul truncate">
                   ផ្ទាំងទី១ ៖ អ្នកបានមកដល់
                 </span>
-                <span className="text-xs text-slate-400 block mt-0.5">
+                <span className="text-[10px] sm:text-xs text-slate-400 hidden sm:block mt-0.5">
                   រាយនាមអ្នកដែលបានគ្រីសវត្តមានរួចរាល់
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center justify-center bg-gradient-to-br from-emerald-500/25 via-emerald-950/90 to-slate-950 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border border-emerald-500/60 shadow-lg shadow-emerald-950/70 shrink-0 min-w-[100px] sm:min-w-[115px]">
+            <div className="flex items-center justify-center bg-gradient-to-br from-emerald-500/25 via-emerald-950/90 to-slate-950 px-2 py-1.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border border-emerald-500/60 shadow-lg shadow-emerald-950/70 shrink-0">
               <div className="text-center font-kantumruy w-full">
-                <div className="flex items-baseline justify-center gap-1 py-0.5">
-                  <span className="text-3xl sm:text-4xl font-extrabold font-kantumruy text-emerald-300 tracking-normal drop-shadow-[0_2px_10px_rgba(16,185,129,0.7)] leading-normal inline-block">
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-xl sm:text-4xl font-extrabold font-kantumruy text-emerald-300 tracking-normal drop-shadow-[0_2px_10px_rgba(16,185,129,0.7)] leading-none inline-block">
                     {westernToKhmerDigits(arrivedCount)}
                   </span>
-                  <span className="text-xs font-bold text-emerald-400 font-kantumruy">នាក់</span>
+                  <span className="text-[10px] sm:text-xs font-bold text-emerald-400 font-kantumruy">នាក់</span>
                 </div>
-                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 font-sans-en">
+                <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 font-sans-en">
                   {arrivedPercentage}% នៃសរុប
                 </span>
               </div>
@@ -153,7 +153,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
           </div>
 
           {activeTab === 'arrived' && (
-            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-emerald-400"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 sm:h-1.5 bg-emerald-400"></div>
           )}
         </button>
 
@@ -161,38 +161,38 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
         <button
           type="button"
           onClick={() => setActiveTab('notArrived')}
-          className={`p-4 rounded-2xl border transition-all text-left relative overflow-hidden group active:scale-[0.99] cursor-pointer ${
+          className={`p-2.5 sm:p-4 rounded-2xl border transition-all text-left relative overflow-hidden group active:scale-[0.99] cursor-pointer ${
             activeTab === 'notArrived'
               ? 'bg-gradient-to-r from-rose-950 via-rose-900 to-slate-900 border-rose-500 ring-2 ring-rose-500/30 shadow-xl shadow-rose-950/40'
               : 'bg-slate-900/90 border-slate-800 hover:border-rose-800/60 opacity-85 hover:opacity-100'
           }`}
         >
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className={`p-2.5 rounded-xl border ${
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <div className={`p-1.5 sm:p-2.5 rounded-xl border shrink-0 ${
                 activeTab === 'notArrived' ? 'bg-rose-500 text-slate-950 border-rose-300' : 'bg-slate-800 text-rose-400 border-slate-700'
               }`}>
-                <XCircle className="w-6 h-6 stroke-[2.5]" />
+                <XCircle className="w-4 h-4 sm:w-6 sm:h-6 stroke-[2.5]" />
               </div>
-              <div>
-                <span className="text-sm font-black text-rose-400 block font-moul">
+              <div className="min-w-0">
+                <span className="text-[11px] sm:text-sm font-black text-rose-400 block font-moul truncate">
                   ផ្ទាំងទី២ ៖ អ្នកមិនទាន់មកដល់
                 </span>
-                <span className="text-xs text-slate-400 block mt-0.5">
+                <span className="text-[10px] sm:text-xs text-slate-400 hidden sm:block mt-0.5">
                   រាយនាមអ្នកដែលមិនទាន់បានមកដល់
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center justify-center bg-gradient-to-br from-rose-500/25 via-rose-950/90 to-slate-950 px-3.5 py-2.5 sm:px-4 sm:py-3 rounded-2xl border border-rose-500/60 shadow-lg shadow-rose-950/70 shrink-0 min-w-[100px] sm:min-w-[115px]">
+            <div className="flex items-center justify-center bg-gradient-to-br from-rose-500/25 via-rose-950/90 to-slate-950 px-2 py-1.5 sm:px-4 sm:py-3 rounded-xl sm:rounded-2xl border border-rose-500/60 shadow-lg shadow-rose-950/70 shrink-0">
               <div className="text-center font-kantumruy w-full">
-                <div className="flex items-baseline justify-center gap-1 py-0.5">
-                  <span className="text-3xl sm:text-4xl font-extrabold font-kantumruy text-rose-300 tracking-normal drop-shadow-[0_2px_10px_rgba(244,63,94,0.7)] leading-normal inline-block">
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-xl sm:text-4xl font-extrabold font-kantumruy text-rose-300 tracking-normal drop-shadow-[0_2px_10px_rgba(244,63,94,0.7)] leading-none inline-block">
                     {westernToKhmerDigits(notArrivedCount)}
                   </span>
-                  <span className="text-xs font-bold text-rose-400 font-kantumruy">នាក់</span>
+                  <span className="text-[10px] sm:text-xs font-bold text-rose-400 font-kantumruy">នាក់</span>
                 </div>
-                <span className="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-500/25 text-rose-300 border border-rose-500/40 font-sans-en">
+                <span className="inline-block mt-0.5 px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-extrabold bg-rose-500/25 text-rose-300 border border-rose-500/40 font-sans-en">
                   {notArrivedPercentage}% នៃសរុប
                 </span>
               </div>
@@ -200,7 +200,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
           </div>
 
           {activeTab === 'notArrived' && (
-            <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-rose-400"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-1 sm:h-1.5 bg-rose-400"></div>
           )}
         </button>
 
