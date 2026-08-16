@@ -87,20 +87,21 @@
   box-shadow: 0 4px 14px 0 rgba(139, 92, 246, 0.35);
 }
 
-/* Smooth Marquee Text Animation (Right-to-Left Loop) */
+/* Seamless Infinite Marquee Text Animation (Zero-Gap Loop) */
 @keyframes marquee {
   0% {
-    transform: translateX(100%);
+    transform: translateX(0%);
   }
   100% {
-    transform: translateX(-100%);
+    transform: translateX(-50%);
   }
 }
 
 .animate-marquee {
-  display: inline-block;
+  display: flex;
+  width: max-content;
   white-space: nowrap;
-  animation: marquee 16s linear infinite;
+  animation: marquee 22s linear infinite;
   will-change: transform;
 }
 

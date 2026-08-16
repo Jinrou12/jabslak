@@ -136,14 +136,17 @@ export default function SearchBar({
         </button>
       </div>
 
-      {/* 📅 Event Khmer Date Banner (Marquee loop right-to-left) */}
+      {/* 📅 Event Khmer Date Banner (Seamless Infinite Marquee) */}
       <div className="border-t border-slate-800/80 pt-2 text-center overflow-hidden">
         <div className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 border border-amber-500/30 rounded-xl px-3 py-1.5 shadow-inner w-full overflow-hidden relative">
-          <Calendar className="w-4 h-4 text-amber-400 shrink-0 z-10 bg-slate-900/90 pr-1 rounded-l-lg" />
+          <Calendar className="w-4 h-4 text-amber-400 shrink-0 z-10 bg-slate-900/95 pr-1 rounded-l-lg" />
           <div className="overflow-hidden relative w-full flex items-center">
-            <span className="text-xs sm:text-sm font-bold text-amber-200 font-kantumruy animate-marquee whitespace-nowrap">
-              ថ្ងៃសៅរ៍ ៨រោច ខែស្រាពណ៍ ឆ្នាំមមី អដ្ឋស័ក ពុទ្ធសករាជ ២៥៧០ ត្រូវនឹងថ្ងៃទី៥ ខែកញ្ញា ឆ្នាំ២០២៦
-            </span>
+            <div className="animate-marquee flex items-center gap-8 font-bold text-amber-200 text-xs sm:text-sm font-kantumruy">
+              <span>ថ្ងៃសៅរ៍ ៨រោច ខែស្រាពណ៍ ឆ្នាំមមី អដ្ឋស័ក ពុទ្ធសករាជ ២៥៧០ ត្រូវនឹងថ្ងៃទី៥ ខែកញ្ញា ឆ្នាំ២០២៦</span>
+              <span className="text-amber-500/60 font-sans-en text-xs">✦</span>
+              <span>ថ្ងៃសៅរ៍ ៨រោច ខែស្រាពណ៍ ឆ្នាំមមី អដ្ឋស័ក ពុទ្ធសករាជ ២៥៧០ ត្រូវនឹងថ្ងៃទី៥ ខែកញ្ញា ឆ្នាំ២០២៦</span>
+              <span className="text-amber-500/60 font-sans-en text-xs">✦</span>
+            </div>
           </div>
         </div>
       </div>
