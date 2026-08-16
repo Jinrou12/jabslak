@@ -494,11 +494,12 @@ export default function TempleMapModal({
   // Zoom handlers (clamped between 0.4x and 5.0x with center focal preservation)
   const handleZoom = (delta) => {
     const vp = viewportRef.current;
+    const mapBox = mapContainerRef.current;
     const currentScale = zoomScale;
     const nextScale = Math.max(0.4, Math.min(5.0, parseFloat((currentScale + delta).toFixed(2))));
     if (nextScale === currentScale) return;
 
-    if (vp && currentScale > 0) {
+    if (vp && mapBox && currentScale > 0) {
       const ratio = nextScale / currentScale;
       const focalX = vp.clientWidth / 2;
       const focalY = vp.clientHeight / 2;
@@ -506,13 +507,11 @@ export default function TempleMapModal({
       const targetScrollLeft = Math.max(0, (vp.scrollLeft + focalX) * ratio - focalX);
       const targetScrollTop = Math.max(0, (vp.scrollTop + focalY) * ratio - focalY);
 
+      mapBox.style.width = `${nextScale * 100}%`;
+      vp.scrollLeft = targetScrollLeft;
+      vp.scrollTop = targetScrollTop;
+
       setZoomScale(nextScale);
-      requestAnimationFrame(() => {
-        if (viewportRef.current) {
-          viewportRef.current.scrollLeft = targetScrollLeft;
-          viewportRef.current.scrollTop = targetScrollTop;
-        }
-      });
     } else {
       setZoomScale(nextScale);
     }
@@ -527,34 +526,35 @@ export default function TempleMapModal({
     }
   };
 
-  // Wheel zoom effect on map viewport box (zooms into mouse cursor focal position)
+  // PC Mouse Scroll Wheel Zoom (zooms directly into exact mouse cursor focal position)
   useEffect(() => {
     const vp = viewportRef.current;
     if (!vp) return;
 
     const handleWheel = (e) => {
-      if (e.ctrlKey || e.metaKey || zoomScale > 1.05) {
-        e.preventDefault();
-        const delta = e.deltaY < 0 ? 0.15 : -0.15;
-        const currentScale = zoomScale;
-        const nextScale = Math.max(0.4, Math.min(5.0, parseFloat((currentScale + delta).toFixed(2))));
-        if (nextScale === currentScale) return;
+      e.preventDefault();
 
+      const delta = e.deltaY < 0 ? 0.15 : -0.15;
+      const currentScale = zoomScale;
+      const nextScale = Math.max(0.4, Math.min(5.0, parseFloat((currentScale + delta).toFixed(2))));
+      if (nextScale === currentScale) return;
+
+      const mapBox = mapContainerRef.current;
+      if (vp && mapBox && currentScale > 0) {
         const vpRect = vp.getBoundingClientRect();
         const focalX = e.clientX - vpRect.left;
         const focalY = e.clientY - vpRect.top;
-        const ratio = nextScale / (currentScale || 1);
+        const ratio = nextScale / currentScale;
 
         const targetScrollLeft = Math.max(0, (vp.scrollLeft + focalX) * ratio - focalX);
         const targetScrollTop = Math.max(0, (vp.scrollTop + focalY) * ratio - focalY);
 
+        // Pre-expand map width in DOM so scrollWidth expands dynamically without clamping
+        mapBox.style.width = `${nextScale * 100}%`;
+        vp.scrollLeft = targetScrollLeft;
+        vp.scrollTop = targetScrollTop;
+
         setZoomScale(nextScale);
-        requestAnimationFrame(() => {
-          if (viewportRef.current) {
-            viewportRef.current.scrollLeft = targetScrollLeft;
-            viewportRef.current.scrollTop = targetScrollTop;
-          }
-        });
       }
     };
 
