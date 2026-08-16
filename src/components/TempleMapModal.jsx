@@ -163,6 +163,8 @@ export default function TempleMapModal({
   // Assistant and Guest can only VIEW the map
   const userRole = currentUser?.role || 'guest';
   const canCustomizeMap = userRole === 'admin' || userRole === 'owner';
+  // Tab 1 = Read only. Tab 2 = Editing location coordinates & adding/editing location names. Tab 3 = Restricted to Admin & Owner.
+  const canCustomizeTab = activeTab === 'interactive' || (activeTab === 'tagger' && canCustomizeMap);
 
   // Tab 1 & Tab 2 share this state
   const [locations, setLocations] = useState(getSavedTempleLocations());
@@ -1188,7 +1190,7 @@ export default function TempleMapModal({
               }`}
             >
               <span className="sm:hidden">📍 ផ្ទាំងទី២</span>
-              <span className="hidden sm:inline">📍 ផ្ទាំងទី២ ៖ អន្តរកម្ម</span>
+              <span className="hidden sm:inline">📍 ផ្ទាំងទី២ ៖ កែសម្រួលទីតាំង & បន្ថែមឈ្មោះ</span>
             </button>
 
             <button
@@ -1730,7 +1732,7 @@ export default function TempleMapModal({
 
                   <div className="flex items-center gap-1 ml-auto">
                     {/* Edit button directly in popover */}
-                    {activeTab !== 'labeled' && canCustomizeMap && (
+                    {canCustomizeTab && (
                       <button
                         onClick={() => handleOpenEditModal(selectedLocation)}
                         className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 hover:border-amber-400/50 text-[10px] sm:text-[11px] font-bold rounded-lg transition-all flex items-center gap-1"
@@ -1784,7 +1786,7 @@ export default function TempleMapModal({
                   />
                 </div>
 
-                {activeTab !== 'labeled' && canCustomizeMap && (
+                {canCustomizeTab && (
                   <button
                     onClick={handleOpenAddModal}
                     className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl border border-emerald-400/50 shrink-0 transition-all flex items-center gap-1"
@@ -1918,7 +1920,7 @@ export default function TempleMapModal({
                     </button>
                   ))}
 
-                  {canCustomizeMap && (
+                  {canCustomizeTab && (
                     <button
                       onClick={() => {
                         setNewCategoryName('');
@@ -2098,8 +2100,8 @@ export default function TempleMapModal({
                                 </div>
                               </div>
 
-                              {/* Edit & Delete Action Buttons (Owner & Admin Only on Tab 2 & Tab 3) */}
-                              {activeTab !== 'labeled' && canCustomizeMap && (
+                              {/* Edit & Delete Action Buttons */}
+                              {canCustomizeTab && (
                                 <div className="flex items-center gap-1 shrink-0">
                                   <button
                                     onClick={(e) => {
