@@ -163,14 +163,15 @@ export default function TempleMapModal({
   // Assistant and Guest can only VIEW the map
   const userRole = currentUser?.role || 'guest';
   const canCustomizeMap = userRole === 'admin' || userRole === 'owner';
-  // Tab 1 = Read only. Tab 2 = Editing location coordinates & adding/editing location names. Tab 3 = Restricted to Admin & Owner.
-  const canCustomizeTab = activeTab === 'interactive' || (activeTab === 'tagger' && canCustomizeMap);
 
   // Tab 1 & Tab 2 share this state
   const [locations, setLocations] = useState(getSavedTempleLocations());
   // Tab 3 has its own INDEPENDENT state
   const [tab3Locations, setTab3Locations] = useState(getSavedTab3Locations());
   const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ នៅស្លាកលើ Map)
+
+  // Tab 1 = Read only. Tab 2 = Editing location coordinates & adding/editing location names. Tab 3 = Restricted to Admin & Owner.
+  const canCustomizeTab = activeTab === 'interactive' || (activeTab === 'tagger' && canCustomizeMap);
 
   // Sync Tab 3 metadata with allTags while preserving Location Names (ឈ្មោះទីតាំង)
   const effectiveTab3Locations = useMemo(() => {
