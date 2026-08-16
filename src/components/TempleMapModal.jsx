@@ -105,14 +105,9 @@ const COLOR_OPTION_GRADIENTS = COLOR_SWATCHES.reduce((acc, swatch) => {
   return acc;
 }, {});
 
-export function getPinBadgeColorClass(loc, idx = 0) {
+export function getPinBadgeColorClass(loc, idx = 0, activeTab = 'interactive') {
   if (!loc) return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
 
-  // Custom user-selected badge color from edit modal form
-  if (loc.badgeColor && COLOR_OPTION_GRADIENTS[loc.badgeColor]) {
-    return COLOR_OPTION_GRADIENTS[loc.badgeColor];
-  }
-  
   const idStr = String(loc.id || '').trim();
 
   // Gates A-E: Original Gold Yellow (ពណ៌លឿង/មាស សម្រាប់ខ្លោងទ្វារ)
@@ -120,12 +115,22 @@ export function getPinBadgeColorClass(loc, idx = 0) {
     return 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 border-white ring-1 ring-amber-400/60';
   }
 
-  // Western Tag Digits (1, 2, 3...): Green (ពណ៌បៃតង សម្រាប់ដៅស្លាកលេខ)
+  // On Tab 1 and Tab 2, ALL location pins default 100% to BLUE (cyan)
+  if (activeTab !== 'tagger') {
+    return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
+  }
+
+  // Custom user-selected badge color on Tab 3
+  if (loc.badgeColor && COLOR_OPTION_GRADIENTS[loc.badgeColor]) {
+    return COLOR_OPTION_GRADIENTS[loc.badgeColor];
+  }
+
+  // On Tab 3: Western Tag Digits (1, 2, 3...) are Green (សម្រាប់ដៅស្លាកលេខ)
   if (/^\d+$/.test(idStr)) {
     return 'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60';
   }
 
-  // Khmer Location Digits (១ ដល់ ១៦) or Khmer Location Names: Blue (ពណ៌ខៀវ សម្រាប់ដៅឈ្មោះទីតាំង)
+  // Otherwise: Blue
   return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
 }
 
@@ -904,7 +909,7 @@ export default function TempleMapModal({
     setModalForm({
       id: String(currentLocations.length + 1),
       name: '',
-      badgeColor: 'emerald',
+      badgeColor: 'cyan',
       type: 'building',
       pos: 'R',
       category: '🏢 ក្រុមអគារ និង កុដិ'
@@ -982,7 +987,7 @@ export default function TempleMapModal({
         name: name,
         x: editingLoc?.x || 50,
         y: editingLoc?.y || 50,
-        badgeColor: modalForm.badgeColor || 'emerald',
+        badgeColor: activeTab === 'interactive' ? 'cyan' : (modalForm.badgeColor || 'cyan'),
         type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
         pos: modalForm.pos || 'R',
         category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
@@ -1589,7 +1594,8 @@ export default function TempleMapModal({
                                   }}
                                   className={`rounded-full flex items-center justify-center border border-white/90 shrink-0 z-10 overflow-hidden select-none shadow-md ${getPinBadgeColorClass(
                                     loc,
-                                    locIdx
+                                    locIdx,
+                                    activeTab
                                   )} ${
                                     isHighlighted
                                       ? 'ring-4 ring-amber-400 ring-offset-2 animate-bounce scale-125 z-50 shadow-2xl'
@@ -1701,7 +1707,9 @@ export default function TempleMapModal({
                   <div className="flex items-center gap-2 min-w-0">
                     <div
                       className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-moul font-bold text-[10px] sm:text-[11px] shadow-md shrink-0 ${getPinBadgeColorClass(
-                        selectedLocation
+                        selectedLocation,
+                        0,
+                        activeTab
                       )}`}
                     >
                       {selectedLocation.id}
