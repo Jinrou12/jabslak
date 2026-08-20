@@ -9,11 +9,13 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
   const isAssistant = currentUser?.role === 'assistant';
   const isGuest = currentUser?.role === 'guest';
   const isArrived = !!tag.arrived;
+  const isPartial = !!tag.isPartialArrived;
+  const tagCount = tag.count || (tag.tags?.length || 1);
 
-  const khmerTagNo = westernToKhmerDigits(tag.tagNumber);
+  const khmerTagNo = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
   const tagQrPayload = JSON.stringify({
     id: tag.id,
-    tagNumber: tag.tagNumber,
+    tagNumber: tag.tagNumberDisplay || tag.tagNumber,
     name: tag.name,
     location: tag.location
   });
@@ -73,7 +75,7 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
           {/* Tag Number Badge */}
           <div className="relative inline-flex flex-col items-center justify-center mb-4">
             <div
-              className="w-28 h-28 rounded-[1.5rem] flex flex-col items-center justify-center text-slate-950 shadow-2xl relative"
+              className="min-w-28 h-28 px-4 rounded-[1.5rem] flex flex-col items-center justify-center text-slate-950 shadow-2xl relative text-center"
               style={{
                 background: 'linear-gradient(145deg, #fbbf24, #f59e0b, #d97706)',
                 boxShadow: '0 8px 32px rgba(245,158,11,0.35), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3)',
@@ -84,12 +86,14 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
                 <div className="absolute top-0 left-0 right-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent rounded-t-[1.5rem]" />
               </div>
               <span className="text-[10px] font-bold tracking-widest uppercase opacity-70 relative z-10 font-sans-en">ស្លាកលេខ</span>
-              <span className="text-4xl font-black font-kantumruy relative z-10 leading-none mt-0.5">
+              <span className="text-2xl md:text-3xl font-black font-kantumruy relative z-10 leading-none mt-0.5 tracking-tight">
                 {khmerTagNo}
               </span>
-              <span className="text-[11px] font-semibold opacity-60 font-sans-en relative z-10">
-                TAG {tag.tagNumber}
-              </span>
+              {tagCount > 1 && (
+                <span className="text-[11px] font-bold bg-slate-950/20 px-2 py-0.5 rounded-md mt-1 font-kantumruy relative z-10">
+                  សរុប {westernToKhmerDigits(tagCount)} អង្គ
+                </span>
+              )}
             </div>
             
             {/* Floating sparkle */}
@@ -114,13 +118,20 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
                 className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all shadow-lg active:scale-95 border ${
                   isArrived
                     ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-emerald-500/25'
+                    : isPartial
+                    ? 'bg-amber-500 text-slate-950 border-amber-300 shadow-amber-500/25'
                     : 'bg-slate-800 text-emerald-300 border-emerald-500/40 hover:bg-slate-700'
                 }`}
               >
                 {isArrived ? (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
-                    <span>បានមកដល់រួចរាល់ (ចុចដើម្បីដកចេញ)</span>
+                    <span>បានមកដល់គ្រប់អង្គ (ចុចដើម្បីដក)</span>
+                  </>
+                ) : isPartial ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
+                    <span>មកដល់ {westernToKhmerDigits(tag.arrivedCount)}/{westernToKhmerDigits(tagCount)} (ចុចដើម្បីគ្រីសទាំងអស់)</span>
                   </>
                 ) : (
                   <>
@@ -210,6 +221,39 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
               >
                 <Phone className="w-5 h-5" />
               </a>
+            </div>
+          )}
+
+          {/* Sub-tags list card for grouped tags */}
+          {tag.tags && tag.tags.length > 1 && (
+            <div
+              className="rounded-2xl p-4 transition-all duration-200"
+              style={{
+                background: 'linear-gradient(135deg, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.02) 100%)',
+                border: '1px solid rgba(245,158,11,0.18)',
+              }}
+            >
+              <div className="text-[11px] text-amber-400 font-bold tracking-wide uppercase mb-2 flex items-center justify-between font-kantumruy">
+                <span>បញ្ជីស្លាកលេខ (សរុប {westernToKhmerDigits(tag.tags.length)} អង្គ)</span>
+                <span className="text-emerald-400 font-bold font-sans-en">
+                  {westernToKhmerDigits(tag.arrivedCount || 0)} / {westernToKhmerDigits(tag.tags.length)} មកដល់
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 custom-scrollbar">
+                {tag.tags.map((subTag) => (
+                  <span
+                    key={subTag.id}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-bold font-kantumruy border flex items-center gap-1 ${
+                      subTag.arrived
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
+                        : 'bg-slate-900/80 text-slate-300 border-slate-700'
+                    }`}
+                  >
+                    <span>#{westernToKhmerDigits(subTag.tagNumber)}</span>
+                    {subTag.arrived ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : null}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
 

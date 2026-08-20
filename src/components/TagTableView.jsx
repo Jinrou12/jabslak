@@ -24,27 +24,36 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
           {/* Table Body */}
           <tbody className="divide-y divide-slate-800/80 font-kantumruy">
             {tags.map((tag) => {
-              const khmerTagNo = westernToKhmerDigits(tag.tagNumber);
+              const khmerTagNo = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
               const isArrived = !!tag.arrived;
+              const isPartial = !!tag.isPartialArrived;
+              const tagCount = tag.count || 1;
 
               return (
                 <tr
                   key={tag.id}
                   onClick={() => onSelectTag(tag)}
                   className={`hover:bg-slate-800/60 cursor-pointer transition-colors group ${
-                    isArrived ? 'bg-emerald-950/20' : ''
+                    isArrived ? 'bg-emerald-950/20' : isPartial ? 'bg-amber-950/20' : ''
                   }`}
                 >
                   {/* Tag Number */}
                   <td className="px-4 py-3 text-center">
-                    <span className="inline-flex items-center justify-center bg-amber-500 text-slate-950 font-black px-2.5 py-1 rounded-xl text-xs shadow-md shadow-amber-500/20 font-sans-en">
+                    <span className="inline-flex items-center justify-center bg-amber-500 text-slate-950 font-black px-2.5 py-1 rounded-xl text-xs shadow-md shadow-amber-500/20 font-kantumruy">
                       {khmerTagNo}
                     </span>
                   </td>
 
                   {/* Name */}
                   <td className="px-4 py-3 font-bold text-slate-100 group-hover:text-amber-400 transition-colors">
-                    {tag.name}
+                    <div className="flex items-center gap-2">
+                      <span>{tag.name}</span>
+                      {tagCount > 1 && (
+                        <span className="bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded-lg text-xs font-kantumruy border border-amber-500/30">
+                          {westernToKhmerDigits(tagCount)} អង្គ
+                        </span>
+                      )}
+                    </div>
                   </td>
 
                   {/* Location - High visibility */}

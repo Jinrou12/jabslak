@@ -135,32 +135,63 @@ export default function App() {
       return;
     }
 
-    const updatedStatus = !tagToToggle.arrived;
-    const updatedTag = {
-      ...tagToToggle,
-      arrived: updatedStatus,
-      arrivedAt: updatedStatus ? new Date().toISOString() : null
-    };
+    const targetItems = tagToToggle.tags && tagToToggle.tags.length > 0 ? tagToToggle.tags : [tagToToggle];
+    const targetIds = new Set(targetItems.map((t) => t.id));
+    const allArrived = targetItems.every((t) => !!t.arrived);
+    const updatedStatus = !allArrived;
+    const now = new Date().toISOString();
 
-    const updatedTags = tags.map((t) => (t.id === tagToToggle.id ? updatedTag : t));
+    const updatedTags = tags.map((t) => {
+      if (targetIds.has(t.id)) {
+        return {
+          ...t,
+          arrived: updatedStatus,
+          arrivedAt: updatedStatus ? now : null
+        };
+      }
+      return t;
+    });
+
     setTags(updatedTags);
     saveTags(updatedTags);
 
     // Push to Cloud & Firebase
     pushTagsToCloud(updatedTags);
-    await saveTagToFirebase(updatedTag);
-
-    if (selectedTag && selectedTag.id === tagToToggle.id) {
-      setSelectedTag(updatedTag);
+    for (const t of updatedTags.filter((item) => targetIds.has(item.id))) {
+      await saveTagToFirebase(t);
     }
 
+    if (selectedTag) {
+      if (selectedTag.tags && selectedTag.tags.length > 0) {
+        const updatedSubTags = selectedTag.tags.map((st) => ({
+          ...st,
+          arrived: updatedStatus,
+          arrivedAt: updatedStatus ? now : null
+        }));
+        setSelectedTag({
+          ...selectedTag,
+          arrived: updatedStatus,
+          arrivedCount: updatedStatus ? updatedSubTags.length : 0,
+          isPartialArrived: false,
+          tags: updatedSubTags
+        });
+      } else if (selectedTag.id === tagToToggle.id) {
+        setSelectedTag({
+          ...selectedTag,
+          arrived: updatedStatus,
+          arrivedAt: updatedStatus ? now : null
+        });
+      }
+    }
+
+    const tagDisplay = tagToToggle.tagNumberDisplay || westernToKhmerDigits(tagToToggle.tagNumber);
     if (updatedStatus) {
-      showToast(`បានគ្រីសរាយការណ៍ស្លាកលេខ ${westernToKhmerDigits(tagToToggle.tagNumber)} (${tagToToggle.name}) មកដល់រួចរាល់! ✔️`);
+      showToast(`បានគ្រីសរាយការណ៍ស្លាកលេខ ${tagDisplay} (${tagToToggle.name}) មកដល់រួចរាល់! ✔️`);
       try {
         confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
       } catch (e) {}
     } else {
-      showToast(`បានដកការគ្រីសវត្តមានស្លាកលេខ ${westernToKhmerDigits(tagToToggle.tagNumber)}!`);
+      showToast(`បានដកការគ្រីសវត្តមានស្លាកលេខ ${tagDisplay}!`);
     }
   };
 
@@ -237,17 +268,23 @@ export default function App() {
   };
 
   const handleDeleteTag = async (tagToDelete) => {
-    if (window.confirm(`តើអ្នកពិតជាចង់លុបស្លាកលេខ ${westernToKhmerDigits(tagToDelete.tagNumber)} (${tagToDelete.name}) មែនទេ?`)) {
-      const updated = tags.filter((t) => t.id !== tagToDelete.id);
+    const targetItems = tagToDelete.tags && tagToDelete.tags.length > 0 ? tagToDelete.tags : [tagToDelete];
+    const targetIds = new Set(targetItems.map((t) => t.id));
+    const tagDisplay = tagToDelete.tagNumberDisplay || westernToKhmerDigits(tagToDelete.tagNumber);
+
+    if (window.confirm(`តើអ្នកពិតជាចង់លុបស្លាកលេខ ${tagDisplay} (${tagToDelete.name}) មែនទេ?`)) {
+      const updated = tags.filter((t) => !targetIds.has(t.id));
       setTags(updated);
       saveTags(updated);
       
       // Push to Zero-Config Cloud Sync & Firebase
       pushTagsToCloud(updated);
-      await deleteTagFromFirebase(tagToDelete.id);
+      for (const id of targetIds) {
+        await deleteTagFromFirebase(id);
+      }
 
       setSelectedTag(null);
-      showToast(`បានលុបស្លាកលេខ ${westernToKhmerDigits(tagToDelete.tagNumber)} រួចរាល់!`);
+      showToast(`បានលុបស្លាកលេខ ${tagDisplay} រួចរាល់!`);
     }
   };
 

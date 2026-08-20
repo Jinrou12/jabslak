@@ -302,6 +302,8 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
             <div className="block sm:hidden divide-y divide-slate-800/80">
               {filteredTags.map((tag) => {
                 const isArrived = !!tag.arrived;
+                const tagDisplay = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
+                const tagCount = tag.count || 1;
                 return (
                   <div
                     key={tag.id}
@@ -312,12 +314,19 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                     {/* Header Row: Tag Badge + Owner Name + Check-in Button */}
                     <div className="flex items-center justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-black font-sans-en text-xs border border-amber-500/40 shrink-0">
-                          #{westernToKhmerDigits(tag.tagNumber)}
+                        <span className="px-2.5 py-1 rounded-xl bg-amber-500/20 text-amber-300 font-black font-kantumruy text-xs border border-amber-500/40 shrink-0">
+                          #{tagDisplay}
                         </span>
-                        <span className="font-bold text-slate-100 text-sm truncate font-kantumruy">
-                          {tag.name}
-                        </span>
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="font-bold text-slate-100 text-sm truncate font-kantumruy">
+                            {tag.name}
+                          </span>
+                          {tagCount > 1 && (
+                            <span className="bg-amber-500/20 text-amber-300 font-extrabold px-1.5 py-0.5 rounded text-[10px] font-kantumruy border border-amber-500/30 shrink-0">
+                              {westernToKhmerDigits(tagCount)} អង្គ
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <button
@@ -388,7 +397,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
               <table className="w-full text-left border-collapse text-xs">
                 <thead className="bg-slate-950 border-b border-slate-800 text-slate-400 font-semibold font-kantumruy">
                   <tr>
-                    <th className="py-3.5 px-4 w-20 text-center">លេខស្លាក</th>
+                    <th className="py-3.5 px-4 w-24 text-center">លេខស្លាក</th>
                     <th className="py-3.5 px-4">ឈ្មោះម្ចាស់ស្លាក</th>
                     <th className="py-3.5 px-4">ទីតាំងស្នាក់នៅ</th>
                     <th className="py-3.5 px-4">លេខទូរស័ព្ទ</th>
@@ -399,6 +408,8 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                 <tbody className="divide-y divide-slate-800/80 font-kantumruy">
                   {filteredTags.map((tag) => {
                     const isArrived = !!tag.arrived;
+                    const tagDisplay = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
+                    const tagCount = tag.count || 1;
                     return (
                       <tr
                         key={tag.id}
@@ -408,14 +419,21 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                       >
                         {/* Tag Badge */}
                         <td className="py-3.5 px-4 text-center">
-                          <span className="inline-block px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 font-black font-sans-en text-xs border border-amber-500/40 shadow-sm">
-                            #{westernToKhmerDigits(tag.tagNumber)}
+                          <span className="inline-block px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 font-black font-kantumruy text-xs border border-amber-500/40 shadow-sm">
+                            #{tagDisplay}
                           </span>
                         </td>
 
                         {/* Name */}
                         <td className="py-3.5 px-4 font-bold text-slate-100 text-sm">
-                          {tag.name}
+                          <div className="flex items-center gap-2">
+                            <span>{tag.name}</span>
+                            {tagCount > 1 && (
+                              <span className="bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded-lg text-xs font-kantumruy border border-amber-500/30">
+                                {westernToKhmerDigits(tagCount)} អង្គ
+                              </span>
+                            )}
+                          </div>
                           {tag.notes && (
                             <span className="block text-[11px] font-normal text-slate-400 mt-0.5 truncate max-w-xs">
                               {tag.notes}
