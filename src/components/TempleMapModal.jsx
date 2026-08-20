@@ -45,7 +45,7 @@ import {
   subscribeToGroupSettings,
   saveGroupSettingsToFirebase
 } from '../utils/firebase';
-import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
+import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName } from '../utils/khmerSearch';
 
 const PIN_COLOR_GRADIENTS = [
   'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950',       // 1: Cyan Sky
@@ -165,8 +165,10 @@ export default function TempleMapModal({
   const [tab3Locations, setTab3Locations] = useState(getSavedTab3Locations());
   const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ នៅស្លាកលើ Map)
 
-  // Tab 1 = Read only for all. Tab 2 & Tab 3 = Restricted to Admin & Owner ONLY!
-  const canCustomizeTab = (activeTab === 'interactive' || activeTab === 'tagger') && canCustomizeMap;
+  // Group tags by person name for dropdown selector & pins
+  const groupedAllTags = useMemo(() => {
+    return groupTagsByName(allTags);
+  }, [allTags]);
 
   // Sync Tab 3 metadata with allTags while preserving Location Names (ឈ្មោះទីតាំង)
   const effectiveTab3Locations = useMemo(() => {
@@ -2226,12 +2228,17 @@ export default function TempleMapModal({
                       const val = e.target.value;
                       setSelectedTagForPin(val);
                       if (val) {
-                        const found = allTags.find((t) => String(t.tagNumber) === String(val));
+                        const found =
+                          groupedAllTags.find(
+                            (t) => String(t.tagNumber) === String(val) || String(t.tagNumberDisplay) === String(val)
+                          ) || allTags.find((t) => String(t.tagNumber) === String(val));
+
                         if (found) {
+                          const tagDisp = found.tagNumberDisplay || String(found.tagNumber);
                           setModalForm((prev) => ({
                             ...prev,
-                            id: String(found.tagNumber),
-                            name: found.name || found.location || `ស្លាកលេខ #${found.tagNumber}`,
+                            id: tagDisp,
+                            name: found.name || found.location || `ស្លាកលេខ #${tagDisp}`,
                             category: found.baseLocation || prev.category || '🏢 ក្រុមអគារ និង កុដិ'
                           }));
                           setFormError('');
@@ -2241,21 +2248,31 @@ export default function TempleMapModal({
                     className="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-xs text-amber-200 focus:outline-none focus:border-amber-400 font-kantumruy"
                   >
                     <option value="">-- ជ្រើសរើសស្លាកលេខពីប្រព័ន្ធ ឬ បញ្ចូលព័ត៌មានដោយដៃ --</option>
-                    {allTags
+                    {groupedAllTags
                       .filter((t) => {
                         const tagNumStr = String(t.tagNumber || '').trim().toLowerCase();
-                        if (editingLoc && String(editingLoc.id || '').trim().toLowerCase() === tagNumStr) {
+                        const tagDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
+                        if (
+                          editingLoc &&
+                          (String(editingLoc.id || '').trim().toLowerCase() === tagNumStr ||
+                            String(editingLoc.id || '').trim().toLowerCase() === tagDispStr)
+                        ) {
                           return true;
                         }
-                        return !currentLocations.some(
-                          (loc) => String(loc.id || '').trim().toLowerCase() === tagNumStr
-                        );
+                        return !currentLocations.some((loc) => {
+                          const locIdStr = String(loc.id || '').trim().toLowerCase();
+                          return locIdStr === tagNumStr || locIdStr === tagDispStr;
+                        });
                       })
-                      .map((t) => (
-                        <option key={t.id || t.tagNumber} value={t.tagNumber}>
-                          ស្លាកលេខ {westernToKhmerDigits(t.tagNumber)} ៖ {t.name || 'គ្មានឈ្មោះ'}
-                        </option>
-                      ))}
+                      .map((t) => {
+                        const tagDisplay = t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber);
+                        const countLabel = t.count > 1 ? ` (${westernToKhmerDigits(t.count)} អង្គ)` : '';
+                        return (
+                          <option key={t.id || t.tagNumber} value={t.tagNumberDisplay || t.tagNumber}>
+                            ស្លាកលេខ {tagDisplay}{countLabel} ៖ {t.name || 'គ្មានឈ្មោះ'}
+                          </option>
+                        );
+                      })}
                   </select>
                 </div>
               )}
