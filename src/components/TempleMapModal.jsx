@@ -170,6 +170,9 @@ export default function TempleMapModal({
     return groupTagsByName(allTags);
   }, [allTags]);
 
+  // Tab 1 = Read only for all. Tab 2 & Tab 3 = Restricted to Admin & Owner ONLY!
+  const canCustomizeTab = (activeTab === 'interactive' || activeTab === 'tagger') && canCustomizeMap;
+
   // Sync Tab 3 metadata with allTags while preserving Location Names (ឈ្មោះទីតាំង)
   const effectiveTab3Locations = useMemo(() => {
     return tab3Locations.map((loc) => {
