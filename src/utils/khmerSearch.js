@@ -73,7 +73,8 @@ export function formatTagRanges(tagNumbers) {
 }
 
 /**
- * Groups list of individual tag objects by person name (+ phone if available).
+ * Groups list of individual tag objects by person name.
+ * Merges phone numbers, locations, and notes if present in any of the tags.
  * Preserves all underlying original tag objects inside item.tags array.
  */
 export function groupTagsByName(tagList) {
@@ -83,11 +84,10 @@ export function groupTagsByName(tagList) {
 
   for (const tag of tagList) {
     const cleanName = (tag.name || '').trim();
-    const cleanPhone = (tag.phone || '').replaceAll('-', '').replaceAll(' ', '').trim();
 
-    // Grouping key: name (lowercased) + phone
+    // Grouping key: name (lowercased)
     // If name is empty, keep single tag so unnamed tags are not grouped together
-    const key = cleanName ? `${cleanName.toLowerCase()}___${cleanPhone}` : `_single_${tag.id}`;
+    const key = cleanName ? cleanName.toLowerCase() : `_single_${tag.id}`;
 
     if (!map.has(key)) {
       map.set(key, []);
@@ -108,6 +108,18 @@ export function groupTagsByName(tagList) {
     const tagNumbers = groupItems.map((t) => t.tagNumber);
     const tagNumberDisplay = formatTagRanges(tagNumbers);
 
+    // Pick best phone, location, notes from group if available
+    const bestPhone = groupItems.find((t) => (t.phone || '').trim())?.phone || firstTag.phone || '';
+    const bestLocation =
+      groupItems.find(
+        (t) =>
+          t.location &&
+          t.location !== 'មើលទីកន្លែង' &&
+          t.location !== 'ទីតាំងមិនទាន់កំណត់' &&
+          t.location !== 'មិនទាន់ដៅលើ Map'
+      )?.location || firstTag.location;
+    const bestNotes = groupItems.find((t) => (t.notes || '').trim())?.notes || firstTag.notes || '';
+
     const arrivedCount = groupItems.filter((t) => !!t.arrived).length;
     const isAllArrived = arrivedCount === groupItems.length;
     const isAnyArrived = arrivedCount > 0;
@@ -115,6 +127,9 @@ export function groupTagsByName(tagList) {
     grouped.push({
       ...firstTag,
       id: groupItems.length > 1 ? `group-${firstTag.id}-${groupItems.length}` : firstTag.id,
+      phone: bestPhone,
+      location: bestLocation,
+      notes: bestNotes,
       tagNumber: firstTag.tagNumber,
       tagNumbers: tagNumbers,
       tagNumberDisplay: tagNumberDisplay,
