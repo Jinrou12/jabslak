@@ -1113,14 +1113,20 @@ export default function TempleMapModal({
     setter(updated);
     saver(updated);
 
-    // Synchronize new pins across both Tab 2 and Tab 3 so pins are 100% visible on all tabs!
+    // Rule 1: Edits/Adds on Tab 2 (interactive) propagate to Tab 1 (locations) AND Tab 3 (tab3Locations)
     if (activeTab === 'interactive') {
-      setTab3Locations(updated);
-      saveTab3LocationsToFirebase(updated);
-    } else if (activeTab === 'tagger') {
-      setLocations(updated);
-      saveTempleLocationsToFirebase(updated);
+      setTab3Locations((prev3) => {
+        const merged = updated.map((loc2) => {
+          const match3 = prev3.find((l3) => l3.id === loc2.id);
+          return match3 ? { ...match3, ...loc2 } : loc2;
+        });
+        const tagPinsOnly = prev3.filter((l3) => l3.isTagPin && !updated.some((l2) => l2.id === l3.id));
+        const finalTab3 = [...merged, ...tagPinsOnly];
+        saveTab3LocationsToFirebase(finalTab3);
+        return finalTab3;
+      });
     }
+    // Rule 2: Edits/Adds on Tab 3 (tagger) stay 100% inside Tab 3 (tab3Locations) without affecting Tab 1 or Tab 2!
 
     setIsEditModalOpen(false);
     setEditingLoc(null);
