@@ -210,8 +210,13 @@ export default function TempleMapModal({
     });
   }, [tab3Locations, allTags]);
 
+  // Filter out visitor tag pins from Tab 1 & Tab 2 locations so Tab 1 & Tab 2 NEVER display visitor tag pins
+  const baseMapLocations = useMemo(() => {
+    return locations.filter((loc) => !loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay);
+  }, [locations]);
+
   // Computed: which locations array to use based on active tab
-  const currentLocations = activeTab === 'tagger' ? effectiveTab3Locations : locations;
+  const currentLocations = activeTab === 'tagger' ? effectiveTab3Locations : baseMapLocations;
   const [zoomScale, setZoomScale] = useState(1.0);
   const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin circle size in px (14px)
   const [selectedSizeGroup, setSelectedSizeGroup] = useState('all'); // 'all' | categoryName
@@ -882,7 +887,13 @@ export default function TempleMapModal({
     if (activeTab === 'tagger') {
       return { setter: setTab3Locations, saver: saveTab3LocationsToFirebase };
     }
-    return { setter: setLocations, saver: saveTempleLocationsToFirebase };
+    return {
+      setter: setLocations,
+      saver: (data) => {
+        const cleanData = data.filter((loc) => !loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay);
+        saveTempleLocationsToFirebase(cleanData);
+      }
+    };
   };
 
   // Ultra-Precise Pin Dragging (Synchronizes to Cloud on End)
@@ -1036,7 +1047,7 @@ export default function TempleMapModal({
     }
 
     // Check duplicate ID (use raw base locations, not computed effectiveTab3Locations)
-    const rawBaseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+    const rawBaseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
     const duplicate = rawBaseLocations.find(
       (l) => String(l.id || '').toLowerCase() === String(id || '').toLowerCase() && (!editingLoc || editingLoc.id !== l.id)
     );
@@ -1049,7 +1060,7 @@ export default function TempleMapModal({
 
     // IMPORTANT: Always use RAW base locations (not computed effectiveTab3Locations)
     // to avoid baking computed tagOwnerName/tagNumber into saved data.
-    const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+    const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
 
     // Helper: strip computed-only properties before saving to state/Firebase
     const stripComputed = (loc) => {
@@ -1137,7 +1148,7 @@ export default function TempleMapModal({
     if (window.confirm(`តើអ្នកពិតជាចង់លុបទីតាំង #${id} នេះមែនទេ?`)) {
       const { setter, saver } = getTabDataFunctions();
       // Use raw base locations (not computed effectiveTab3Locations) to avoid saving computed props
-      const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+      const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
       const updated = baseLocations.filter((l) => l.id !== id);
       setter(updated);
       saver(updated);
@@ -1216,7 +1227,7 @@ export default function TempleMapModal({
 
     const { setter, saver } = getTabDataFunctions();
     // Use raw base locations to avoid saving computed tagOwnerName/tagNumber
-    const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+    const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
     const stripComputed2 = ({ tagOwnerName, tagNumber, ...clean }) => clean; // eslint-disable-line no-unused-vars
     const updated = baseLocations.map((loc) => {
       if (selectedLocationIdsForGroup.includes(loc.id)) {
