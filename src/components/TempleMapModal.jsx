@@ -184,13 +184,18 @@ export default function TempleMapModal({
 
       const matchedTag = allTags.find((t) => {
         const tNoStr = String(t.tagNumber || '').trim();
+        const tDispStr = String(t.tagNumberDisplay || '').trim();
         const tBase = String(t.baseLocation || t.location || '').trim();
 
-        // 1. Match Western Tag Pin ID (e.g. Pin "2" matches Tag #2)
-        if (tNoStr === locIdStr) return true;
+        // 1. Explicit tag pin match (if pin was created/assigned specifically for a tag number)
+        if (loc.isTagPin && (String(loc.tagNumber || '') === tNoStr || String(loc.tagNumberDisplay || '') === tDispStr || locIdStr === tDispStr)) {
+          return true;
+        }
 
-        // 2. Match Location Pin by location name ONLY if tag's location explicitly matches locationName
-        if (tBase && (tBase === locIdStr || tBase === locationName)) return true;
+        // 2. Match by Location Name ONLY if tag's baseLocation explicitly matches locationName or locIdStr
+        if (tBase && tBase !== 'មើលទីកន្លែង' && tBase !== 'មិនទាន់ដៅលើ Map' && tBase !== 'ទីតាំងមិនទាន់កំណត់' && (tBase === locationName || tBase === locIdStr)) {
+          return true;
+        }
 
         return false;
       });
@@ -2255,16 +2260,33 @@ export default function TempleMapModal({
                       .filter((t) => {
                         const tagNumStr = String(t.tagNumber || '').trim().toLowerCase();
                         const tagDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
+                        const tagNumKhmer = westernToKhmerDigits(t.tagNumber).trim().toLowerCase();
+
                         if (
                           editingLoc &&
-                          (String(editingLoc.id || '').trim().toLowerCase() === tagNumStr ||
-                            String(editingLoc.id || '').trim().toLowerCase() === tagDispStr)
+                          (String(editingLoc.tagNumber || '').trim().toLowerCase() === tagNumStr ||
+                            (editingLoc.isTagPin && String(editingLoc.id || '').trim().toLowerCase() === tagDispStr))
                         ) {
                           return true;
                         }
+
+                        // Filter out tag ONLY if it is explicitly pinned on Tab 3 as a tag pin
                         return !currentLocations.some((loc) => {
+                          if (!loc.isTagPin && !loc.tagNumber) return false;
+                          const locTagNum = loc.tagNumber ? String(loc.tagNumber).trim().toLowerCase() : '';
+                          const locTagDisp = loc.tagNumberDisplay ? String(loc.tagNumberDisplay).trim().toLowerCase() : '';
                           const locIdStr = String(loc.id || '').trim().toLowerCase();
-                          return locIdStr === tagNumStr || locIdStr === tagDispStr;
+
+                          if (locTagNum && (locTagNum === tagNumStr || locTagNum === tagDispStr || locTagNum === tagNumKhmer)) {
+                            return true;
+                          }
+                          if (locTagDisp && (locTagDisp === tagNumStr || locTagDisp === tagDispStr)) {
+                            return true;
+                          }
+                          if (loc.isTagPin && (locIdStr === tagNumStr || locIdStr === tagDispStr)) {
+                            return true;
+                          }
+                          return false;
                         });
                       })
                       .map((t) => {
