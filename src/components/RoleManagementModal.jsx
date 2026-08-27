@@ -289,9 +289,18 @@ export default function RoleManagementModal({
                           {getRoleBadge(u.role)}
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 mt-0.5 font-sans-en">
-                          {u.email && <span className="text-amber-400 font-semibold">✉️ {u.email}</span>}
-                          {u.phone && <span>📞 {u.phone}</span>}
-                          <span>🔑 PIN: {u.pin || '1234'}</span>
+                          {isTargetOwner && !isOwner ? (
+                            <span className="text-slate-500 italic font-kantumruy flex items-center gap-1">
+                              <Lock className="w-3 h-3 text-slate-500 shrink-0" />
+                              <span>ព័ត៌មាន Email & PIN ត្រូវបានលាក់ (Owner ប៉ុណ្ណោះ)</span>
+                            </span>
+                          ) : (
+                            <>
+                              {u.email && <span className="text-amber-400 font-semibold">✉️ {u.email}</span>}
+                              {u.phone && <span>📞 {u.phone}</span>}
+                              <span>🔑 PIN: {u.pin || '1234'}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -336,7 +345,7 @@ export default function RoleManagementModal({
             <h4 className="font-bold text-amber-400 font-moul">💡 កម្រិតសិទ្ធិនីមួយៗ (Permission Matrix) ៖</h4>
             <ul className="space-y-1.5 list-disc list-inside text-slate-400 leading-relaxed font-kantumruy">
               <li><strong className="text-amber-300 font-semibold">Owner 👑</strong> ៖ មានសិទ្ធិគ្រប់យ៉ាងក្នុង Web អាចផ្ទេរតំណែង Owner ឬតម្លើង/ដក Admin & Assistant បាន។</li>
-              <li><strong className="text-emerald-300 font-semibold">Admin 🛡️</strong> ៖ មានសិទ្ធិដូច Owner (បន្ថែម កែប្រែ លុប Excel) ប៉ុន្តែ **គ្មានសិទ្ធិលុប ឬដក Owner ឡើយ**។</li>
+              <li><strong className="text-emerald-300 font-semibold">Admin 🛡️</strong> ៖ មានសិទ្ធិដូច Owner (បន្ថែម កែប្រែ លុប Excel) ប៉ុន្តែ **គ្មានសិទ្ធិមើល Email/PIN, កែប្រែ ឬលុប Owner ឡើយ**។</li>
               <li><strong className="text-sky-300 font-semibold">Assistant 📋</strong> ៖ មានសិទ្ធិ **មើលព័ត៌មាន និងទីតាំងប៉ុណ្ណោះ** (មិនអាចបន្ថែម កែប្រែ ឬលុបទិន្នន័យឡើយ)។</li>
             </ul>
           </div>
