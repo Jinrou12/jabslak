@@ -774,7 +774,7 @@ export default function TempleMapModal({
       }
     });
     const nextNum = maxNum > 0 ? maxNum + 1 : locs.length + 1;
-    return westernToKhmerDigits(nextNum);
+    return String(nextNum);
   };
 
   // Map Click (Add new pin on Tab 2 or Tab 3)
@@ -976,7 +976,7 @@ export default function TempleMapModal({
 
     // Helper: strip computed-only properties before saving to state/Firebase
     const stripComputed = (loc) => {
-      const { tagOwnerName, tagNumber, ...clean } = loc; // eslint-disable-line no-unused-vars
+      const { tagOwnerName, ...clean } = loc; // eslint-disable-line no-unused-vars
       return clean;
     };
 
@@ -991,7 +991,10 @@ export default function TempleMapModal({
               badgeColor: modalForm.badgeColor || 'emerald',
               type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
               pos: modalForm.pos || 'R',
-              category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
+              category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ',
+              isTagPin: modalForm.isTagPin !== undefined ? modalForm.isTagPin : l.isTagPin,
+              tagNumber: modalForm.tagNumber !== undefined ? modalForm.tagNumber : l.tagNumber,
+              tagNumberDisplay: modalForm.tagNumberDisplay !== undefined ? modalForm.tagNumberDisplay : l.tagNumberDisplay
             })
           : stripComputed(l)
       );
@@ -1015,7 +1018,10 @@ export default function TempleMapModal({
         badgeColor: activeTab === 'interactive' ? 'cyan' : (modalForm.badgeColor || 'cyan'),
         type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
         pos: modalForm.pos || 'R',
-        category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
+        category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ',
+        isTagPin: modalForm.isTagPin || false,
+        tagNumber: modalForm.tagNumber || null,
+        tagNumberDisplay: modalForm.tagNumberDisplay || null
       };
       updated = [...baseLocations.map(stripComputed), newPoint];
       setSelectedLocation(newPoint);
@@ -2243,11 +2249,15 @@ export default function TempleMapModal({
 
                         if (found) {
                           const tagDisp = found.tagNumberDisplay || String(found.tagNumber);
+                          const latinId = String(found.tagNumber || khmerToWesternDigits(tagDisp));
                           setModalForm((prev) => ({
                             ...prev,
-                            id: tagDisp,
-                            name: found.name || found.location || `ស្លាកលេខ #${tagDisp}`,
-                            category: found.baseLocation || prev.category || '🏢 ក្រុមអគារ និង កុដិ'
+                            id: latinId,
+                            tagNumber: found.tagNumber,
+                            tagNumberDisplay: tagDisp,
+                            isTagPin: true,
+                            name: found.name || found.location || `ស្លាកលេខ #${latinId}`,
+                            category: (found.baseLocation && found.baseLocation !== 'មើលទីកន្លែង' && found.baseLocation !== 'មិនទាន់ដៅលើ Map') ? found.baseLocation : (prev.category || '🏢 ក្រុមអគារ និង កុដិ')
                           }));
                           setFormError('');
                         }
@@ -2258,34 +2268,45 @@ export default function TempleMapModal({
                     <option value="">-- ជ្រើសរើសស្លាកលេខពីប្រព័ន្ធ ឬ បញ្ចូលព័ត៌មានដោយដៃ --</option>
                     {groupedAllTags
                       .filter((t) => {
+                        const tNum = Number(t.tagNumber);
                         const tagNumStr = String(t.tagNumber || '').trim().toLowerCase();
                         const tagDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
-                        const tagNumKhmer = westernToKhmerDigits(t.tagNumber).trim().toLowerCase();
+                        const tagNumWestern = khmerToWesternDigits(tagDispStr || tagNumStr).trim().toLowerCase();
 
                         if (
                           editingLoc &&
-                          (String(editingLoc.tagNumber || '').trim().toLowerCase() === tagNumStr ||
-                            (editingLoc.isTagPin && String(editingLoc.id || '').trim().toLowerCase() === tagDispStr))
+                          ((editingLoc.tagNumber && Number(editingLoc.tagNumber) === tNum) ||
+                            (editingLoc.isTagPin &&
+                              (khmerToWesternDigits(String(editingLoc.id || '')) === tagNumWestern ||
+                                String(editingLoc.id || '').trim().toLowerCase() === tagNumStr ||
+                                String(editingLoc.id || '').trim().toLowerCase() === tagDispStr)))
                         ) {
                           return true;
                         }
 
-                        // Filter out tag ONLY if it is explicitly pinned on Tab 3 as a tag pin
+                        // Filter out tag ONLY if it is ALREADY pinned on Tab 3 as a tag pin
                         return !currentLocations.some((loc) => {
-                          if (!loc.isTagPin && !loc.tagNumber) return false;
-                          const locTagNum = loc.tagNumber ? String(loc.tagNumber).trim().toLowerCase() : '';
-                          const locTagDisp = loc.tagNumberDisplay ? String(loc.tagNumberDisplay).trim().toLowerCase() : '';
-                          const locIdStr = String(loc.id || '').trim().toLowerCase();
+                          if (!loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay) return false;
 
-                          if (locTagNum && (locTagNum === tagNumStr || locTagNum === tagDispStr || locTagNum === tagNumKhmer)) {
+                          const locTagNum = loc.tagNumber ? Number(loc.tagNumber) : null;
+                          if (locTagNum && locTagNum === tNum) {
                             return true;
                           }
-                          if (locTagDisp && (locTagDisp === tagNumStr || locTagDisp === tagDispStr)) {
-                            return true;
+
+                          if (loc.tagNumberDisplay) {
+                            const locDispWestern = khmerToWesternDigits(String(loc.tagNumberDisplay)).trim().toLowerCase();
+                            if (locDispWestern === tagNumWestern || String(loc.tagNumberDisplay).trim().toLowerCase() === tagDispStr) {
+                              return true;
+                            }
                           }
-                          if (loc.isTagPin && (locIdStr === tagNumStr || locIdStr === tagDispStr)) {
-                            return true;
+
+                          if (loc.isTagPin) {
+                            const locIdWestern = khmerToWesternDigits(String(loc.id || '')).trim().toLowerCase();
+                            if (locIdWestern === tagNumWestern || String(loc.id).trim().toLowerCase() === tagNumStr || String(loc.id).trim().toLowerCase() === tagDispStr) {
+                              return true;
+                            }
                           }
+
                           return false;
                         });
                       })
@@ -2311,11 +2332,12 @@ export default function TempleMapModal({
                     type="text"
                     value={modalForm.id}
                     onChange={(e) => {
-                      setModalForm((prev) => ({ ...prev, id: e.target.value }));
+                      const latinVal = khmerToWesternDigits(e.target.value);
+                      setModalForm((prev) => ({ ...prev, id: latinVal }));
                       setFormError('');
                     }}
-                    placeholder="ឧ. ១៧, ១៨, F, G..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
+                    placeholder="ឧ. 17, 18, F, G..."
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400 font-sans-en"
                   />
                 </div>
 
