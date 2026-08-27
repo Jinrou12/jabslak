@@ -777,6 +777,39 @@ export default function TempleMapModal({
     return String(nextNum);
   };
 
+  // Helper: get the first unpinned tag in system to recommend as next pin
+  const getFirstAvailableTag = () => {
+    if (!groupedAllTags || groupedAllTags.length === 0) return null;
+
+    return groupedAllTags.find((t) => {
+      const tNum = Number(t.tagNumber);
+      const tagNumStr = String(t.tagNumber || '').trim().toLowerCase();
+      const tagDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
+      const tagNumWestern = khmerToWesternDigits(tagDispStr || tagNumStr).trim().toLowerCase();
+
+      const isPinned = currentLocations.some((loc) => {
+        if (!loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay) return false;
+
+        const locTagNum = loc.tagNumber ? Number(loc.tagNumber) : null;
+        if (locTagNum && locTagNum === tNum) return true;
+
+        if (loc.tagNumberDisplay) {
+          const locDispWestern = khmerToWesternDigits(String(loc.tagNumberDisplay)).trim().toLowerCase();
+          if (locDispWestern === tagNumWestern || String(loc.tagNumberDisplay).trim().toLowerCase() === tagDispStr) return true;
+        }
+
+        if (loc.isTagPin) {
+          const locIdWestern = khmerToWesternDigits(String(loc.id || '')).trim().toLowerCase();
+          if (locIdWestern === tagNumWestern || String(loc.id).trim().toLowerCase() === tagNumStr || String(loc.id).trim().toLowerCase() === tagDispStr) return true;
+        }
+
+        return false;
+      });
+
+      return !isPinned;
+    });
+  };
+
   // Map Click (Add new pin on Tab 2 or Tab 3)
   const handleMapClick = (e) => {
     if (!canCustomizeTab) return; // Only Admin & Owner can add pins on Tab 2 & Tab 3
@@ -794,25 +827,48 @@ export default function TempleMapModal({
     });
 
     if (pendingPinTag) {
+      const tagDisp = pendingPinTag.tagNumberDisplay || String(pendingPinTag.tagNumber);
+      const latinId = String(pendingPinTag.tagNumber || khmerToWesternDigits(tagDisp));
       setModalForm({
-        id: String(pendingPinTag.tagNumber || currentLocations.length + 1),
-        name: pendingPinTag.name || pendingPinTag.location || `ស្លាកលេខ #${pendingPinTag.tagNumber}`,
+        id: latinId,
+        tagNumber: pendingPinTag.tagNumber,
+        tagNumberDisplay: tagDisp,
+        isTagPin: true,
+        name: pendingPinTag.name || pendingPinTag.location || `ស្លាកលេខ #${latinId}`,
         type: 'building',
         pos: 'R',
-        category: pendingPinTag.baseLocation || '🏢 ក្រុមអគារ និង កុដិ'
+        category: (pendingPinTag.baseLocation && pendingPinTag.baseLocation !== 'មើលទីកន្លែង' && pendingPinTag.baseLocation !== 'មិនទាន់ដៅលើ Map') ? pendingPinTag.baseLocation : '🏢 ក្រុមអគារ និង កុដិ'
       });
-      setSelectedTagForPin(String(pendingPinTag.tagNumber));
+      setSelectedTagForPin(tagDisp || String(pendingPinTag.tagNumber));
       setPendingPinTag(null);
     } else {
-      setModalForm({
-        id: getNextDefaultLocationId(currentLocations),
-        name: '',
-        badgeColor: 'cyan',
-        type: 'building',
-        pos: 'R',
-        category: '🏢 ក្រុមអគារ និង កុដិ'
-      });
-      setSelectedTagForPin('');
+      const firstAvailable = activeTab === 'tagger' ? getFirstAvailableTag() : null;
+      if (firstAvailable) {
+        const tagDisp = firstAvailable.tagNumberDisplay || String(firstAvailable.tagNumber);
+        const latinId = String(firstAvailable.tagNumber || khmerToWesternDigits(tagDisp));
+        setModalForm({
+          id: latinId,
+          tagNumber: firstAvailable.tagNumber,
+          tagNumberDisplay: tagDisp,
+          isTagPin: true,
+          name: firstAvailable.name || firstAvailable.location || `ស្លាកលេខ #${latinId}`,
+          badgeColor: 'cyan',
+          type: 'building',
+          pos: 'R',
+          category: (firstAvailable.baseLocation && firstAvailable.baseLocation !== 'មើលទីកន្លែង' && firstAvailable.baseLocation !== 'មិនទាន់ដៅលើ Map') ? firstAvailable.baseLocation : '🏢 ក្រុមអគារ និង កុដិ'
+        });
+        setSelectedTagForPin(tagDisp || String(firstAvailable.tagNumber));
+      } else {
+        setModalForm({
+          id: getNextDefaultLocationId(currentLocations),
+          name: '',
+          badgeColor: 'cyan',
+          type: 'building',
+          pos: 'R',
+          category: '🏢 ក្រុមអគារ និង កុដិ'
+        });
+        setSelectedTagForPin('');
+      }
     }
 
     setFormError('');
@@ -931,14 +987,33 @@ export default function TempleMapModal({
       x: 50,
       y: 50
     });
-    setModalForm({
-      id: getNextDefaultLocationId(currentLocations),
-      name: '',
-      badgeColor: 'cyan',
-      type: 'building',
-      pos: 'R',
-      category: '🏢 ក្រុមអគារ និង កុដិ'
-    });
+    const firstAvailable = activeTab === 'tagger' ? getFirstAvailableTag() : null;
+    if (firstAvailable) {
+      const tagDisp = firstAvailable.tagNumberDisplay || String(firstAvailable.tagNumber);
+      const latinId = String(firstAvailable.tagNumber || khmerToWesternDigits(tagDisp));
+      setModalForm({
+        id: latinId,
+        tagNumber: firstAvailable.tagNumber,
+        tagNumberDisplay: tagDisp,
+        isTagPin: true,
+        name: firstAvailable.name || firstAvailable.location || `ស្លាកលេខ #${latinId}`,
+        badgeColor: 'cyan',
+        type: 'building',
+        pos: 'R',
+        category: (firstAvailable.baseLocation && firstAvailable.baseLocation !== 'មើលទីកន្លែង' && firstAvailable.baseLocation !== 'មិនទាន់ដៅលើ Map') ? firstAvailable.baseLocation : '🏢 ក្រុមអគារ និង កុដិ'
+      });
+      setSelectedTagForPin(tagDisp || String(firstAvailable.tagNumber));
+    } else {
+      setModalForm({
+        id: getNextDefaultLocationId(currentLocations),
+        name: '',
+        badgeColor: 'cyan',
+        type: 'building',
+        pos: 'R',
+        category: '🏢 ក្រុមអគារ និង កុដិ'
+      });
+      setSelectedTagForPin('');
+    }
     setFormError('');
     setIsEditModalOpen(true);
   };
