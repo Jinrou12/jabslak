@@ -63,20 +63,20 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== Bodhi Tree — CSS background, 85% size, dead-centered on cream ====== */}
+      {/* ====== Bodhi Tree — full image, medallion at screen center ====== */}
       <div
         className="absolute inset-0 pointer-events-none animate-tree-sway"
         style={{
           backgroundColor: '#f4ece0',
           backgroundImage: 'url(/bodhi_bg_v6.jpg)',
-          backgroundSize: '85%',
-          backgroundPosition: '42% center',
+          backgroundSize: 'contain',
+          backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
         }}
       >
         {/* Soft dark-gold top/bottom gradients for title readability */}
         <div className="absolute inset-0"
-          style={{background: 'linear-gradient(to bottom, rgba(25, 16, 6, 0.65) 0%, rgba(25, 16, 6, 0.1) 25%, transparent 45%, transparent 65%, rgba(25, 16, 6, 0.4) 85%, rgba(25, 16, 6, 0.75) 100%)'}}
+          style={{background: 'linear-gradient(to bottom, rgba(25, 16, 6, 0.55) 0%, rgba(25, 16, 6, 0.05) 20%, transparent 40%, transparent 65%, rgba(25, 16, 6, 0.35) 85%, rgba(25, 16, 6, 0.7) 100%)'}}
         />
       </div>
 
