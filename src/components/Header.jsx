@@ -77,12 +77,37 @@ export default function Header({
             </div>
           </div>
 
-          {/* Right Action Controls (Role, Login/Logout, Cloud icons side-by-side on Far Right) */}
+          {/* Right Action Controls (Year Switcher + Role, Login/Logout, Cloud icons side-by-side on Far Right) */}
           <div className="flex items-center gap-1.5 ml-auto shrink-0 font-kantumruy">
             
+            {/* 📅 Year Switcher Button */}
+            <button
+              type="button"
+              onClick={onToggleYear}
+              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10 active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
+              title="ចុចដើម្បីប្តូរឆ្នាំ (Switch Year)"
+            >
+              <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
+              <span className="font-moul text-amber-300 text-xs sm:text-sm">ឆ្នាំ {westernToKhmerDigits(selectedYear)}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-0.5" />
+            </button>
+
+            {/* ➕ Add Year Button (Visible ONLY for Owner & Admin) */}
+            {(isOwner || isAdmin) && (
+              <button
+                type="button"
+                onClick={onAddYear}
+                className="px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-sm active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
+                title="បន្ថែមឆ្នាំថ្មី (Add New Year)"
+              >
+                <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0 stroke-[3]" />
+                <span className="font-bold whitespace-nowrap text-xs">ឆ្នាំ</span>
+              </button>
+            )}
+
             {/* 1. Role Icon Badge */}
             <div
-              className={`flex items-center justify-center p-2 rounded-xl border transition-all active:scale-95 ${getRoleBadge().color}`}
+              className={`flex items-center justify-center p-1.5 sm:p-2 rounded-xl border transition-all active:scale-95 ${getRoleBadge().color}`}
               title={`${getUserDisplayName()} (${getRoleBadge().text})`}
             >
               {React.createElement(getRoleBadge().icon, { className: 'w-4 h-4' })}
@@ -92,7 +117,7 @@ export default function Header({
             {isOwner && (
               <button
                 onClick={onOpenRoleManagement}
-                className="p-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 active:scale-95 transition-all"
+                className="p-1.5 sm:p-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 active:scale-95 transition-all"
                 title="គ្រប់គ្រងសិទ្ធិ (Role Management)"
               >
                 <Users className="w-4 h-4 text-purple-400" />
@@ -103,7 +128,7 @@ export default function Header({
             {currentUser?.role && currentUser.role !== 'guest' ? (
               <button
                 onClick={onLogout}
-                className="p-2 bg-slate-900/90 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-800 rounded-xl transition-all active:scale-95"
+                className="p-1.5 sm:p-2 bg-slate-900/90 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-800 rounded-xl transition-all active:scale-95"
                 title="ចាកចេញ (Logout)"
               >
                 <LogOut className="w-4 h-4" />
@@ -111,7 +136,7 @@ export default function Header({
             ) : (
               <button
                 onClick={onOpenLoginModal}
-                className="p-2 bg-slate-900/90 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 border border-slate-800 rounded-xl transition-all active:scale-95"
+                className="p-1.5 sm:p-2 bg-slate-900/90 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 border border-slate-800 rounded-xl transition-all active:scale-95"
                 title="ចូលប្រើប្រាស់ (Login)"
               >
                 <LogIn className="w-4 h-4" />
@@ -122,7 +147,7 @@ export default function Header({
             {isCloudSyncing && (
               <button
                 onClick={onOpenCloudConfig}
-                className="p-2 bg-sky-950/80 hover:bg-sky-900/80 border border-sky-500/50 text-sky-300 rounded-xl transition-all active:scale-95 relative flex items-center justify-center"
+                className="p-1.5 sm:p-2 bg-sky-950/80 hover:bg-sky-900/80 border border-sky-500/50 text-sky-300 rounded-xl transition-all active:scale-95 relative flex items-center justify-center"
                 title="ស្ថានភាព Realtime Cloud Sync"
               >
                 <Cloud className="w-4 h-4 text-sky-400" />
@@ -137,31 +162,6 @@ export default function Header({
         {/* Second Row: Action Buttons Bar */}
         <div className="flex flex-wrap items-center gap-2 pt-1 w-full font-kantumruy">
           
-          {/* 📅 Year Switcher Button (Allows switching between 2026 ↔ 2027) */}
-          <button
-            type="button"
-            onClick={onToggleYear}
-            className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10 active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
-            title="ចុចដើម្បីប្តូរឆ្នាំ (Switch Year 2026 ↔ 2027)"
-          >
-            <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="font-moul text-amber-300">ឆ្នាំ {westernToKhmerDigits(selectedYear)}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-0.5" />
-          </button>
-
-          {/* ➕ Add Year Button (Visible ONLY for Owner & Admin) */}
-          {(isOwner || isAdmin) && (
-            <button
-              type="button"
-              onClick={onAddYear}
-              className="px-2.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-sm active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
-              title="បន្ថែមឆ្នាំថ្មី (Add New Year)"
-            >
-              <Plus className="w-4 h-4 text-amber-400 shrink-0 stroke-[3]" />
-              <span className="font-bold whitespace-nowrap">ឆ្នាំ</span>
-            </button>
-          )}
-
           {/* 🗺️ ផែនទីវត្ត Button (PC/Desktop view) */}
           <button
             onClick={onOpenTempleMap}
