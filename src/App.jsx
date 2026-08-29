@@ -905,10 +905,10 @@ export default function App() {
         />
       )}
 
-      {/* 📱 Fixed Mobile Bottom Navigation Bar for Phones (1. +បន្ថែម [Recent pos], 2. ផែនទីវត្ត [Home pos], 3. ថយក្រោយ [Back pos]) */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/50 backdrop-blur-xl border-t border-amber-500/40 px-3 py-1.5 flex items-center justify-around shadow-[0_-10px_35px_rgba(0,0,0,0.6)] font-kantumruy">
+      {/* 📱 Fixed Mobile Bottom Navigation Bar for Phones ONLY (Hidden on PC/Desktop) */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/50 backdrop-blur-xl border-t border-amber-500/40 px-3 py-1.5 flex items-center justify-around shadow-[0_-10px_35px_rgba(0,0,0,0.6)] font-kantumruy">
         
-        {/* 1. Left Button (ជំនួស Recent) -> +បន្ថែម (Add Tag) */}
+        {/* 1. Left Button -> +បន្ថែម (Add Tag) */}
         <button
           type="button"
           onClick={() => {
@@ -928,7 +928,7 @@ export default function App() {
           <span className="text-[11px] font-bold tracking-tight text-amber-300">+បន្ថែម</span>
         </button>
 
-        {/* 2. Middle Button (ជំនួស Home) -> ផែនទីវត្ត (Temple Map) */}
+        {/* 2. Middle Button -> ផែនទីវត្ត (Temple Map) */}
         <button
           type="button"
           onClick={() => {
@@ -944,7 +944,7 @@ export default function App() {
           <span className="text-[11px] font-extrabold text-amber-300 font-moul tracking-tight">ផែនទីវត្ត</span>
         </button>
 
-        {/* 3. Right Button (ជំនួស Back) -> ថយក្រោយ (Go Back / Double Back Exit) */}
+        {/* 3. Right Button -> ថយក្រោយ (Go Back) */}
         <button
           type="button"
           onClick={handleNavigateBack}
@@ -960,7 +960,7 @@ export default function App() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-4 px-4 pb-24 text-center text-xs text-slate-500 font-kantumruy">
+      <footer className="border-t border-slate-900 bg-slate-950 py-4 px-4 pb-24 sm:pb-6 text-center text-xs text-slate-500 font-kantumruy">
         <p>ប្រព័ន្ធគ្រប់គ្រងស្លាកលេខ និងទីតាំងស្នាក់នៅ © ២០២៦ | Realtime Cloud Sync សម្រាប់ក្រុមការងារ ២០ នាក់</p>
       </footer>
 

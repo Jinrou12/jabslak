@@ -162,6 +162,28 @@ export default function Header({
             </button>
           )}
 
+          {/* 🗺️ ផែនទីវត្ត Button (PC/Desktop view) */}
+          <button
+            onClick={onOpenTempleMap}
+            className="hidden sm:flex px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10 active:scale-95 transition-all shrink-0 font-kantumruy"
+            title="មើលផែនទីវត្ត"
+          >
+            <MapIcon className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="font-moul text-amber-300">ផែនទីវត្ត</span>
+          </button>
+
+          {/* ➕ Add New Tag Button (PC/Desktop view for Owner & Admin) */}
+          {(isOwner || isAdmin) && (
+            <button
+              onClick={onOpenAddModal}
+              className="hidden sm:flex px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold items-center justify-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-sm active:scale-95 transition-all shrink-0 font-kantumruy"
+              title="បន្ថែមស្លាកលេខថ្មី (+បន្ថែមថ្មី)"
+            >
+              <Plus className="w-4 h-4 text-amber-400 shrink-0 stroke-[3]" />
+              <span className="font-bold whitespace-nowrap">+បន្ថែមថ្មី</span>
+            </button>
+          )}
+
           {/* 📊 Attendance Report Dashboard Button */}
           <button
             onClick={onOpenAttendanceReport}
