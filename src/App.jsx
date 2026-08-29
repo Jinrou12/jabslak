@@ -862,7 +862,7 @@ export default function App() {
       )}
 
       {/* 📱 Fixed Mobile Bottom Navigation Bar for Phones (1. +បន្ថែម [Recent pos], 2. ផែនទីវត្ត [Home pos], 3. ថយក្រោយ [Back pos]) */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 border-t border-amber-500/30 backdrop-blur-2xl px-3 py-1.5 flex items-center justify-around shadow-[0_-10px_30px_rgba(0,0,0,0.8)] font-kantumruy">
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/50 backdrop-blur-xl border-t border-amber-500/40 px-3 py-1.5 flex items-center justify-around shadow-[0_-10px_35px_rgba(0,0,0,0.6)] font-kantumruy">
         
         {/* 1. Left Button (ជំនួស Recent) -> +បន្ថែម (Add Tag) */}
         <button
@@ -894,7 +894,7 @@ export default function App() {
           className="flex flex-col items-center justify-center gap-0.5 py-1 px-4 text-amber-300 hover:text-amber-200 active:scale-95 transition-all group shrink-0 -mt-3"
           title="មើលផែនទីវត្ត (ផែនទីវត្ត)"
         >
-          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 via-amber-400 to-amber-600 border-2 border-amber-300 flex items-center justify-center text-slate-950 shadow-xl shadow-amber-500/40 ring-4 ring-slate-950">
+          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 via-amber-400 to-amber-600 border-2 border-amber-300 flex items-center justify-center text-slate-950 shadow-xl shadow-amber-500/40 ring-4 ring-slate-950/80">
             <MapIcon className="w-6 h-6 stroke-[2.5]" />
           </div>
           <span className="text-[11px] font-extrabold text-amber-300 font-moul tracking-tight">ផែនទីវត្ត</span>
