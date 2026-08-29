@@ -63,15 +63,16 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== Warm Cream Background Color ====== */}
-      <div className="absolute inset-0 bg-[#f4eee0]"></div>
+      {/* ====== Warm Cream Background — matches tree image background ====== */}
+      <div className="absolute inset-0" style={{background: '#f4ece0'}}></div>
 
-      {/* ====== Perfectly Centered Bodhi Tree Artwork Background (1920x1080 16:9) ====== */}
+      {/* ====== Perfectly Centered Bodhi Tree — full tree always visible ====== */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
         <img
           src="/bodhi_bg_v6.jpg"
           alt="ដើមពោធិ៍"
-          className="w-full h-full object-cover object-center animate-tree-sway brightness-102 contrast-102"
+          className="w-full h-full object-contain object-center animate-tree-sway"
+          style={{maxWidth: '100%', maxHeight: '100%'}}
         />
         {/* Soft dark-gold top/bottom gradients for title readability */}
         <div className="absolute inset-0 pointer-events-none"

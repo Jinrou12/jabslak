@@ -632,8 +632,8 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-kantumruy relative overflow-x-hidden">
       {/* 🍃 Web App Background — Bodhi Tree Artwork */}
       <div 
-        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-center opacity-15 filter brightness-110 contrast-105"
-        style={{ backgroundImage: 'url(/bodhi_bg_v6.jpg)' }}
+        className="fixed inset-0 pointer-events-none z-0 bg-contain bg-center bg-no-repeat opacity-12"
+        style={{ backgroundImage: 'url(/bodhi_bg_v6.jpg)', backgroundColor: '#f4ece0' }}
       />
       <div className="fixed inset-0 pointer-events-none z-0 bg-gradient-to-b from-slate-950/80 via-slate-950/85 to-slate-950/95" />
       
