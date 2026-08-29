@@ -22,8 +22,8 @@ export default function InstallAppModal({ onClose, onInstall, deferredPrompt }) 
 
         {/* Header Icon */}
         <div className="flex flex-col items-center text-center gap-3 mb-6">
-          <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-amber-500 via-amber-400 to-amber-600 flex items-center justify-center text-slate-950 shadow-xl shadow-amber-500/30 border-2 border-amber-300">
-            <Smartphone className="w-8 h-8 stroke-[2.5]" />
+          <div className="w-20 h-20 rounded-3xl overflow-hidden shadow-xl shadow-amber-500/30 border-2 border-amber-400 bg-slate-950 flex items-center justify-center p-1">
+            <img src="/pwa-192x192.png" alt="Logo" className="w-full h-full object-cover rounded-2xl" />
           </div>
           <div>
             <h2 className="text-lg font-black text-amber-400 font-moul">

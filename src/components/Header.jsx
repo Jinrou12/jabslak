@@ -58,8 +58,8 @@ export default function Header({
           
           {/* Logo & Title */}
           <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/30 shrink-0">
-              <Tag className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 rounded-2xl overflow-hidden border border-amber-400/60 shadow-lg shadow-amber-500/20 shrink-0 bg-slate-900 flex items-center justify-center">
+              <img src="/pwa-192x192.png" alt="ចាប់សឡាកភ្នំ" className="w-full h-full object-cover transform scale-105" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-1.5">
