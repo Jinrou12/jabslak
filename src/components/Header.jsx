@@ -58,12 +58,12 @@ export default function Header({
           
           {/* Logo & Title */}
           <div className="flex items-center gap-2 min-w-0">
-            <div className="relative w-11 h-11 sm:w-14 sm:h-14 md:w-16 md:h-16 shrink-0 flex items-center justify-center -my-1 transition-all">
-              <img src="/app_logo.png" alt="ចាប់ស្លាកលេខ" className="w-full h-full object-contain filter drop-shadow-[0_4px_12px_rgba(245,158,11,0.35)]" />
+            <div className="relative w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 shrink-0 flex items-center justify-center -my-2 sm:-my-4 transition-all hover:scale-105 duration-300">
+              <img src="/app_logo.png" alt="ចាប់ស្លាកលេខ" className="w-full h-full object-contain filter drop-shadow-[0_6px_16px_rgba(245,158,11,0.45)]" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h1 className="text-xs sm:text-base font-black text-amber-400 font-moul tracking-wide truncate">
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm sm:text-lg md:text-xl font-black text-amber-400 font-moul tracking-wide truncate">
                   ប្រព័ន្ធគ្រប់គ្រងស្លាកលេខ
                 </h1>
                 <span className="text-[9px] sm:text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded-full font-sans-en font-bold shrink-0">
