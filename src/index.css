@@ -52,6 +52,23 @@
   animation: float-logo 3.5s ease-in-out infinite;
 }
 
+@keyframes tree-sway {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(1.5deg) scale(1.01);
+  }
+  75% {
+    transform: rotate(-1.5deg) scale(0.99);
+  }
+}
+
+.animate-tree-sway {
+  animation: tree-sway 6.5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
 .font-moul {
   font-family: 'Moul', cursive;
 }
