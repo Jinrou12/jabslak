@@ -21,24 +21,23 @@ export default function Header({
   onOpenAttendanceReport,
   isCloudSyncing,
   selectedYear = '2026',
-  onToggleYear
+  onToggleYear,
+  onAddYear
 }) {
   const isOwner = currentUser?.role === 'owner';
   const isAdmin = currentUser?.role === 'admin';
   const isAssistant = currentUser?.role === 'assistant';
   const isGuest = currentUser?.role === 'guest' || !currentUser?.role;
 
-  const getRoleIcon = () => {
-    if (isOwner) return <Crown className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />;
-    if (isAdmin) return <Shield className="w-3.5 h-3.5 text-emerald-400" />;
-    if (isAssistant) return <UserCheck className="w-3.5 h-3.5 text-sky-400" />;
-    return <Eye className="w-3.5 h-3.5 text-slate-400" />;
+  const getRoleBadge = () => {
+    if (isOwner) return { text: 'ប្រធាន (Owner)', color: 'bg-amber-500/20 text-amber-300 border-amber-500/40', icon: Crown };
+    if (isAdmin) return { text: 'អ្នកគ្រប់គ្រង (Admin)', color: 'bg-purple-500/20 text-purple-300 border-purple-500/40', icon: Shield };
+    if (isAssistant) return { text: 'ជំនួយការ (Assistant)', color: 'bg-blue-500/20 text-blue-300 border-blue-500/40', icon: UserCog };
+    return { text: 'អ្នកមើល (Guest)', color: 'bg-slate-500/20 text-slate-300 border-slate-500/40', icon: Eye };
   };
 
-  const getRoleText = () => {
-    if (isOwner) return 'Owner (ម្ចាស់)';
-    if (isAdmin) return 'Admin';
-    if (isAssistant) return 'Assistant';
+  const getUserDisplayName = () => {
+    if (currentUser?.name) return currentUser.name;
     return 'Guest (អ្នកមើល)';
   };
 
@@ -52,100 +51,81 @@ export default function Header({
     if (selectedYear === '2024') {
       return 'ថ្ងៃពុធ ៥កើត ខែស្រាពណ៍ ឆ្នាំម្សាញ់ បញ្ចស័ក ពុទ្ធសករាជ ២៥៦៨ ត្រូវនឹងថ្ងៃទី១ ខែកញ្ញា ឆ្នាំ២០២៤';
     }
-    return 'ថ្ងៃសៅរ៍ ៨រោច ខែស្រាពណ៍ ឆ្នាំមមី អដ្ឋស័ក ពុទ្ធសករាជ ២៥៧០ ត្រូវនឹងថ្ងៃទី៥ ខែកញ្ញា ឆ្នាំ២០២៦';
+    return `ថ្ងៃសៅរ៍ ៨រោច ខែស្រាពណ៍ ឆ្នាំមមី អដ្ឋស័ក ពុទ្ធសករាជ ២៥៧០ ត្រូវនឹងថ្ងៃទី៥ ខែកញ្ញា ឆ្នាំ${westernToKhmerDigits(selectedYear)}`;
   };
 
   return (
     <header className="relative z-10 glass-panel border-b border-slate-800/80 px-3 sm:px-4 py-2.5 sm:py-3 shadow-2xl">
       <div className="max-w-7xl mx-auto flex flex-col gap-2.5">
         
-        {/* Top Row: Brand & Active User / Role Badge */}
-        <div className="flex items-center justify-between gap-2">
-          {/* Brand Logo & Name */}
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl badge-gold flex items-center justify-center text-slate-950 font-bold shadow-lg shadow-amber-500/20 shrink-0">
-              <Tag className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
+        {/* Top Bar: Title & Stats */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/60 pb-2">
+          
+          {/* Logo & Title */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/30 shrink-0">
+              <Tag className="w-5 h-5 stroke-[2.5]" />
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-1.5">
-                <h1 className="text-base sm:text-lg md:text-xl font-bold font-moul text-amber-400 tracking-wide truncate">
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base sm:text-lg font-black text-amber-400 font-moul tracking-wide">
                   ប្រព័ន្ធគ្រប់គ្រងស្លាកលេខ
                 </h1>
-                <span className="bg-amber-500/20 text-amber-300 text-[10px] sm:text-xs font-semibold px-2 py-0.2 rounded-full border border-amber-500/30 shrink-0">
+                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded-full font-sans-en font-bold">
                   v2.0
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-slate-400 font-kantumruy flex items-center gap-1.5 mt-0.5 truncate">
-                <span className="truncate">គ្រប់គ្រងទីតាំង និងម្ចាស់ស្លាកលេខ</span>
-                <span className="inline-block w-1 h-1 rounded-full bg-slate-600 shrink-0"></span>
-                <span className="text-emerald-400 flex items-center gap-1 shrink-0">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                  {westernToKhmerDigits(totalCount)} នាក់
-                </span>
+              <p className="text-[11px] sm:text-xs text-slate-400 font-kantumruy flex items-center gap-2">
+                <span>គ្រប់គ្រងទីតាំង និងអ្នកស្នាក់នៅក្នុវត្ត</span>
+                <span className="text-slate-600">•</span>
+                <span className="text-amber-300 font-bold">{westernToKhmerDigits(totalCount)} ស្លាក</span>
               </p>
             </div>
           </div>
 
-          {/* User Profile Badge & Authentication Controls */}
-          <div className="flex items-center gap-1.5 shrink-0 font-kantumruy">
-            {/* Current Active User Badge */}
-            {isOwner ? (
-              <div
-                className="flex items-center justify-center rounded-xl px-2.5 py-1.5 bg-amber-500/20 border border-amber-500/50 text-amber-300 shadow-md shadow-amber-500/10 cursor-default"
-                title="Owner (ម្ចាស់ប្រព័ន្ធ)"
-              >
-                <Crown className="w-4 h-4 text-amber-400 fill-amber-400" />
+          {/* Right Action Controls */}
+          <div className="flex items-center gap-2">
+            
+            {/* User Role Badge */}
+            <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1.5">
+              <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-bold border ${getRoleBadge().color}`}>
+                {React.createElement(getRoleBadge().icon, { className: 'w-3.5 h-3.5' })}
+                <span className="font-kantumruy">{getUserDisplayName()}</span>
               </div>
-            ) : !isGuest ? (
-              <div
-                className={`flex items-center gap-1 rounded-xl px-2.5 py-1.5 text-xs font-bold border ${
-                  isAdmin
-                    ? 'bg-emerald-950/80 border-emerald-500/50 text-emerald-300'
-                    : 'bg-sky-950/80 border-sky-500/50 text-sky-300'
-                }`}
-              >
-                {getRoleIcon()}
-                <span className="font-bold">{getRoleText()}</span>
-              </div>
-            ) : null}
 
-            {/* 🔑 Email Login Button (Only show when NOT logged in / Guest) */}
-            {isGuest && (
-              <button
-                onClick={onOpenLoginModal}
-                className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl px-2.5 py-1.5 text-xs font-bold transition-all active:scale-95 shadow-sm"
-                title="ចូលប្រើប្រាស់តាម Email (Login)"
-              >
-                <LogIn className="w-3.5 h-3.5 text-amber-400" />
-                <span className="hidden sm:inline">Login</span>
-              </button>
-            )}
+              {/* Login / Logout */}
+              {currentUser?.role && currentUser.role !== 'guest' ? (
+                <button
+                  onClick={onLogout}
+                  className="p-1 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 rounded-lg transition-all"
+                  title="ចាកចេញ (Logout)"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={onOpenLoginModal}
+                  className="p-1 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 rounded-lg transition-all"
+                  title="ចូលប្រើប្រាស់ (Login)"
+                >
+                  <LogIn className="w-4 h-4" />
+                </button>
+              )}
+            </div>
 
-            {/* Logout Button (for non-guest users) */}
-            {!isGuest && (
-              <button
-                onClick={onLogout}
-                className="p-1.5 bg-rose-950/60 hover:bg-rose-900 border border-rose-800 text-rose-300 rounded-xl text-xs transition-all active:scale-95"
-                title="ចាកចេញ (Logout)"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            )}
-
-            {/* Role Management (Owner & Admin Only) */}
-            {(isOwner || isAdmin) && (
+            {/* Role Management (Owner only) */}
+            {isOwner && (
               <button
                 onClick={onOpenRoleManagement}
-                className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/50 text-amber-300 rounded-xl px-2 py-1.5 text-xs font-bold font-kantumruy transition-all active:scale-95 animate-in zoom-in-50 duration-200 shadow-sm"
-                title="គ្រប់គ្រងសិទ្ធិ និងគណនីក្រុមការងារ (Role Management)"
+                className="p-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 active:scale-95 transition-all"
+                title="គ្រប់គ្រងសិទ្ធិ (Role Management)"
               >
-                <UserCog className="w-4 h-4 text-amber-400" />
-                <span className="text-[11px]">សិទ្ធិ</span>
+                <Users className="w-4 h-4 text-purple-400" />
               </button>
             )}
 
-            {/* Cloud Sync Status (Owner & Admin Only) */}
-            {(isOwner || isAdmin) && (
+            {/* Realtime Cloud Sync status */}
+            {isCloudSyncing && (
               <button
                 onClick={onOpenCloudConfig}
                 className={`flex items-center gap-1 rounded-xl px-2 py-1.5 text-xs font-semibold transition-all active:scale-95 border animate-in zoom-in-50 duration-200 ${
@@ -162,14 +142,33 @@ export default function Header({
           </div>
         </div>
 
-        {/* Second Row: Action Buttons Bar (Button Switch ឆ្នាំ replaces ផែនទីវត្ត & +បន្ថែម) */}
+        {/* Second Row: Action Buttons Bar */}
         <div className="flex flex-wrap items-center gap-2 pt-1 w-full font-kantumruy">
           
-          {/* 📅 Year Display Badge (static - ឆ្នាំ ២០២៦) */}
-          <div className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10 shrink-0 font-kantumruy select-none">
+          {/* 📅 Year Switcher Button (Allows switching between 2026 ↔ 2027) */}
+          <button
+            type="button"
+            onClick={onToggleYear}
+            className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10 active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
+            title="ចុចដើម្បីប្តូរឆ្នាំ (Switch Year 2026 ↔ 2027)"
+          >
             <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="font-moul text-amber-300">ឆ្នាំ {westernToKhmerDigits(selectedYear)}</span>
-          </div>
+            <ChevronDown className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-0.5" />
+          </button>
+
+          {/* ➕ Add Year Button (Visible ONLY for Owner & Admin) */}
+          {(isOwner || isAdmin) && (
+            <button
+              type="button"
+              onClick={onAddYear}
+              className="px-2.5 sm:px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-sm active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
+              title="បន្ថែមឆ្នាំថ្មី (Add New Year)"
+            >
+              <Plus className="w-4 h-4 text-amber-400 shrink-0 stroke-[3]" />
+              <span className="font-bold whitespace-nowrap">ឆ្នាំ</span>
+            </button>
+          )}
 
           {/* 📊 Attendance Report Dashboard Button */}
           <button

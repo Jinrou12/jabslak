@@ -35,6 +35,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table' | 'map' | 'report'
   const [attendanceFilter, setAttendanceFilter] = useState('ALL'); // 'ALL' | 'notArrived' | 'arrived'
   const [reportActiveTab, setReportActiveTab] = useState('arrived'); // 'arrived' | 'notArrived' | 'all'
+  const [availableYears, setAvailableYears] = useState(['2026', '2027']);
   const [selectedYear, setSelectedYear] = useState('2026');
   const [isCloudSyncing, setIsCloudSyncing] = useState(true);
 
@@ -68,11 +69,29 @@ export default function App() {
   };
 
   const handleToggleYear = () => {
-    const years = ['2026', '2025', '2027', '2024'];
-    const currIdx = years.indexOf(selectedYear);
-    const nextY = years[(currIdx + 1) % years.length];
+    const currIdx = availableYears.indexOf(selectedYear);
+    const nextIdx = (currIdx + 1) % availableYears.length;
+    const nextY = availableYears[nextIdx];
     setSelectedYear(nextY);
     showToast(`បានប្តូរទៅ ៖ ឆ្នាំ ${westernToKhmerDigits(nextY)}`);
+  };
+
+  const handleAddYear = () => {
+    const input = window.prompt('សូមបញ្ចូលឆ្នាំថ្មី (ឧទាហរណ៍ ៖ ២០២៨):', '2028');
+    if (!input) return;
+    
+    const khmerDigits = '០១២៣៤៥៦៧៨៩';
+    const cleanYear = input.trim().replace(/[០-៩]/g, (d) => khmerDigits.indexOf(d));
+    if (!cleanYear || isNaN(cleanYear)) {
+      alert('សូមបញ្ចូលលេខឆ្នាំឱ្យបានត្រឹមត្រូវ!');
+      return;
+    }
+
+    if (!availableYears.includes(cleanYear)) {
+      setAvailableYears(prev => [...prev, cleanYear].sort());
+    }
+    setSelectedYear(cleanYear);
+    showToast(`បានបន្ថែម ៖ ឆ្នាំ ${westernToKhmerDigits(cleanYear)}`);
   };
 
   // Check if any modal is currently active
@@ -566,6 +585,7 @@ export default function App() {
         isCloudSyncing={isCloudSyncing}
         selectedYear={selectedYear}
         onToggleYear={handleToggleYear}
+        onAddYear={handleAddYear}
       />
 
       {/* Main Content Body */}
