@@ -84,37 +84,18 @@ export default function SplashScreen({ onFinish }) {
         />
       </div>
 
-      {/* ====== Falling Dark Bodhi Leaves ====== */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-20">
-        {LEAVES.map((leaf) => (
-          <BodhiLeaf
-            key={leaf.id}
-            style={{
-              left: leaf.left,
-              top: '-60px',
-              width: leaf.size,
-              height: leaf.size,
-              animationDuration: leaf.animationDuration,
-              animationDelay: leaf.animationDelay,
-              opacity: leaf.opacity,
-              transform: `rotate(${leaf.rotation})`
-            }}
-          />
-        ))}
-      </div>
-
-      {/* ====== Center Emblem Logo — Dead-centered on screen & tree ====== */}
+      {/* ====== Center Emblem Logo — Dead-centered on screen & tree (STATIC) ====== */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
         <div className="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center">
           {/* Soft warm halo */}
           <div className="absolute w-[130%] h-[130%] rounded-full bg-amber-400/25 blur-[30px]"></div>
-          {/* Pulsing ring */}
-          <div className="absolute inset-0 rounded-full border border-amber-300/30 animate-ping"></div>
-          {/* Logo */}
+          {/* Static ring */}
+          <div className="absolute inset-0 rounded-full border border-amber-300/30"></div>
+          {/* Logo — Static without floating animation */}
           <img
             src="/app_logo.png"
             alt="ចាប់ស្លាកលេខ"
-            className="relative w-full h-full object-contain rounded-full animate-float filter drop-shadow-[0_8px_30px_rgba(200,130,0,0.8)]"
+            className="relative w-full h-full object-contain rounded-full filter drop-shadow-[0_8px_30px_rgba(200,130,0,0.8)]"
             fetchpriority="high"
             decoding="async"
           />
@@ -129,7 +110,7 @@ export default function SplashScreen({ onFinish }) {
         </h1>
         <p className="text-[10px] text-amber-300/70 font-kantumruy flex items-center gap-1"
           style={{textShadow: '0 1px 6px rgba(0,0,0,0.9)'}}>
-          <span>🍃 ដើមពោធិ៍ • ស្លឹកធ្លាក់</span>
+          <span>🍃 ដើមពោធិ៍</span>
           <span>•</span>
           <span>ចុចដើម្បីរំលង</span>
         </p>
