@@ -94,20 +94,35 @@ export default function App() {
     setEditingTag(null);
   };
 
-  // Back Navigation Handler (Returns to Home Screen / Grid View)
+  // Ref to track last back press timestamp for Double-Back-To-Exit feature
+  const lastBackPressTimeRef = useRef(0);
+  const isHistoryPushedRef = useRef(false);
+
+  // Push initial history guard entry on mount so browser back button is intercepted
+  useEffect(() => {
+    try {
+      window.history.pushState({ appRootGuard: true }, '');
+      isHistoryPushedRef.current = true;
+    } catch (e) {}
+  }, []);
+
+  // Back Navigation Handler with Double-Back Press Exit Guard
   const handleNavigateBack = () => {
+    // 1. If any modal is active -> Close all modals
     if (hasActiveModal) {
       closeAllModals();
       showToast('◀ ថយក្រោយ ៖ បិទផ្ទាំង (Closed Modal)');
       return true;
     }
 
+    // 2. If viewMode is not 'grid' -> Return to Home Screen
     if (viewMode !== 'grid') {
       setViewMode('grid');
       showToast('◀ ថយក្រោយ ៖ ត្រឡប់ទៅផ្ទាំងដើម (Home Screen)');
       return true;
     }
 
+    // 3. If filters are active -> Reset to default list
     if (attendanceFilter !== 'ALL' || selectedLocation !== 'ALL' || searchQuery) {
       setAttendanceFilter('ALL');
       setSelectedLocation('ALL');
@@ -116,36 +131,60 @@ export default function App() {
       return true;
     }
 
-    return false;
+    // 4. Already on Home Screen (Grid View with default filters) -> DOUBLE BACK PRESS GUARD TO EXIT!
+    const now = Date.now();
+    if (now - lastBackPressTimeRef.current < 2500) {
+      // Pressed back 2 times within 2.5s -> Allow exit!
+      showToast('👋 បានចាកចេញពីកម្មវិធី!');
+      try {
+        window.history.go(-1);
+      } catch (err) {}
+      return false;
+    } else {
+      // 1st back press -> Prompt user and lock history
+      lastBackPressTimeRef.current = now;
+      try {
+        window.history.pushState({ appRootGuard: true }, '');
+      } catch (err) {}
+      showToast('⚠️ សូមចុចថយក្រោយ (ឬអូស) ១ ដងទៀតដើម្បីចាកចេញពី Web 🚪');
+      return true;
+    }
   };
 
-  // Manage Browser History State for Single-Click Back Navigation
-  const isHistoryPushedRef = useRef(false);
-
-  useEffect(() => {
-    const isNonGridOrModal = viewMode !== 'grid' || hasActiveModal;
-
-    if (isNonGridOrModal && !isHistoryPushedRef.current) {
-      window.history.pushState({ appNav: true }, '');
-      isHistoryPushedRef.current = true;
-    } else if (!isNonGridOrModal && isHistoryPushedRef.current) {
-      isHistoryPushedRef.current = false;
-    }
-  }, [viewMode, hasActiveModal]);
-
+  // Sync browser back button (popstate event) with double-back exit lock
   useEffect(() => {
     const handlePopState = () => {
       if (hasActiveModal) {
         closeAllModals();
-        isHistoryPushedRef.current = false;
+        try {
+          window.history.pushState({ appRootGuard: true }, '');
+        } catch (err) {}
       } else if (viewMode !== 'grid') {
         setViewMode('grid');
-        isHistoryPushedRef.current = false;
+        try {
+          window.history.pushState({ appRootGuard: true }, '');
+        } catch (err) {}
       } else if (searchQuery || selectedLocation !== 'ALL' || attendanceFilter !== 'ALL') {
         setSearchQuery('');
         setSelectedLocation('ALL');
         setAttendanceFilter('ALL');
-        isHistoryPushedRef.current = false;
+        try {
+          window.history.pushState({ appRootGuard: true }, '');
+        } catch (err) {}
+      } else {
+        // User is on Home Screen -> Execute Double Back Guard
+        const now = Date.now();
+        if (now - lastBackPressTimeRef.current < 2500) {
+          // Exit web app (2nd press)
+          showToast('👋 បានចាកចេញពីកម្មវិធី!');
+        } else {
+          // 1st press -> Lock and prompt
+          lastBackPressTimeRef.current = now;
+          try {
+            window.history.pushState({ appRootGuard: true }, '');
+          } catch (err) {}
+          showToast('⚠️ សូមចុចថយក្រោយ (ឬអូស) ១ ដងទៀតដើម្បីចាកចេញពី Web 🚪');
+        }
       }
     };
 
