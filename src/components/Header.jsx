@@ -86,11 +86,13 @@ export default function Header({
           {/* Right Action Controls */}
           <div className="flex items-center gap-2">
             
-            {/* User Role Badge */}
-            <div className="flex items-center gap-1 bg-slate-900/90 border border-slate-800 rounded-xl px-2.5 py-1.5">
-              <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-xs font-bold border ${getRoleBadge().color}`}>
-                {React.createElement(getRoleBadge().icon, { className: 'w-3.5 h-3.5' })}
-                <span className="font-kantumruy">{getUserDisplayName()}</span>
+            {/* User Role Badge (Icon Only) */}
+            <div className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-xl p-1.5">
+              <div
+                className={`flex items-center justify-center p-1 rounded-lg border ${getRoleBadge().color}`}
+                title={`${getUserDisplayName()} (${getRoleBadge().text})`}
+              >
+                {React.createElement(getRoleBadge().icon, { className: 'w-4 h-4' })}
               </div>
 
               {/* Login / Logout */}
