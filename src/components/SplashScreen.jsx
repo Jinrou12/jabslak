@@ -70,9 +70,9 @@ export default function SplashScreen({ onFinish }) {
           backgroundColor: '#f4ece0',
           backgroundImage: 'url(/bodhi_bg_v6.jpg)',
           backgroundSize: 'contain',
-          backgroundPosition: '50% calc(50% + 4.63vh)',
+          backgroundPosition: '50% 50%',
           backgroundRepeat: 'no-repeat',
-          transformOrigin: '50% 85%',
+          transformOrigin: '50% 50%',
         }}
       >
         {/* Golden ambient center spotlight highlight */}
