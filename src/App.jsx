@@ -265,7 +265,7 @@ export default function App() {
       const { hasActiveModal: modal, viewMode: vm, attendanceFilter: af } = swipeStateRef.current;
 
       // ── Swipe Right→Left (switch filter forward) ──
-      if (deltaX < -60 && Math.abs(deltaY) < 70 && deltaTime < 700) {
+      if (deltaX < -45 && Math.abs(deltaY) < 100 && deltaTime < 850) {
         if (!modal && vm === 'grid') {
           if (af === 'ALL') {
             setAttendanceFilter('notArrived');
@@ -282,7 +282,7 @@ export default function App() {
       }
 
       // ── Swipe Left→Right ──
-      if (deltaX > 60 && Math.abs(deltaY) < 70 && deltaTime < 700) {
+      if (deltaX > 45 && Math.abs(deltaY) < 100 && deltaTime < 850) {
         // A. Close modal or go back from map/report view
         if (modal || vm !== 'grid') {
           handleNavigateBack();
@@ -316,24 +316,12 @@ export default function App() {
       }
     };
 
-    const handleEdgeTouchMove = (e) => {
-      if (e.touches && e.touches.length === 1) {
-        const touchX = e.touches[0].clientX;
-        const startX = touchStartRef.current.x;
-        if (startX < 40 && touchX > startX + 8 && e.cancelable) {
-          e.preventDefault();
-        }
-      }
-    };
-
     document.addEventListener('touchstart', handleTouchStart, { passive: true });
     document.addEventListener('touchend', handleTouchEnd, { passive: true });
-    document.addEventListener('touchmove', handleEdgeTouchMove, { passive: false });
 
     return () => {
       document.removeEventListener('touchstart', handleTouchStart);
       document.removeEventListener('touchend', handleTouchEnd);
-      document.removeEventListener('touchmove', handleEdgeTouchMove);
     };
   }, []);
   // ================================================================
