@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Plus, FileSpreadsheet, Trash2, Users, MapPin, Cloud, Map as MapIcon, Crown, Shield, UserCheck, Lock, UserCog, LogIn, Eye, LogOut, Calendar, ChevronDown } from 'lucide-react';
+import { Tag, Plus, FileSpreadsheet, Trash2, Users, MapPin, Cloud, Map as MapIcon, Crown, Shield, UserCheck, Lock, UserCog, LogIn, Eye, LogOut, Calendar, ChevronDown, Smartphone } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function Header({
@@ -22,7 +22,8 @@ export default function Header({
   isCloudSyncing,
   selectedYear = '2026',
   onToggleYear,
-  onAddYear
+  onAddYear,
+  onInstallApp
 }) {
   const isOwner = currentUser?.role === 'owner';
   const isAdmin = currentUser?.role === 'admin';
@@ -77,7 +78,7 @@ export default function Header({
             </div>
           </div>
 
-          {/* Right Action Controls (Role, Login/Logout, Cloud icons + PC Year Switcher on Far Right) */}
+          {/* Right Action Controls (Role, Login/Logout, Cloud, Install App icons on Far Right) */}
           <div className="flex items-center gap-1.5 ml-auto shrink-0 font-kantumruy">
             
             {/* 📅 Year Switcher Button (PC / Desktop ONLY: hidden sm:flex) */}
@@ -155,6 +156,15 @@ export default function Header({
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400"></span>
               </button>
             )}
+
+            {/* 4. 📲 Install Mobile App Button */}
+            <button
+              onClick={onInstallApp}
+              className="p-1.5 sm:p-2 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded-xl transition-all active:scale-95 flex items-center justify-center shadow-md shadow-amber-500/10"
+              title="ដំឡើំងជា Mobile App លើទូរស័ព្ទ (Install App)"
+            >
+              <Smartphone className="w-4 h-4 text-amber-400" />
+            </button>
 
           </div>
         </div>

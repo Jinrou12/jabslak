@@ -17,6 +17,7 @@ import MobileConnectModal from './components/MobileConnectModal';
 import TempleMapModal from './components/TempleMapModal';
 import RoleManagementModal from './components/RoleManagementModal';
 import LoginModal from './components/LoginModal';
+import InstallAppModal from './components/InstallAppModal';
 import { searchTags, westernToKhmerDigits } from './utils/khmerSearch';
 import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER } from './utils/storage';
 import {
@@ -57,6 +58,31 @@ export default function App() {
   const [isMobileConnectOpen, setIsMobileConnectOpen] = useState(false);
   const [isTempleMapOpen, setIsTempleMapOpen] = useState(false);
   const [templeMapTargetLoc, setTempleMapTargetLoc] = useState(null);
+  
+  // PWA Install State
+  const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        showToast('បានដំឡើងជា Mobile App រួចរាល់!');
+      }
+      setDeferredPrompt(null);
+      setIsInstallModalOpen(false);
+    }
+  };
   
   // Toast notification
   const [toastMessage, setToastMessage] = useState(null);
@@ -639,6 +665,7 @@ export default function App() {
         selectedYear={selectedYear}
         onToggleYear={handleToggleYear}
         onAddYear={handleAddYear}
+        onInstallApp={() => setIsInstallModalOpen(true)}
       />
 
       {/* Main Content Body */}
@@ -902,6 +929,15 @@ export default function App() {
           users={users}
           onClose={() => setIsLoginModalOpen(false)}
           onLoginUser={handleLoginUser}
+        />
+      )}
+
+      {/* 📲 PWA Install Mobile App Modal */}
+      {isInstallModalOpen && (
+        <InstallAppModal
+          onClose={() => setIsInstallModalOpen(false)}
+          onInstall={handleInstallApp}
+          deferredPrompt={deferredPrompt}
         />
       )}
 
