@@ -252,22 +252,8 @@ export default function App() {
       return;
     }
 
-    // 1. Swipe Left to Right (អូសពីឆ្វេងទៅស្ដាំ ៖ ថយក្រោយ/ត្រឡប់ទៅផ្ទាំងដើម)
-    const isEdgeSwipeRight = startX < 80 && deltaX > 40 && Math.abs(deltaY) < 70;
-    const isGeneralSwipeRight = deltaX > 75 && Math.abs(deltaY) < 60 && deltaTime < 700;
-
-    if (isEdgeSwipeRight || isGeneralSwipeRight) {
-      const handled = handleNavigateBack();
-      if (handled && isHistoryPushedRef.current) {
-        try {
-          window.history.back();
-        } catch (err) {}
-      }
-      return;
-    }
-
-    // 2. Swipe Right to Left (អូសពីស្ដាំទៅឆ្វេង ៖ ប្តូរទៅតម្រង 'មិនទាន់មកដល់' / 'បានមកដល់')
-    const isSwipeLeft = deltaX < -80 && Math.abs(deltaY) < 60 && deltaTime < 700;
+    // 1. Swipe Right to Left (អូសពីស្ដាំទៅឆ្វេង ៖ ប្តូរទៅតម្រងបន្ទាប់)
+    const isSwipeLeft = deltaX < -60 && Math.abs(deltaY) < 60 && deltaTime < 700;
     if (isSwipeLeft && !hasActiveModal && viewMode === 'grid') {
       if (attendanceFilter === 'ALL') {
         setAttendanceFilter('notArrived');
@@ -275,7 +261,31 @@ export default function App() {
       } else if (attendanceFilter === 'notArrived') {
         setAttendanceFilter('arrived');
         showToast('▶ ប្តូរទៅតម្រង ៖ បានមកដល់');
+      } else {
+        setAttendanceFilter('ALL');
+        showToast('▶ ប្តូរទៅតម្រង ៖ ទាំងអស់');
       }
+      return;
+    }
+
+    // 2. Swipe Left to Right (អូសពីឆ្វេងទៅស្ដាំ ៖ ប្តូរតម្រងថយក្រោយ / ត្រឡប់ទៅផ្ទាំងដើម)
+    const isSwipeRight = deltaX > 60 && Math.abs(deltaY) < 60 && deltaTime < 700;
+    if (isSwipeRight) {
+      if (hasActiveModal || viewMode !== 'grid') {
+        handleNavigateBack();
+      } else {
+        if (attendanceFilter === 'ALL') {
+          setAttendanceFilter('arrived');
+          showToast('◀ ប្តូរទៅតម្រង ៖ បានមកដល់');
+        } else if (attendanceFilter === 'arrived') {
+          setAttendanceFilter('notArrived');
+          showToast('◀ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
+        } else {
+          setAttendanceFilter('ALL');
+          showToast('◀ ប្តូរទៅតម្រង ៖ ទាំងអស់');
+        }
+      }
+      return;
     }
   };
 
