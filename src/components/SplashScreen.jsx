@@ -3,26 +3,31 @@ import React, { useEffect, useRef, useState } from 'react';
 // ===========================
 // Dark Brown Heart-Shaped Bodhi Leaf — matches the tree artwork style
 // ===========================
-function BodhiLeaf({ style }) {
+// ===========================
+// Dark Brown Heart-Shaped Bodhi Leaf — matches the tree artwork style
+// ===========================
+function BodhiLeaf({ style, rotation }) {
   return (
     <div className="absolute pointer-events-none animate-falling-leaf z-20" style={style}>
-      <svg viewBox="0 0 50 65" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-        {/* Heart-shaped leaf body */}
-        <path
-          d="M25 6 C25 6 6 16 6 32 C6 46 15 56 25 58 C35 56 44 46 44 32 C44 16 25 6 25 6 Z"
-          fill="#3d1f00"
-          stroke="#7c4a00"
-          strokeWidth="1"
-          opacity="0.92"
-        />
-        {/* Drip tip */}
-        <path d="M25 58 L25 64" stroke="#3d1f00" strokeWidth="1.8" strokeLinecap="round" opacity="0.8"/>
-        {/* Center vein */}
-        <path d="M25 8 L25 58" stroke="#7c4a00" strokeWidth="1" opacity="0.5"/>
-        {/* Side veins */}
-        <path d="M25 20 L14 28 M25 30 L10 40 M25 42 L15 48 M25 20 L36 28 M25 30 L40 40 M25 42 L35 48"
-          stroke="#7c4a00" strokeWidth="0.7" opacity="0.4"/>
-      </svg>
+      <div style={{ transform: `rotate(${rotation})` }} className="w-full h-full">
+        <svg viewBox="0 0 50 65" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
+          {/* Heart-shaped leaf body */}
+          <path
+            d="M25 6 C25 6 6 16 6 32 C6 46 15 56 25 58 C35 56 44 46 44 32 C44 16 25 6 25 6 Z"
+            fill="#3d1f00"
+            stroke="#7c4a00"
+            strokeWidth="1"
+            opacity="0.92"
+          />
+          {/* Drip tip */}
+          <path d="M25 58 L25 64" stroke="#3d1f00" strokeWidth="1.8" strokeLinecap="round" opacity="0.8"/>
+          {/* Center vein */}
+          <path d="M25 8 L25 58" stroke="#7c4a00" strokeWidth="1" opacity="0.5"/>
+          {/* Side veins */}
+          <path d="M25 20 L14 28 M25 30 L10 40 M25 42 L15 48 M25 20 L36 28 M25 30 L40 40 M25 42 L35 48"
+            stroke="#7c4a00" strokeWidth="0.7" opacity="0.4"/>
+        </svg>
+      </div>
     </div>
   );
 }
@@ -31,10 +36,10 @@ function BodhiLeaf({ style }) {
 const LEAVES = Array.from({ length: 30 }).map((_, idx) => ({
   id: idx,
   left: `${(idx * 3.4 + 2) % 100}%`,
-  animationDuration: `${4 + (idx % 7) * 0.65}s`,
-  animationDelay: `${(idx % 10) * 0.28}s`,
-  size: `${22 + (idx % 5) * 6}px`,
-  opacity: 0.55 + (idx % 3) * 0.2,
+  animationDuration: `${3.5 + (idx % 7) * 0.6}s`,
+  animationDelay: `${(idx % 10) * 0.2}s`,
+  size: `${24 + (idx % 5) * 6}px`,
+  opacity: 0.65 + (idx % 3) * 0.15,
   rotation: `${(idx * 53) % 360}deg`
 }));
 
@@ -88,6 +93,7 @@ export default function SplashScreen({ onFinish }) {
         {LEAVES.map((leaf) => (
           <BodhiLeaf
             key={leaf.id}
+            rotation={leaf.rotation}
             style={{
               left: leaf.left,
               top: '-60px',
@@ -96,7 +102,6 @@ export default function SplashScreen({ onFinish }) {
               animationDuration: leaf.animationDuration,
               animationDelay: leaf.animationDelay,
               opacity: leaf.opacity,
-              transform: `rotate(${leaf.rotation})`
             }}
           />
         ))}
@@ -108,7 +113,7 @@ export default function SplashScreen({ onFinish }) {
           {/* Soft warm halo */}
           <div className="absolute w-[130%] h-[130%] rounded-full bg-amber-400/25 blur-[30px]"></div>
           {/* Pulsing ring */}
-          <div className="absolute inset-0 rounded-full border border-amber-300/30 animate-ping"></div>
+          <div className="absolute inset-0 rounded-full border-2 border-amber-400/60 bg-amber-400/10 animate-ping"></div>
           {/* Logo */}
           <img
             src="/app_logo.png"
