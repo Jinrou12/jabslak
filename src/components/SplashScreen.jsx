@@ -69,15 +69,15 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== Magnificent Golden Bodhi Tree Artwork Background ====== */}
+      {/* ====== Black Bodhi Tree Silhouette Background ====== */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
         <img
           src="/bodhi_tree_bg.jpg"
-          alt="ដើមពោធិ៍មាស"
-          className="w-full h-full object-cover sm:object-contain scale-105 animate-tree-sway opacity-60 filter brightness-110 contrast-105"
+          alt="ស្រមោលដើមពោធិ៍ខ្មៅ"
+          className="w-full h-full object-cover sm:object-contain scale-105 animate-tree-sway opacity-90 sm:opacity-95 filter drop-shadow-[0_0_30px_rgba(245,158,11,0.25)]"
         />
-        {/* Radial Dark Vignette Overlay to highlight central logo emblem */}
-        <div className="absolute inset-0 bg-radial from-slate-950/20 via-slate-950/60 to-slate-950/90 pointer-events-none"></div>
+        {/* Subtle Edge Vignette */}
+        <div className="absolute inset-0 bg-radial from-transparent via-slate-950/40 to-slate-950/85 pointer-events-none"></div>
       </div>
 
       {/* Ambient Central Gold Glow */}
