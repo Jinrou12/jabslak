@@ -69,7 +69,7 @@ export default function SplashScreen({ onFinish }) {
       {/* ====== Bodhi Tree Artwork Background (Image 2) ====== */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <img
-          src="/bodhi_bg.jpg"
+          src="/bodhi_bg_v2.jpg"
           alt="ដើមពោធិ៍"
           className="w-full h-full object-cover animate-tree-sway brightness-105 contrast-105"
         />
