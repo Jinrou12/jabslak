@@ -108,7 +108,7 @@ export default function SplashScreen({ onFinish }) {
           <img
             src="/app_logo.png"
             alt="ចាប់ស្លាកលេខ"
-            className="w-full h-full object-contain animate-float"
+            className="w-full h-full object-contain rounded-full animate-float"
           />
         </div>
       </div>
