@@ -59,60 +59,39 @@ export default function Header({
       <div className="max-w-7xl mx-auto flex flex-col gap-2.5">
         
         {/* Top Bar: Title & Stats */}
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/60 pb-2">
+        <div className="flex items-center justify-between gap-2 border-b border-slate-800/60 pb-2">
           
           {/* Logo & Title */}
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/30 shrink-0">
-              <Tag className="w-5 h-5 stroke-[2.5]" />
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-amber-500/30 shrink-0">
+              <Tag className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-base sm:text-lg font-black text-amber-400 font-moul tracking-wide">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h1 className="text-xs sm:text-base font-black text-amber-400 font-moul tracking-wide truncate">
                   ប្រព័ន្ធគ្រប់គ្រងស្លាកលេខ
                 </h1>
-                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded-full font-sans-en font-bold">
+                <span className="text-[9px] sm:text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 py-0.2 rounded-full font-sans-en font-bold shrink-0">
                   v2.0
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-slate-400 font-kantumruy flex items-center gap-2">
-                <span>គ្រប់គ្រងទីតាំង និងអ្នកស្នាក់នៅក្នុវត្ត</span>
+              <p className="text-[10px] sm:text-xs text-slate-400 font-kantumruy flex items-center gap-1.5 truncate">
+                <span className="truncate">គ្រប់គ្រងទីតាំង</span>
                 <span className="text-slate-600">•</span>
-                <span className="text-amber-300 font-bold">{westernToKhmerDigits(totalCount)} ស្លាក</span>
+                <span className="text-amber-300 font-bold shrink-0">{westernToKhmerDigits(totalCount)} ស្លាក</span>
               </p>
             </div>
           </div>
 
-          {/* Right Action Controls */}
-          <div className="flex items-center gap-2">
+          {/* Right Action Controls (Role, Login/Logout, Cloud icons side-by-side on Far Right) */}
+          <div className="flex items-center gap-1.5 ml-auto shrink-0 font-kantumruy">
             
-            {/* User Role Badge (Icon Only) */}
-            <div className="flex items-center gap-1.5 bg-slate-900/90 border border-slate-800 rounded-xl p-1.5">
-              <div
-                className={`flex items-center justify-center p-1 rounded-lg border ${getRoleBadge().color}`}
-                title={`${getUserDisplayName()} (${getRoleBadge().text})`}
-              >
-                {React.createElement(getRoleBadge().icon, { className: 'w-4 h-4' })}
-              </div>
-
-              {/* Login / Logout */}
-              {currentUser?.role && currentUser.role !== 'guest' ? (
-                <button
-                  onClick={onLogout}
-                  className="p-1 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 rounded-lg transition-all"
-                  title="ចាកចេញ (Logout)"
-                >
-                  <LogOut className="w-4 h-4" />
-                </button>
-              ) : (
-                <button
-                  onClick={onOpenLoginModal}
-                  className="p-1 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 rounded-lg transition-all"
-                  title="ចូលប្រើប្រាស់ (Login)"
-                >
-                  <LogIn className="w-4 h-4" />
-                </button>
-              )}
+            {/* 1. Role Icon Badge */}
+            <div
+              className={`flex items-center justify-center p-2 rounded-xl border transition-all active:scale-95 ${getRoleBadge().color}`}
+              title={`${getUserDisplayName()} (${getRoleBadge().text})`}
+            >
+              {React.createElement(getRoleBadge().icon, { className: 'w-4 h-4' })}
             </div>
 
             {/* Role Management (Owner only) */}
@@ -126,21 +105,38 @@ export default function Header({
               </button>
             )}
 
-            {/* Realtime Cloud Sync status */}
+            {/* 2. Login / Logout Icon */}
+            {currentUser?.role && currentUser.role !== 'guest' ? (
+              <button
+                onClick={onLogout}
+                className="p-2 bg-slate-900/90 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-800 rounded-xl transition-all active:scale-95"
+                title="ចាកចេញ (Logout)"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                onClick={onOpenLoginModal}
+                className="p-2 bg-slate-900/90 hover:bg-amber-500/20 text-slate-400 hover:text-amber-400 border border-slate-800 rounded-xl transition-all active:scale-95"
+                title="ចូលប្រើប្រាស់ (Login)"
+              >
+                <LogIn className="w-4 h-4" />
+              </button>
+            )}
+
+            {/* 3. Realtime Cloud Sync Status Icon */}
             {isCloudSyncing && (
               <button
                 onClick={onOpenCloudConfig}
-                className={`flex items-center gap-1 rounded-xl px-2 py-1.5 text-xs font-semibold transition-all active:scale-95 border animate-in zoom-in-50 duration-200 ${
-                  isCloudSyncing
-                    ? 'bg-sky-950/80 border-sky-500/50 text-sky-300'
-                    : 'bg-slate-900/80 border-slate-700/60 text-slate-400'
-                }`}
+                className="p-2 bg-sky-950/80 hover:bg-sky-900/80 border border-sky-500/50 text-sky-300 rounded-xl transition-all active:scale-95 relative flex items-center justify-center"
                 title="ស្ថានភាព Realtime Cloud Sync"
               >
-                <Cloud className="w-3.5 h-3.5 text-sky-400" />
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <Cloud className="w-4 h-4 text-sky-400" />
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-400"></span>
               </button>
             )}
+
           </div>
         </div>
 
