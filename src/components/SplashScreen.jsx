@@ -63,23 +63,23 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== Golden Background Color (shows behind image) ====== */}
-      <div className="absolute inset-0 bg-[#c69214]"></div>
+      {/* ====== Warm Cream Background Color ====== */}
+      <div className="absolute inset-0 bg-[#f4eee0]"></div>
 
-      {/* ====== Bodhi Tree Artwork Background (Image 2) ====== */}
+      {/* ====== Bodhi Tree Artwork Background ====== */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <img
-          src="/bodhi_bg_v2.jpg"
+          src="/bodhi_bg_v3.jpg"
           alt="ដើមពោធិ៍"
-          className="w-full h-full object-cover animate-tree-sway brightness-105 contrast-105"
+          className="w-full h-full object-cover animate-tree-sway brightness-102 contrast-102"
         />
-        {/* Soft dark-gold top/bottom gradients for clear title & logo readability without obscuring golden background */}
+        {/* Subtle dark-gold top/bottom gradients for clear title & logo readability */}
         <div className="absolute inset-0 pointer-events-none"
-          style={{background: 'linear-gradient(to bottom, rgba(20, 12, 4, 0.6) 0%, rgba(20, 12, 4, 0.15) 25%, transparent 45%, transparent 65%, rgba(20, 12, 4, 0.5) 85%, rgba(20, 12, 4, 0.8) 100%)'}}
+          style={{background: 'linear-gradient(to bottom, rgba(25, 16, 6, 0.65) 0%, rgba(25, 16, 6, 0.2) 25%, transparent 45%, transparent 65%, rgba(25, 16, 6, 0.55) 85%, rgba(25, 16, 6, 0.85) 100%)'}}
         />
         {/* Subtle warm vignette on extreme edges */}
         <div className="absolute inset-0 pointer-events-none"
-          style={{background: 'radial-gradient(ellipse at center, transparent 50%, rgba(20, 12, 4, 0.35) 100%)'}}
+          style={{background: 'radial-gradient(ellipse at center, transparent 50%, rgba(25, 16, 6, 0.35) 100%)'}}
         />
       </div>
 
