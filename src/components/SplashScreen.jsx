@@ -70,7 +70,7 @@ export default function SplashScreen({ onFinish }) {
           backgroundColor: '#f4ece0',
           backgroundImage: 'url(/bodhi_bg_v6.jpg)',
           backgroundSize: '85%',
-          backgroundPosition: 'center center',
+          backgroundPosition: '42% center',
           backgroundRepeat: 'no-repeat',
         }}
       >
@@ -118,12 +118,12 @@ export default function SplashScreen({ onFinish }) {
       </div>
 
       {/* ====== Bottom Title ====== */}
-      <div className="absolute bottom-6 sm:bottom-10 z-10 flex flex-col items-center gap-1.5 px-4 text-center">
-        <h1 className="text-xl sm:text-2xl font-black text-amber-200 font-moul tracking-wide text-center"
-          style={{textShadow: '0 2px 16px rgba(180,100,0,0.9), 0 1px 4px rgba(0,0,0,0.9)'}}>
+      <div className="absolute bottom-5 sm:bottom-8 z-10 flex flex-col items-center gap-1 px-4 text-center">
+        <h1 className="text-sm sm:text-base font-black text-amber-200 font-moul tracking-wide text-center"
+          style={{textShadow: '0 2px 12px rgba(180,100,0,0.9), 0 1px 4px rgba(0,0,0,0.9)'}}>
           ប្រព័ន្ធគ្រប់គ្រងស្លាកលេខ
         </h1>
-        <p className="text-[11px] text-amber-300/80 font-kantumruy flex items-center gap-1.5"
+        <p className="text-[10px] text-amber-300/70 font-kantumruy flex items-center gap-1"
           style={{textShadow: '0 1px 6px rgba(0,0,0,0.9)'}}>
           <span>🍃 ដើមពោធិ៍ • ស្លឹកធ្លាក់</span>
           <span>•</span>
