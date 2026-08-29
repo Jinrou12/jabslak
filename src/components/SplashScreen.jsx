@@ -76,8 +76,8 @@ export default function SplashScreen({ onFinish }) {
           backgroundSize: 'contain',
           backgroundPosition: '48% 54.6%',
           backgroundRepeat: 'no-repeat',
-          // 🍃 [កែសម្រួលដើមឈើ BG] ៖ អាចកែ translateY(0px) scale(1.0) តាមចិត្ត
-          transform: 'translateY(-20px) scale(1.20)',
+          // 🍃 [កែសម្រួលដើមឈើ BG] ៖ អាចកែ translateY, scale, translateX
+          transform: 'translateX(-30px) scale(1.20)',
         }}
       />
 
@@ -117,7 +117,7 @@ export default function SplashScreen({ onFinish }) {
           className="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center"
           style={{
             // 🍃 [កែសម្រួល LOGO] ៖ អាចកែ translateY(0px) translateX(0px) តាមចិត្ត
-            transform: 'translateY(0px)',
+            transform: 'translateY(-60px)',
           }}
         >
           {/* Soft warm halo */}
