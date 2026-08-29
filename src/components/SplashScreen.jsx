@@ -3,9 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 // ===========================
 // Dark Brown Heart-Shaped Bodhi Leaf — matches the tree artwork style
 // ===========================
-// ===========================
-// Dark Brown Heart-Shaped Bodhi Leaf — matches the tree artwork style
-// ===========================
 function BodhiLeaf({ style, rotation }) {
   return (
     <div className="absolute pointer-events-none animate-falling-leaf z-20" style={style}>
@@ -68,14 +65,14 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== Bodhi Tree — static (no sway), inner branch ring dead-center on logo ====== */}
+      {/* ====== Bodhi Tree — centered on screen, logo floats inside inner branch ring ====== */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
           backgroundColor: '#f4ece0',
           backgroundImage: 'url(/bodhi_bg_v6.jpg)',
           backgroundSize: 'contain',
-          backgroundPosition: '50% calc(50% + 4.63vh)',
+          backgroundPosition: '50% 50%',
           backgroundRepeat: 'no-repeat',
         }}
       >
