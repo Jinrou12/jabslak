@@ -63,14 +63,14 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== Bodhi Tree — full image, medallion perfectly centered ====== */}
+      {/* ====== Bodhi Tree — full image, inner branch ring aligned dead-center on logo emblem ====== */}
       <div
         className="absolute inset-0 pointer-events-none animate-tree-sway"
         style={{
           backgroundColor: '#f4ece0',
           backgroundImage: 'url(/bodhi_bg_v6.jpg)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center center',
+          backgroundSize: 'contain',
+          backgroundPosition: '50% calc(50% + 4.63vh)',
           backgroundRepeat: 'no-repeat',
           transformOrigin: '50% 85%',
         }}
