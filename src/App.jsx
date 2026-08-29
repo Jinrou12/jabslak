@@ -219,7 +219,72 @@ export default function App() {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, [hasActiveModal, viewMode, searchQuery, selectedLocation, attendanceFilter]);
+  // ===== DOUBLE SWIPE-RIGHT EXIT GUARD FOR TELEGRAM WEBVIEW =====
+  // Prevents "swipe left→right" from immediately closing the Telegram in-app browser.
+  // User must swipe right TWICE within 2.5s to exit back to Telegram.
+  const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
+  const lastSwipeRightTimeRef = useRef(0);
 
+  useEffect(() => {
+    const handleTouchStart = (e) => {
+      if (e.touches && e.touches.length === 1) {
+        touchStartRef.current = {
+          x: e.touches[0].clientX,
+          y: e.touches[0].clientY,
+          time: Date.now()
+        };
+      }
+    };
+
+    const handleTouchEnd = (e) => {
+      if (!e.changedTouches || e.changedTouches.length !== 1) return;
+      const touch = e.changedTouches[0];
+      const startX = touchStartRef.current.x;
+      const deltaX = touch.clientX - startX;
+      const deltaY = touch.clientY - touchStartRef.current.y;
+      const deltaTime = Date.now() - touchStartRef.current.time;
+
+      // Only handle clear horizontal swipe-right (left→right)
+      if (deltaX > 60 && Math.abs(deltaY) < 70 && deltaTime < 700) {
+        const now = Date.now();
+        // Double swipe-right guard: first swipe shows toast, second within 2.5s lets the OS handle it (exit to Telegram)
+        if (now - lastSwipeRightTimeRef.current < 2500) {
+          // 2nd swipe — allow browser native back (exits to Telegram)
+          lastSwipeRightTimeRef.current = 0;
+          showToast('ចាកចេញពីកម្មវិធី');
+          setTimeout(() => { try { window.history.go(-2); } catch (_) {} }, 300);
+        } else {
+          // 1st swipe — block native behavior, show "swipe again" toast
+          lastSwipeRightTimeRef.current = now;
+          try { window.history.pushState({ appRootGuard: true }, ''); } catch (_) {}
+          showToast('អូសម្ដងទៀតដើម្បីចេញ');
+        }
+        return;
+      }
+    };
+
+    const handleEdgeTouchMove = (e) => {
+      if (e.touches && e.touches.length === 1) {
+        const touchX = e.touches[0].clientX;
+        const startX = touchStartRef.current.x;
+        // Block native Telegram/browser swipe-back starting from left edge (<40px)
+        if (startX < 40 && touchX > startX + 8 && e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    document.addEventListener('touchstart', handleTouchStart, { passive: true });
+    document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    document.addEventListener('touchmove', handleEdgeTouchMove, { passive: false });
+
+    return () => {
+      document.removeEventListener('touchstart', handleTouchStart);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchmove', handleEdgeTouchMove);
+    };
+  }, []);
+  // ================================================================
 
 
   // Load initial tags & subscribe to Cloud & Firebase Realtime updates
