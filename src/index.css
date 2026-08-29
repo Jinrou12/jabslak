@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
 @layer base {
-  body {
+  html, body, #root {
+    overscroll-behavior-x: none;
+    touch-action: pan-y pinch-zoom;
     font-family: 'Kantumruy Pro', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     -webkit-tap-highlight-color: transparent;
   }

@@ -220,8 +220,22 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [hasActiveModal, viewMode, searchQuery, selectedLocation, attendanceFilter]);
 
-  // Touch Swipe Gesture Handler (Swipe Left-to-Right -> Switch to Home / Go Back)
-  const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
+  // Prevent Telegram & Mobile Browser native edge-swipe back gesture to Telegram
+  useEffect(() => {
+    const handleEdgeTouchMove = (e) => {
+      if (e.touches && e.touches.length === 1) {
+        const touchX = e.touches[0].clientX;
+        const startX = touchStartRef.current.x;
+        // If swipe starts near left edge (startX < 40px) and moves right, block native Telegram/Safari back navigation
+        if (startX < 40 && touchX > startX + 5 && e.cancelable) {
+          e.preventDefault();
+        }
+      }
+    };
+
+    document.addEventListener('touchmove', handleEdgeTouchMove, { passive: false });
+    return () => document.removeEventListener('touchmove', handleEdgeTouchMove);
+  }, []);
 
   const handleTouchStart = (e) => {
     if (e.touches && e.touches.length === 1) {
