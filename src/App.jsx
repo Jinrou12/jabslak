@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { Tag, Plus, AlertCircle, RefreshCw, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Tag, Plus, AlertCircle, RefreshCw, Sparkles, CheckCircle2, Map as MapIcon, ArrowLeft } from 'lucide-react';
 import Header from './components/Header';
 import SearchBar from './components/SearchBar';
 import TagCard from './components/TagCard';
@@ -821,8 +821,62 @@ export default function App() {
         />
       )}
 
+      {/* 📱 Fixed Mobile Bottom Navigation Bar for Phones (1. +បន្ថែម [Recent pos], 2. ផែនទីវត្ត [Home pos], 3. ថយក្រោយ [Back pos]) */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 border-t border-amber-500/30 backdrop-blur-2xl px-3 py-1.5 flex items-center justify-around shadow-[0_-10px_30px_rgba(0,0,0,0.8)] font-kantumruy">
+        
+        {/* 1. Left Button (ជំនួស Recent) -> +បន្ថែម (Add Tag) */}
+        <button
+          type="button"
+          onClick={() => {
+            if (currentUser?.role === 'assistant' || currentUser?.role === 'guest') {
+              alert('សិទ្ធិ Assistant និង Guest មិនអាចបន្ថែមស្លាកលេខថ្មីបានទេ!');
+              return;
+            }
+            setEditingTag(null);
+            setIsFormOpen(true);
+          }}
+          className="flex flex-col items-center justify-center gap-0.5 py-1 px-3 text-amber-400 hover:text-amber-300 active:scale-95 transition-all group shrink-0"
+          title="បន្ថែមស្លាកលេខថ្មី (+បន្ថែម)"
+        >
+          <div className="w-9 h-9 rounded-2xl bg-amber-500/20 group-hover:bg-amber-500/30 border border-amber-500/40 flex items-center justify-center text-amber-400 shadow-md shadow-amber-500/10">
+            <Plus className="w-5 h-5 stroke-[2.5]" />
+          </div>
+          <span className="text-[11px] font-bold tracking-tight text-amber-300">+បន្ថែម</span>
+        </button>
+
+        {/* 2. Middle Button (ជំនួស Home) -> ផែនទីវត្ត (Temple Map) */}
+        <button
+          type="button"
+          onClick={() => {
+            setTempleMapTargetLoc(null);
+            setIsTempleMapOpen(true);
+          }}
+          className="flex flex-col items-center justify-center gap-0.5 py-1 px-4 text-amber-300 hover:text-amber-200 active:scale-95 transition-all group shrink-0 -mt-3"
+          title="មើលផែនទីវត្ត (ផែនទីវត្ត)"
+        >
+          <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-500 via-amber-400 to-amber-600 border-2 border-amber-300 flex items-center justify-center text-slate-950 shadow-xl shadow-amber-500/40 ring-4 ring-slate-950">
+            <MapIcon className="w-6 h-6 stroke-[2.5]" />
+          </div>
+          <span className="text-[11px] font-extrabold text-amber-300 font-moul tracking-tight">ផែនទីវត្ត</span>
+        </button>
+
+        {/* 3. Right Button (ជំនួស Back) -> ថយក្រោយ (Go Back / Double Back Exit) */}
+        <button
+          type="button"
+          onClick={handleNavigateBack}
+          className="flex flex-col items-center justify-center gap-0.5 py-1 px-3 text-sky-400 hover:text-sky-300 active:scale-95 transition-all group shrink-0"
+          title="ថយក្រោយ / ត្រឡប់ទៅផ្ទាំងដើម"
+        >
+          <div className="w-9 h-9 rounded-2xl bg-sky-500/20 group-hover:bg-sky-500/30 border border-sky-500/40 flex items-center justify-center text-sky-400 shadow-md shadow-sky-500/10">
+            <ArrowLeft className="w-5 h-5 stroke-[2.5]" />
+          </div>
+          <span className="text-[11px] font-bold tracking-tight text-sky-300">ថយក្រោយ</span>
+        </button>
+
+      </div>
+
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-4 px-4 text-center text-xs text-slate-500 font-kantumruy">
+      <footer className="border-t border-slate-900 bg-slate-950 py-4 px-4 pb-24 text-center text-xs text-slate-500 font-kantumruy">
         <p>ប្រព័ន្ធគ្រប់គ្រងស្លាកលេខ និងទីតាំងស្នាក់នៅ © ២០២៦ | Realtime Cloud Sync សម្រាប់ក្រុមការងារ ២០ នាក់</p>
       </footer>
 
