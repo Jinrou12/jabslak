@@ -63,7 +63,7 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== Bodhi Tree — full image, medallion at screen center ====== */}
+      {/* ====== Bodhi Tree — full image, medallion perfectly centered ====== */}
       <div
         className="absolute inset-0 pointer-events-none animate-tree-sway"
         style={{
@@ -72,8 +72,12 @@ export default function SplashScreen({ onFinish }) {
           backgroundSize: 'contain',
           backgroundPosition: 'center center',
           backgroundRepeat: 'no-repeat',
+          transformOrigin: '50% 85%',
         }}
       >
+        {/* Golden ambient center spotlight highlight */}
+        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.18)_0%,_transparent_60%)]" />
+
         {/* Soft dark-gold top/bottom gradients for title readability */}
         <div className="absolute inset-0"
           style={{background: 'linear-gradient(to bottom, rgba(25, 16, 6, 0.55) 0%, rgba(25, 16, 6, 0.05) 20%, transparent 40%, transparent 65%, rgba(25, 16, 6, 0.35) 85%, rgba(25, 16, 6, 0.7) 100%)'}}
