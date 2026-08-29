@@ -69,13 +69,12 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== Flat 2D Golden Bodhi Tree Background ====== */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-end justify-center bg-amber-950/10">
+      {/* ====== Beautiful Portrait Bodhi Tree Background ====== */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
         <img
           src="/bodhi_tree_bg.jpg"
           alt="ដើមពោធិ៍ 2D មាស"
-          className="w-[85%] max-w-2xl h-auto object-contain animate-tree-sway opacity-90"
-          style={{ marginBottom: '-2%' }}
+          className="w-full h-full object-cover animate-tree-sway opacity-90"
         />
         {/* Edge vignette overlay — darkens corners so text & logo are readable */}
         <div className="absolute inset-0 pointer-events-none"
