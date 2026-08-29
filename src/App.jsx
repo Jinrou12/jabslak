@@ -111,14 +111,14 @@ export default function App() {
     // 1. If any modal is active -> Close all modals
     if (hasActiveModal) {
       closeAllModals();
-      showToast('◀ ថយក្រោយ ៖ បិទផ្ទាំង (Closed Modal)');
+      showToast('បិទផ្ទាំង');
       return true;
     }
 
     // 2. If viewMode is not 'grid' -> Return to Home Screen
     if (viewMode !== 'grid') {
       setViewMode('grid');
-      showToast('◀ ថយក្រោយ ៖ ត្រឡប់ទៅផ្ទាំងដើម (Home Screen)');
+      showToast('ត្រឡប់ទៅផ្ទាំងដើម');
       return true;
     }
 
@@ -127,7 +127,7 @@ export default function App() {
       setAttendanceFilter('ALL');
       setSelectedLocation('ALL');
       setSearchQuery('');
-      showToast('◀ ថយក្រោយ ៖ បង្ហាញបញ្ជីដើមវិញ');
+      showToast('បង្ហាញបញ្ជីដើម');
       return true;
     }
 
@@ -135,7 +135,7 @@ export default function App() {
     const now = Date.now();
     if (now - lastBackPressTimeRef.current < 2500) {
       // Pressed back 2 times within 2.5s -> Allow exit!
-      showToast('👋 បានចាកចេញពីកម្មវិធី!');
+      showToast('ចាកចេញពីកម្មវិធី');
       try {
         window.history.go(-1);
       } catch (err) {}
@@ -146,7 +146,7 @@ export default function App() {
       try {
         window.history.pushState({ appRootGuard: true }, '');
       } catch (err) {}
-      showToast('⚠️ សូមចុចថយក្រោយ (ឬអូស) ១ ដងទៀតដើម្បីចាកចេញពី Web 🚪');
+      showToast('ថយម្ដងទៀត');
       return true;
     }
   };
@@ -176,14 +176,14 @@ export default function App() {
         const now = Date.now();
         if (now - lastBackPressTimeRef.current < 2500) {
           // Exit web app (2nd press)
-          showToast('👋 បានចាកចេញពីកម្មវិធី!');
+          showToast('ចាកចេញពីកម្មវិធី');
         } else {
           // 1st press -> Lock and prompt
           lastBackPressTimeRef.current = now;
           try {
             window.history.pushState({ appRootGuard: true }, '');
           } catch (err) {}
-          showToast('⚠️ សូមចុចថយក្រោយ (ឬអូស) ១ ដងទៀតដើម្បីចាកចេញពី Web 🚪');
+          showToast('ថយម្ដងទៀត');
         }
       }
     };
@@ -524,7 +524,7 @@ export default function App() {
       
       {/* Toast Notification Floating */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 bg-amber-500 text-slate-950 font-bold px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-2 border border-amber-300 animate-in slide-in-from-bottom-5 duration-300">
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-6 sm:bottom-6 z-50 bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-2xl shadow-2xl flex items-center justify-center gap-2 border border-amber-300 animate-in slide-in-from-bottom-5 duration-300 pointer-events-none max-w-[90vw] shrink-0">
           <CheckCircle2 className="w-5 h-5 text-slate-950 shrink-0" />
           <span className="text-sm font-kantumruy">{toastMessage}</span>
         </div>
