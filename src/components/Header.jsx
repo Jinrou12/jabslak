@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Plus, FileSpreadsheet, Trash2, Users, MapPin, Cloud, Map as MapIcon, Crown, Shield, UserCheck, Lock, UserCog, LogIn, Eye, LogOut, Calendar } from 'lucide-react';
+import { Tag, Plus, FileSpreadsheet, Trash2, Users, MapPin, Cloud, Map as MapIcon, Crown, Shield, UserCheck, Lock, UserCog, LogIn, Eye, LogOut, Calendar, ChevronDown } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function Header({
@@ -19,7 +19,9 @@ export default function Header({
   onOpenLoginModal,
   onLogout,
   onOpenAttendanceReport,
-  isCloudSyncing
+  isCloudSyncing,
+  selectedYear = '2026',
+  onToggleYear
 }) {
   const isOwner = currentUser?.role === 'owner';
   const isAdmin = currentUser?.role === 'admin';
@@ -38,6 +40,19 @@ export default function Header({
     if (isAdmin) return 'Admin';
     if (isAssistant) return 'Assistant';
     return 'Guest (អ្នកមើល)';
+  };
+
+  const getDateBannerText = () => {
+    if (selectedYear === '2025') {
+      return 'ថ្ងៃអាទិត្យ ១៥កើត ខែស្រាពណ៍ ឆ្នាំរោង ឆស័ក ពុទ្ធសករាជ ២៥៦៩ ត្រូវនឹងថ្ងៃទី១០ ខែកញ្ញា ឆ្នាំ២០២៥';
+    }
+    if (selectedYear === '2027') {
+      return 'ថ្ងៃអង្គារ ១០កើត ខែស្រាពណ៍ ឆ្នាំមមែ នព្វស័ក ពុទ្ធសករាជ ២៥៧១ ត្រូវនឹងថ្ងៃទី១៥ ខែកញ្ញា ឆ្នាំ២០២៧';
+    }
+    if (selectedYear === '2024') {
+      return 'ថ្ងៃពុធ ៥កើត ខែស្រាពណ៍ ឆ្នាំម្សាញ់ បញ្ចស័ក ពុទ្ធសករាជ ២៥៦៨ ត្រូវនឹងថ្ងៃទី១ ខែកញ្ញា ឆ្នាំ២០២៤';
+    }
+    return 'ថ្ងៃសៅរ៍ ៨រោច ខែស្រាពណ៍ ឆ្នាំមមី អដ្ឋស័ក ពុទ្ធសករាជ ២៥៧០ ត្រូវនឹងថ្ងៃទី៥ ខែកញ្ញា ឆ្នាំ២០២៦';
   };
 
   return (
@@ -147,30 +162,20 @@ export default function Header({
           </div>
         </div>
 
-        {/* Second Row: Action Buttons Bar (Responsive flex layout - Excel & Trash buttons hidden on Mobile) */}
+        {/* Second Row: Action Buttons Bar (Button Switch ឆ្នាំ replaces ផែនទីវត្ត & +បន្ថែម) */}
         <div className="flex flex-wrap items-center gap-2 pt-1 w-full font-kantumruy">
           
-          {/* 🗺️ Temple Map Button */}
+          {/* 📅 Year Switcher Button (button switch ឆ្នាំ ៖ ជំនួស "ផែនទីវត្ត" & "+បន្ថែម" លើ Top Bar) */}
           <button
-            onClick={onOpenTempleMap}
-            className="px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 active:scale-95 shadow-sm"
-            title="មើលផែនទីទីតាំងក្នុងវត្ត"
+            type="button"
+            onClick={onToggleYear}
+            className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10 active:scale-95 transition-all shrink-0 font-kantumruy"
+            title="ចុចដើម្បីប្តូរឆ្នាំ (Switch Year)"
           >
-            <MapIcon className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="whitespace-nowrap font-bold">ផែនទីវត្ត</span>
+            <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="font-moul text-amber-300">ឆ្នាំ {westernToKhmerDigits(selectedYear)}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-0.5" />
           </button>
-
-          {/* Add Tag (Pops up for Owner & Admin only) */}
-          {(isOwner || isAdmin) && (
-            <button
-              onClick={onOpenAddModal}
-              className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 shadow-lg shadow-amber-500/25 active:scale-95 transition-all shrink-0 animate-in zoom-in-50 duration-200"
-              title="បន្ថែមស្លាកលេខថ្មី"
-            >
-              <Plus className="w-4 h-4 stroke-[3]" />
-              <span className="whitespace-nowrap font-bold">បន្ថែមថ្មី</span>
-            </button>
-          )}
 
           {/* 📊 Attendance Report Dashboard Button */}
           <button
@@ -213,9 +218,9 @@ export default function Header({
             <Calendar className="w-4 h-4 text-amber-400 shrink-0 z-10 bg-slate-900/95 pr-1 rounded-l-lg" />
             <div className="overflow-hidden relative w-full flex items-center">
               <div className="animate-marquee flex items-center gap-8 font-bold text-amber-200 text-xs sm:text-sm font-kantumruy">
-                <span>ថ្ងៃសៅរ៍ ៨រោច ខែស្រាពណ៍ ឆ្នាំមមី អដ្ឋស័ក ពុទ្ធសករាជ ២៥៧០ ត្រូវនឹងថ្ងៃទី៥ ខែកញ្ញា ឆ្នាំ២០២៦</span>
+                <span>{getDateBannerText()}</span>
                 <span className="text-amber-500/60 font-sans-en text-xs">✦</span>
-                <span>ថ្ងៃសៅរ៍ ៨រោច ខែស្រាពណ៍ ឆ្នាំមមី អដ្ឋស័ក ពុទ្ធសករាជ ២៥៧០ ត្រូវនឹងថ្ងៃទី៥ ខែកញ្ញា ឆ្នាំ២០២៦</span>
+                <span>{getDateBannerText()}</span>
                 <span className="text-amber-500/60 font-sans-en text-xs">✦</span>
               </div>
             </div>
