@@ -68,15 +68,25 @@ export default function SplashScreen({ onFinish }) {
       {/* ====== 1. Base Solid Background Color ====== */}
       <div className="absolute inset-0 bg-[#f4ece0] pointer-events-none" />
 
-      {/* ====== 2. TREE BACKGROUND IMAGE (កែសម្រួលដើមឈើ BG នៅទីនេះ) ====== */}
+      {/* ====== 2. MOBILE TREE BACKGROUND IMAGE (📱 ទូរស័ព្ទដៃ - ប្រើរូបភាពរាងឈរថ្មី) ====== */}
       <div
-        className="absolute inset-0 pointer-events-none"
+        className="block sm:hidden absolute inset-0 pointer-events-none transition-transform duration-300"
+        style={{
+          backgroundImage: 'url(/bodhi_bg_mobile.jpg)',
+          backgroundSize: 'contain',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      />
+
+      {/* ====== 2. PC TREE BACKGROUND IMAGE (💻 កុំព្យូទ័រ PC - ប្រើរូបភាពរាងផ្តេកដើម) ====== */}
+      <div
+        className="hidden sm:block absolute inset-0 pointer-events-none transition-transform duration-300"
         style={{
           backgroundImage: 'url(/bodhi_bg_v6.jpg)',
           backgroundSize: 'contain',
           backgroundPosition: '48% 54.6%',
           backgroundRepeat: 'no-repeat',
-          // 🍃 [កែសម្រួលដើមឈើ BG] ៖ អាចកែ translateY, scale, translateX
           transform: 'translateX(-30px) scale(1.20)',
         }}
       />
@@ -111,14 +121,14 @@ export default function SplashScreen({ onFinish }) {
         ))}
       </div>
 
-      {/* ====== 3. CENTER EMBLEM LOGO (កែសម្រួល LOGO នៅទីនេះ) ====== */}
+      {/* ====== 5. CENTER EMBLEM LOGO ====== */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
         <div
-          className="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center"
-          style={{
-            // 🍃 [កែសម្រួល LOGO] ៖ អាចកែ translateY(0px) translateX(0px) តាមចិត្ត
-            transform: 'translateY(-60px)',
-          }}
+          /* 
+            📱 [សម្រាប់ទូរស័ព្ទ Phone តែមួយមុខ] ៖ w-32 h-32, translate-y-0, translate-x-0
+            💻 [សម្រាប់កុំព្យូទ័រ PC]           ៖ sm:w-56 sm:h-56, sm:translate-y-[-60px], sm:translate-x-0
+          */
+          className="relative w-32 h-32 translate-y-0 translate-x-0 sm:w-56 sm:h-56 sm:translate-y-[-60px] sm:translate-x-0 flex items-center justify-center transition-all duration-300"
         >
           {/* Soft warm halo */}
           <div className="absolute w-[130%] h-[130%] rounded-full bg-amber-400/25 blur-[30px]"></div>
