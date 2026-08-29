@@ -77,14 +77,14 @@ export default function Header({
             </div>
           </div>
 
-          {/* Right Action Controls (Year Switcher + Role, Login/Logout, Cloud icons side-by-side on Far Right) */}
+          {/* Right Action Controls (Role, Login/Logout, Cloud icons + PC Year Switcher on Far Right) */}
           <div className="flex items-center gap-1.5 ml-auto shrink-0 font-kantumruy">
             
-            {/* 📅 Year Switcher Button */}
+            {/* 📅 Year Switcher Button (PC / Desktop ONLY: hidden sm:flex) */}
             <button
               type="button"
               onClick={onToggleYear}
-              className="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10 active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
+              className="hidden sm:flex px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10 active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
               title="ចុចដើម្បីប្តូរឆ្នាំ (Switch Year)"
             >
               <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
@@ -92,12 +92,12 @@ export default function Header({
               <ChevronDown className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-0.5" />
             </button>
 
-            {/* ➕ Add Year Button (Visible ONLY for Owner & Admin) */}
+            {/* ➕ Add Year Button (PC / Desktop ONLY: hidden sm:flex) */}
             {(isOwner || isAdmin) && (
               <button
                 type="button"
                 onClick={onAddYear}
-                className="px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-sm active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
+                className="hidden sm:flex px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-xl text-xs font-bold items-center justify-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-sm active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
                 title="បន្ថែមឆ្នាំថ្មី (Add New Year)"
               >
                 <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0 stroke-[3]" />
@@ -161,6 +161,31 @@ export default function Header({
 
         {/* Second Row: Action Buttons Bar */}
         <div className="flex flex-wrap items-center gap-2 pt-1 w-full font-kantumruy">
+          
+          {/* 📅 Year Switcher Button (Mobile ONLY: flex sm:hidden) */}
+          <button
+            type="button"
+            onClick={onToggleYear}
+            className="flex sm:hidden px-3 py-2 rounded-xl text-xs font-bold items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10 active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
+            title="ចុចដើម្បីប្តូរឆ្នាំ (Switch Year)"
+          >
+            <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="font-moul text-amber-300">ឆ្នាំ {westernToKhmerDigits(selectedYear)}</span>
+            <ChevronDown className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-0.5" />
+          </button>
+
+          {/* ➕ Add Year Button (Mobile ONLY for Owner & Admin: flex sm:hidden) */}
+          {(isOwner || isAdmin) && (
+            <button
+              type="button"
+              onClick={onAddYear}
+              className="flex sm:hidden px-2.5 py-2 rounded-xl text-xs font-bold items-center justify-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-sm active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
+              title="បន្ថែមឆ្នាំថ្មី (Add New Year)"
+            >
+              <Plus className="w-4 h-4 text-amber-400 shrink-0 stroke-[3]" />
+              <span className="font-bold whitespace-nowrap">ឆ្នាំ</span>
+            </button>
+          )}
           
           {/* 🗺️ ផែនទីវត្ត Button (PC/Desktop view) */}
           <button
