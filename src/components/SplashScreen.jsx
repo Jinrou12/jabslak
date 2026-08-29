@@ -64,22 +64,22 @@ export default function SplashScreen({ onFinish }) {
       }`}
     >
       {/* ====== Golden Background Color (shows behind image) ====== */}
-      <div className="absolute inset-0 bg-[#a67c00]"></div>
+      <div className="absolute inset-0 bg-[#c69214]"></div>
 
-      {/* ====== Bodhi Tree Artwork Background ====== */}
+      {/* ====== Bodhi Tree Artwork Background (Image 2) ====== */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <img
           src="/bodhi_bg.jpg"
           alt="ដើមពោធិ៍"
-          className="w-full h-full object-cover animate-tree-sway"
+          className="w-full h-full object-cover animate-tree-sway brightness-105 contrast-105"
         />
-        {/* Top dark fade — so logo area is readable */}
+        {/* Soft dark-gold top/bottom gradients for clear title & logo readability without obscuring golden background */}
         <div className="absolute inset-0 pointer-events-none"
-          style={{background: 'linear-gradient(to bottom, rgba(10,14,28,0.82) 0%, rgba(10,14,28,0.3) 20%, transparent 42%, transparent 68%, rgba(10,14,28,0.75) 90%, rgba(10,14,28,0.92) 100%)'}}
+          style={{background: 'linear-gradient(to bottom, rgba(20, 12, 4, 0.6) 0%, rgba(20, 12, 4, 0.15) 25%, transparent 45%, transparent 65%, rgba(20, 12, 4, 0.5) 85%, rgba(20, 12, 4, 0.8) 100%)'}}
         />
-        {/* Subtle radial vignette on edges */}
+        {/* Subtle warm vignette on extreme edges */}
         <div className="absolute inset-0 pointer-events-none"
-          style={{background: 'radial-gradient(ellipse at center, transparent 40%, rgba(10,14,28,0.55) 100%)'}}
+          style={{background: 'radial-gradient(ellipse at center, transparent 50%, rgba(20, 12, 4, 0.35) 100%)'}}
         />
       </div>
 

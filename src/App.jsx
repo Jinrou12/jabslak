@@ -629,7 +629,13 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-kantumruy">
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-kantumruy relative overflow-x-hidden">
+      {/* 🍃 Web App Background — Golden Bodhi Tree Artwork (Image 2) */}
+      <div 
+        className="fixed inset-0 pointer-events-none z-0 bg-cover bg-center opacity-15 filter brightness-110 contrast-105"
+        style={{ backgroundImage: 'url(/bodhi_bg.jpg)' }}
+      />
+      <div className="fixed inset-0 pointer-events-none z-0 bg-gradient-to-b from-slate-950/80 via-slate-950/85 to-slate-950/95" />
       
       {/* 🍃 App Splash Screen Launch Intro with Falling Bodhi Leaves Animation */}
       {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
