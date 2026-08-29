@@ -220,88 +220,7 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, [hasActiveModal, viewMode, searchQuery, selectedLocation, attendanceFilter]);
 
-  // Prevent Telegram & Mobile Browser native edge-swipe back gesture to Telegram
-  useEffect(() => {
-    const handleEdgeTouchMove = (e) => {
-      if (e.touches && e.touches.length === 1) {
-        const touchX = e.touches[0].clientX;
-        const startX = touchStartRef.current.x;
-        // If swipe starts near left edge (startX < 40px) and moves right, block native Telegram/Safari back navigation
-        if (startX < 40 && touchX > startX + 5 && e.cancelable) {
-          e.preventDefault();
-        }
-      }
-    };
 
-    document.addEventListener('touchmove', handleEdgeTouchMove, { passive: false });
-    return () => document.removeEventListener('touchmove', handleEdgeTouchMove);
-  }, []);
-
-  const handleTouchStart = (e) => {
-    if (e.touches && e.touches.length === 1) {
-      touchStartRef.current = {
-        x: e.touches[0].clientX,
-        y: e.touches[0].clientY,
-        time: Date.now()
-      };
-    }
-  };
-
-  const handleTouchEnd = (e) => {
-    if (!e.changedTouches || e.changedTouches.length !== 1) return;
-    const touch = e.changedTouches[0];
-    const startX = touchStartRef.current.x;
-    const deltaX = touch.clientX - startX;
-    const deltaY = touch.clientY - touchStartRef.current.y;
-    const deltaTime = Date.now() - touchStartRef.current.time;
-
-    const target = e.target;
-    if (
-      target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
-      target.tagName === 'SELECT' ||
-      target.closest('.map-pin-element') ||
-      target.closest('.zoom-toolbar')
-    ) {
-      return;
-    }
-
-    // 1. Swipe Right to Left (អូសពីស្ដាំទៅឆ្វេង ៖ ប្តូរទៅតម្រងបន្ទាប់)
-    const isSwipeLeft = deltaX < -60 && Math.abs(deltaY) < 60 && deltaTime < 700;
-    if (isSwipeLeft && !hasActiveModal && viewMode === 'grid') {
-      if (attendanceFilter === 'ALL') {
-        setAttendanceFilter('notArrived');
-        showToast('▶ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
-      } else if (attendanceFilter === 'notArrived') {
-        setAttendanceFilter('arrived');
-        showToast('▶ ប្តូរទៅតម្រង ៖ បានមកដល់');
-      } else {
-        setAttendanceFilter('ALL');
-        showToast('▶ ប្តូរទៅតម្រង ៖ ទាំងអស់');
-      }
-      return;
-    }
-
-    // 2. Swipe Left to Right (អូសពីឆ្វេងទៅស្ដាំ ៖ ប្តូរតម្រងថយក្រោយ / ត្រឡប់ទៅផ្ទាំងដើម)
-    const isSwipeRight = deltaX > 60 && Math.abs(deltaY) < 60 && deltaTime < 700;
-    if (isSwipeRight) {
-      if (hasActiveModal || viewMode !== 'grid') {
-        handleNavigateBack();
-      } else {
-        if (attendanceFilter === 'ALL') {
-          setAttendanceFilter('arrived');
-          showToast('◀ ប្តូរទៅតម្រង ៖ បានមកដល់');
-        } else if (attendanceFilter === 'arrived') {
-          setAttendanceFilter('notArrived');
-          showToast('◀ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
-        } else {
-          setAttendanceFilter('ALL');
-          showToast('◀ ប្តូរទៅតម្រង ៖ ទាំងអស់');
-        }
-      }
-      return;
-    }
-  };
 
   // Load initial tags & subscribe to Cloud & Firebase Realtime updates
   useEffect(() => {
@@ -577,11 +496,7 @@ export default function App() {
   };
 
   return (
-    <div
-      className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-kantumruy"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-kantumruy">
       
       {/* Toast Notification Floating */}
       {toastMessage && (
