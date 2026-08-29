@@ -633,7 +633,7 @@ export default function App() {
       {/* 🍃 Web App Background — Bodhi Tree Artwork */}
       <div 
         className="fixed inset-0 pointer-events-none z-0 bg-cover bg-center opacity-15 filter brightness-110 contrast-105"
-        style={{ backgroundImage: 'url(/bodhi_bg_v5.jpg)' }}
+        style={{ backgroundImage: 'url(/bodhi_bg_v6.jpg)' }}
       />
       <div className="fixed inset-0 pointer-events-none z-0 bg-gradient-to-b from-slate-950/80 via-slate-950/85 to-slate-950/95" />
       

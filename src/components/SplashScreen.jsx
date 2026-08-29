@@ -69,7 +69,7 @@ export default function SplashScreen({ onFinish }) {
       {/* ====== Perfectly Centered Bodhi Tree Artwork Background (1920x1080 16:9) ====== */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
         <img
-          src="/bodhi_bg_v5.jpg"
+          src="/bodhi_bg_v6.jpg"
           alt="ដើមពោធិ៍"
           className="w-full h-full object-cover object-center animate-tree-sway brightness-102 contrast-102"
         />
@@ -104,7 +104,7 @@ export default function SplashScreen({ onFinish }) {
 
       {/* ====== Center Emblem Logo — Dead-centered on screen & tree ====== */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
-        <div className="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center -mt-6">
+        <div className="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center">
           {/* Soft warm halo */}
           <div className="absolute w-[130%] h-[130%] rounded-full bg-amber-400/25 blur-[30px]"></div>
           {/* Pulsing ring */}
