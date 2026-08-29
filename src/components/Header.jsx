@@ -165,17 +165,11 @@ export default function Header({
         {/* Second Row: Action Buttons Bar (Button Switch ឆ្នាំ replaces ផែនទីវត្ត & +បន្ថែម) */}
         <div className="flex flex-wrap items-center gap-2 pt-1 w-full font-kantumruy">
           
-          {/* 📅 Year Switcher Button (button switch ឆ្នាំ ៖ ជំនួស "ផែនទីវត្ត" & "+បន្ថែម" លើ Top Bar) */}
-          <button
-            type="button"
-            onClick={onToggleYear}
-            className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10 active:scale-95 transition-all shrink-0 font-kantumruy"
-            title="ចុចដើម្បីប្តូរឆ្នាំ (Switch Year)"
-          >
+          {/* 📅 Year Display Badge (static - ឆ្នាំ ២០២៦) */}
+          <div className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-500/30 to-amber-500/20 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10 shrink-0 font-kantumruy select-none">
             <Calendar className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="font-moul text-amber-300">ឆ្នាំ {westernToKhmerDigits(selectedYear)}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-amber-400 shrink-0 ml-0.5" />
-          </button>
+          </div>
 
           {/* 📊 Attendance Report Dashboard Button */}
           <button
