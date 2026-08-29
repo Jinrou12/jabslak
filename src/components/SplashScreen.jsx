@@ -69,19 +69,24 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== Black Bodhi Tree Silhouette Background ====== */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
+      {/* ====== Flat 2D Golden Bodhi Tree Background ====== */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-end justify-center">
         <img
           src="/bodhi_tree_bg.jpg"
-          alt="ស្រមោលដើមពោធិ៍ខ្មៅ"
-          className="w-full h-full object-cover sm:object-contain scale-105 animate-tree-sway opacity-90 sm:opacity-95 filter drop-shadow-[0_0_30px_rgba(245,158,11,0.25)]"
+          alt="ដើមពោធិ៍ 2D មាស"
+          className="w-full h-full object-cover animate-tree-sway opacity-95"
         />
-        {/* Subtle Edge Vignette */}
-        <div className="absolute inset-0 bg-radial from-transparent via-slate-950/40 to-slate-950/85 pointer-events-none"></div>
+        {/* Edge vignette overlay — darkens corners so text & logo are readable */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{background: 'radial-gradient(ellipse at center, rgba(15,23,42,0) 30%, rgba(15,23,42,0.55) 70%, rgba(15,23,42,0.92) 100%)'}}
+        ></div>
+        {/* Top & Bottom darkening for text readability */}
+        <div className="absolute inset-0 pointer-events-none"
+          style={{background: 'linear-gradient(to bottom, rgba(15,23,42,0.75) 0%, transparent 25%, transparent 70%, rgba(15,23,42,0.85) 100%)'}}
+        ></div>
       </div>
 
-      {/* Ambient Central Gold Glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[32rem] h-[32rem] bg-amber-500/25 rounded-full blur-[130px] pointer-events-none animate-pulse"></div>
+      {/* No extra glow needed — golden bg already glows */}
 
       {/* ====== Falling Bodhi Leaves Animation ====== */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
