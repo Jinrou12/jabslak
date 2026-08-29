@@ -314,26 +314,31 @@ export default function App() {
     };
   }, []);
 
-  // Filter tags in real-time
-  const filteredTags = useMemo(() => {
-    return searchTags(tags, searchQuery, selectedLocation, attendanceFilter);
-  }, [tags, searchQuery, selectedLocation, attendanceFilter]);
+  // Filter tags by selected year (default 2026 for unassigned tags)
+  const yearTags = useMemo(() => {
+    return tags.filter((t) => (t.year || '2026') === selectedYear);
+  }, [tags, selectedYear]);
 
-  // Arrived & Not Arrived count calculation
+  // Filter tags in real-time for current selected year
+  const filteredTags = useMemo(() => {
+    return searchTags(yearTags, searchQuery, selectedLocation, attendanceFilter);
+  }, [yearTags, searchQuery, selectedLocation, attendanceFilter]);
+
+  // Arrived & Not Arrived count calculation for current year
   const arrivedCount = useMemo(() => {
-    return tags.filter((t) => !!t.arrived).length;
-  }, [tags]);
+    return yearTags.filter((t) => !!t.arrived).length;
+  }, [yearTags]);
 
   const notArrivedCount = useMemo(() => {
-    return tags.filter((t) => !t.arrived).length;
-  }, [tags]);
+    return yearTags.filter((t) => !t.arrived).length;
+  }, [yearTags]);
 
-  // Compute next available tag number
+  // Compute next available tag number for current year
   const nextAvailableTagNumber = useMemo(() => {
-    if (!tags || tags.length === 0) return 1;
-    const maxNum = Math.max(...tags.map((t) => Number(t.tagNumber) || 0));
+    if (!yearTags || yearTags.length === 0) return 1;
+    const maxNum = Math.max(...yearTags.map((t) => Number(t.tagNumber) || 0));
     return maxNum + 1;
-  }, [tags]);
+  }, [yearTags]);
 
   // Handle open map focused on a location
   const handleOpenMapWithLocation = (locName) => {
@@ -454,13 +459,14 @@ export default function App() {
 
   // CRUD Operations with Firebase & Cloud Sync
   const handleSaveTag = async (tagData) => {
+    const tagWithYear = { ...tagData, year: tagData.year || selectedYear };
     let updated;
     if (editingTag) {
-      updated = tags.map((t) => (t.id === tagData.id ? tagData : t));
-      showToast(`បានកែប្រែព័ត៌មានស្លាកលេខ ${westernToKhmerDigits(tagData.tagNumber)} រួចរាល់!`);
+      updated = tags.map((t) => (t.id === tagWithYear.id ? tagWithYear : t));
+      showToast(`បានកែប្រែព័ត៌មានស្លាកលេខ ${westernToKhmerDigits(tagWithYear.tagNumber)} រួចរាល់!`);
     } else {
-      updated = [tagData, ...tags];
-      showToast(`បានបន្ថែមស្លាកលេខថ្មី ${westernToKhmerDigits(tagData.tagNumber)} (${tagData.name}) រួចរាល់!`);
+      updated = [tagWithYear, ...tags];
+      showToast(`បានបន្ថែមស្លាកលេខថ្មី ${westernToKhmerDigits(tagWithYear.tagNumber)} (${tagWithYear.name}) សម្រាប់ឆ្នាំ ${westernToKhmerDigits(selectedYear)} រួចរាល់!`);
       try {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
       } catch (e) {}
@@ -471,12 +477,12 @@ export default function App() {
     
     // Push to Zero-Config Cloud Sync & Firebase
     pushTagsToCloud(updated);
-    await saveTagToFirebase(tagData);
+    await saveTagToFirebase(tagWithYear);
 
     setIsFormOpen(false);
     setEditingTag(null);
-    if (selectedTag && selectedTag.id === tagData.id) {
-      setSelectedTag(tagData);
+    if (selectedTag && selectedTag.id === tagWithYear.id) {
+      setSelectedTag(tagWithYear);
     }
   };
 
@@ -512,23 +518,26 @@ export default function App() {
   };
 
   const handleImportData = (importedTags, isAppend = false) => {
+    const stampedImported = importedTags.map((t) => ({ ...t, year: selectedYear }));
     let updatedTags;
 
-    if (isAppend && tags.length > 0) {
-      // Find highest existing tag number
-      const maxExistingNum = Math.max(...tags.map((t) => Number(t.tagNumber) || 0));
+    if (isAppend && yearTags.length > 0) {
+      // Find highest existing tag number for current year
+      const maxExistingNum = Math.max(...yearTags.map((t) => Number(t.tagNumber) || 0));
 
       // Re-sequence newly imported tags starting after highest existing number
-      const reSequencedImported = importedTags.map((t, idx) => ({
+      const reSequencedImported = stampedImported.map((t, idx) => ({
         ...t,
         tagNumber: maxExistingNum + idx + 1
       }));
 
       updatedTags = [...tags, ...reSequencedImported];
-      showToast(`បានបន្ថែមទិន្នន័យថ្មីចំនួន ${westernToKhmerDigits(importedTags.length)} ស្លាកលេខ ចូលក្នុងបញ្ជីដែលមានស្រាប់! (សរុបសរុប ៖ ${westernToKhmerDigits(updatedTags.length)} ស្លាក)`);
+      showToast(`បានបន្ថែមទិន្នន័យថ្មីចំនួន ${westernToKhmerDigits(importedTags.length)} ស្លាកលេខ ចូលក្នុងឆ្នាំ ${westernToKhmerDigits(selectedYear)}!`);
     } else {
-      updatedTags = importedTags;
-      showToast(`បានលុបទិន្នន័យចាស់ និងជំនួសដោយទិន្នន័យថ្មីចំនួន ${westernToKhmerDigits(importedTags.length)} ស្លាកលេខ!`);
+      // Replace tags for current selectedYear only, preserve tags for other years
+      const otherYearsTags = tags.filter((t) => (t.year || '2026') !== selectedYear);
+      updatedTags = [...otherYearsTags, ...stampedImported];
+      showToast(`បានបញ្ចូលទិន្នន័យថ្មីចំនួន ${westernToKhmerDigits(importedTags.length)} ស្លាកលេខ សម្រាប់ឆ្នាំ ${westernToKhmerDigits(selectedYear)}!`);
     }
 
     setTags(updatedTags);
@@ -560,7 +569,7 @@ export default function App() {
 
       {/* Main Header */}
       <Header
-        totalCount={tags.length}
+        totalCount={yearTags.length}
         filteredCount={filteredTags.length}
         arrivedCount={arrivedCount}
         currentUser={currentUser}
@@ -599,7 +608,7 @@ export default function App() {
           setSelectedLocation={setSelectedLocation}
           attendanceFilter={attendanceFilter}
           setAttendanceFilter={setAttendanceFilter}
-          totalCount={tags.length}
+          totalCount={yearTags.length}
           arrivedCount={arrivedCount}
           notArrivedCount={notArrivedCount}
           viewMode={viewMode}
@@ -610,7 +619,7 @@ export default function App() {
         {viewMode === 'map' ? (
           <div className="pb-12">
             <TempleMapModal
-              allTags={tags}
+              allTags={yearTags}
               currentUser={currentUser}
               highlightLocationName={templeMapTargetLoc}
               onClose={() => {
@@ -641,7 +650,7 @@ export default function App() {
         ) : viewMode === 'report' ? (
           <div className="pb-12">
             <AttendanceReportView
-              allTags={tags}
+              allTags={yearTags}
               currentUser={currentUser}
               onToggleAttendance={handleToggleAttendance}
               onCloseView={() => setViewMode('grid')}
@@ -684,7 +693,7 @@ export default function App() {
               រកមិនឃើញព័ត៌មានស្លាកលេខទេ
             </h3>
             <p className="text-xs text-slate-400 max-w-md mt-1 mb-4">
-              គ្មានទិន្នន័យដែលត្រូវគ្នានឹងពាក្យស្វែងរក "{searchQuery}" ឬតម្រងទីតាំងដែលបានជ្រើសរើសឡើយ។
+              គ្មានទិន្នន័យស្លាកលេខសម្រាប់ឆ្នាំ {westernToKhmerDigits(selectedYear)} នេះនៅឡើយទេ។ {currentUser?.role === 'owner' || currentUser?.role === 'admin' ? 'សូមបញ្ចូលទិន្នន័យ (Excel/CSV) ឬបន្ថែមស្លាកលេខថ្មី!' : ''}
             </p>
             <div className="flex items-center gap-3">
               {searchQuery && (
@@ -757,7 +766,7 @@ export default function App() {
 
       {isQRScannerOpen && (
         <QRScannerModal
-          allTags={tags}
+          allTags={yearTags}
           onClose={() => setIsQRScannerOpen(false)}
           onScanSuccess={(scannedTag) => {
             setIsQRScannerOpen(false);
@@ -769,7 +778,7 @@ export default function App() {
 
       {isImportExportOpen && (
         <ImportExportModal
-          allTags={tags}
+          allTags={yearTags}
           onClose={() => setIsImportExportOpen(false)}
           onImportData={handleImportData}
         />
@@ -777,7 +786,7 @@ export default function App() {
 
       {isLocationStatsOpen && (
         <LocationStatsModal
-          allTags={tags}
+          allTags={yearTags}
           onClose={() => setIsLocationStatsOpen(false)}
           onSelectLocationFilter={(locName) => {
             setSelectedLocation(locName);
