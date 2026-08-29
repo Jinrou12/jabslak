@@ -9,6 +9,12 @@
   }
 }
 
+.smooth-gpu {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
 .font-moul {
   font-family: 'Moul', cursive;
 }
