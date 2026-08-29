@@ -65,25 +65,32 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== Bodhi Tree — centered on screen, logo floats inside inner branch ring ====== */}
+      {/* ====== 1. Base Solid Background Color ====== */}
+      <div className="absolute inset-0 bg-[#f4ece0] pointer-events-none" />
+
+      {/* ====== 2. TREE BACKGROUND IMAGE (កែសម្រួលដើមឈើ BG នៅទីនេះ) ====== */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundColor: '#f4ece0',
           backgroundImage: 'url(/bodhi_bg_v6.jpg)',
           backgroundSize: 'contain',
           backgroundPosition: '48% 54.6%',
           backgroundRepeat: 'no-repeat',
+          // 🍃 [កែសម្រួលដើមឈើ BG] ៖ អាចកែ translateY(0px) scale(1.0) តាមចិត្ត
+          transform: 'translateY(-20px) scale(1.20)',
         }}
-      >
-        {/* Golden ambient center spotlight highlight */}
-        <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.18)_0%,_transparent_60%)]" />
+      />
 
-        {/* Soft dark-gold top/bottom gradients for title readability */}
-        <div className="absolute inset-0"
-          style={{background: 'linear-gradient(to bottom, rgba(25, 16, 6, 0.55) 0%, rgba(25, 16, 6, 0.05) 20%, transparent 40%, transparent 65%, rgba(25, 16, 6, 0.35) 85%, rgba(25, 16, 6, 0.7) 100%)'}}
-        />
-      </div>
+      {/* ====== 3. Golden Ambient Center Spotlight Highlight (លើដើមឈើ) ====== */}
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,_rgba(245,158,11,0.18)_0%,_transparent_60%)]" />
+
+      {/* ====== 4. Soft Dark-Gold Top/Bottom Gradients (រក្សាពណ៌លើក្រោមស្អាត ពេញអេក្រង់) ====== */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: 'linear-gradient(to bottom, rgba(25, 16, 6, 0.55) 0%, rgba(25, 16, 6, 0.05) 20%, transparent 40%, transparent 65%, rgba(25, 16, 6, 0.35) 85%, rgba(25, 16, 6, 0.7) 100%)'
+        }}
+      />
 
       {/* ====== Falling Dark Bodhi Leaves ====== */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none z-20">
@@ -104,9 +111,15 @@ export default function SplashScreen({ onFinish }) {
         ))}
       </div>
 
-      {/* ====== Center Emblem Logo — Dead-centered on screen & tree ====== */}
+      {/* ====== 3. CENTER EMBLEM LOGO (កែសម្រួល LOGO នៅទីនេះ) ====== */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
-        <div className="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center">
+        <div
+          className="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center"
+          style={{
+            // 🍃 [កែសម្រួល LOGO] ៖ អាចកែ translateY(0px) translateX(0px) តាមចិត្ត
+            transform: 'translateY(0px)',
+          }}
+        >
           {/* Soft warm halo */}
           <div className="absolute w-[130%] h-[130%] rounded-full bg-amber-400/25 blur-[30px]"></div>
           {/* Pulsing ring */}
