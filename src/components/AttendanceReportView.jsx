@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { CheckCircle2, XCircle, Search, MapPin, Phone, Download, Printer, UserCheck, Users, RefreshCw } from 'lucide-react';
+import React, { useState, useMemo, useRef } from 'react';
+import { CheckCircle2, XCircle, Search, MapPin, Phone, Download, Printer, UserCheck, Users, RefreshCw, ArrowLeft } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
 
@@ -12,6 +12,31 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
   const [selectedLocFilter, setSelectedLocFilter] = useState('ALL');
 
   const isAdminOrOwner = currentUser?.role === 'owner' || currentUser?.role === 'admin';
+
+  // Touch Swipe Gesture for AttendanceReportView
+  const touchStartRef = useRef({ x: 0, y: 0 });
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches.length === 1) {
+      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  };
+  const handleTouchEnd = (e) => {
+    if (!e.changedTouches || e.changedTouches.length !== 1) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartRef.current.x;
+    const deltaY = e.changedTouches[0].clientY - touchStartRef.current.y;
+    // Swipe left to right -> Go back or switch tab
+    if (deltaX > 75 && Math.abs(deltaY) < 60) {
+      if (activeTab === 'notArrived') {
+        setActiveTab('arrived');
+      } else if (onCloseView) {
+        onCloseView();
+      }
+    } else if (deltaX < -75 && Math.abs(deltaY) < 60) {
+      if (activeTab === 'arrived') {
+        setActiveTab('notArrived');
+      }
+    }
+  };
 
   // Calculate summary counts
   const totalCount = allTags.length;
@@ -105,7 +130,34 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
   };
 
   return (
-    <div className="w-full space-y-4 font-kantumruy animate-in fade-in duration-200">
+    <div
+      className="w-full space-y-4 font-kantumruy animate-in fade-in duration-200"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      
+      {/* ◀ Top Navigation Header Bar with Back Button */}
+      <div className="flex items-center justify-between bg-slate-900/95 border border-slate-800 p-3 rounded-2xl shadow-lg backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          {onCloseView && (
+            <button
+              type="button"
+              onClick={onCloseView}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 px-3.5 py-2 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md shadow-amber-500/20"
+              title="ត្រឡប់ទៅផ្ទាំងដើម"
+            >
+              <ArrowLeft className="w-4 h-4 stroke-[3]" />
+              <span>ថយក្រោយ (ផ្ទាំងដើម)</span>
+            </button>
+          )}
+          <span className="text-xs text-slate-300 font-bold font-moul truncate pl-1">
+            របាយការណ៍វត្តមាន
+          </span>
+        </div>
+        <div className="text-[11px] text-amber-400/90 font-semibold bg-amber-500/10 border border-amber-500/30 px-2.5 py-1 rounded-xl hidden sm:flex items-center gap-1">
+          <span>👉 អូសពីឆ្វេងទៅស្ដាំ ៖ ថយក្រោយ/ប្ដូរផ្ទាំង</span>
+        </div>
+      </div>
       
       {/* 🔄 Primary Dual Switch Cards (ផ្ទាំងស្វីច ទី១ vs ទី២ - 2 Columns on Mobile & PC) */}
       <div className="grid grid-cols-2 gap-2 sm:gap-3.5">

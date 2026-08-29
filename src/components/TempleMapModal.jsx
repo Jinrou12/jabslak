@@ -27,7 +27,8 @@ import {
   Layers,
   Map as MapIcon,
   Move,
-  Tag
+  Tag,
+  ArrowLeft
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
@@ -154,7 +155,7 @@ export default function TempleMapModal({
   onSelectTag,
   isModal = true
 }) {
-  const modalMode = isModal || Boolean(onClose);
+  const modalMode = isModal && Boolean(onClose);
   // Only admin & owner can customize (add/edit/delete pins, drag, create groups) on Tab 3
   // Assistant and Guest can only VIEW the map
   const userRole = currentUser?.role || 'guest';
@@ -1374,15 +1375,28 @@ export default function TempleMapModal({
             </div>
           </div>
 
-          {/* Quick Header Actions (Close Button) */}
+          {/* Quick Header Actions (Close / Back Button) */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <button
-              onClick={onClose}
-              className="p-1.5 sm:p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full transition-all ml-0.5"
-              title="បិទផែនទី"
-            >
-              <X className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md shadow-amber-500/20"
+                title="ថយក្រោយទៅផ្ទាំងដើម"
+              >
+                <ArrowLeft className="w-4 h-4 stroke-[3]" />
+                <span className="whitespace-nowrap font-bold">ថយក្រោយ</span>
+              </button>
+            )}
+            {onClose && (
+              <button
+                onClick={onClose}
+                className="p-1.5 sm:p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full transition-all ml-0.5"
+                title="បិទផែនទី"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            )}
           </div>
         </div>
 

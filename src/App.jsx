@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { Tag, Plus, AlertCircle, RefreshCw, Sparkles, CheckCircle2 } from 'lucide-react';
 import Header from './components/Header';
@@ -64,6 +64,152 @@ export default function App() {
     setTimeout(() => {
       setToastMessage(null);
     }, 3500);
+  };
+
+  // Check if any modal is currently active
+  const hasActiveModal = Boolean(
+    selectedTag ||
+    isFormOpen ||
+    isQRScannerOpen ||
+    isImportExportOpen ||
+    isLocationStatsOpen ||
+    isCloudConfigOpen ||
+    isMobileConnectOpen ||
+    isTempleMapOpen ||
+    isRoleManagementOpen ||
+    isLoginModalOpen
+  );
+
+  const closeAllModals = () => {
+    setSelectedTag(null);
+    setIsFormOpen(false);
+    setIsQRScannerOpen(false);
+    setIsImportExportOpen(false);
+    setIsLocationStatsOpen(false);
+    setIsCloudConfigOpen(false);
+    setIsMobileConnectOpen(false);
+    setIsTempleMapOpen(false);
+    setIsRoleManagementOpen(false);
+    setIsLoginModalOpen(false);
+    setEditingTag(null);
+  };
+
+  // Back Navigation Handler (Returns to Home Screen / Grid View)
+  const handleNavigateBack = () => {
+    if (hasActiveModal) {
+      closeAllModals();
+      showToast('◀ ថយក្រោយ ៖ បិទផ្ទាំង (Closed Modal)');
+      return true;
+    }
+
+    if (viewMode !== 'grid') {
+      setViewMode('grid');
+      showToast('◀ ថយក្រោយ ៖ ត្រឡប់ទៅផ្ទាំងដើម (Home Screen)');
+      return true;
+    }
+
+    if (attendanceFilter !== 'ALL' || selectedLocation !== 'ALL' || searchQuery) {
+      setAttendanceFilter('ALL');
+      setSelectedLocation('ALL');
+      setSearchQuery('');
+      showToast('◀ ថយក្រោយ ៖ បង្ហាញបញ្ជីដើមវិញ');
+      return true;
+    }
+
+    return false;
+  };
+
+  // Manage Browser History State for Single-Click Back Navigation
+  const isHistoryPushedRef = useRef(false);
+
+  useEffect(() => {
+    const isNonGridOrModal = viewMode !== 'grid' || hasActiveModal;
+
+    if (isNonGridOrModal && !isHistoryPushedRef.current) {
+      window.history.pushState({ appNav: true }, '');
+      isHistoryPushedRef.current = true;
+    } else if (!isNonGridOrModal && isHistoryPushedRef.current) {
+      isHistoryPushedRef.current = false;
+    }
+  }, [viewMode, hasActiveModal]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      if (hasActiveModal) {
+        closeAllModals();
+        isHistoryPushedRef.current = false;
+      } else if (viewMode !== 'grid') {
+        setViewMode('grid');
+        isHistoryPushedRef.current = false;
+      } else if (searchQuery || selectedLocation !== 'ALL' || attendanceFilter !== 'ALL') {
+        setSearchQuery('');
+        setSelectedLocation('ALL');
+        setAttendanceFilter('ALL');
+        isHistoryPushedRef.current = false;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [hasActiveModal, viewMode, searchQuery, selectedLocation, attendanceFilter]);
+
+  // Touch Swipe Gesture Handler (Swipe Left-to-Right -> Switch to Home / Go Back)
+  const touchStartRef = useRef({ x: 0, y: 0, time: 0 });
+
+  const handleTouchStart = (e) => {
+    if (e.touches && e.touches.length === 1) {
+      touchStartRef.current = {
+        x: e.touches[0].clientX,
+        y: e.touches[0].clientY,
+        time: Date.now()
+      };
+    }
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!e.changedTouches || e.changedTouches.length !== 1) return;
+    const touch = e.changedTouches[0];
+    const startX = touchStartRef.current.x;
+    const deltaX = touch.clientX - startX;
+    const deltaY = touch.clientY - touchStartRef.current.y;
+    const deltaTime = Date.now() - touchStartRef.current.time;
+
+    const target = e.target;
+    if (
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'SELECT' ||
+      target.closest('.map-pin-element') ||
+      target.closest('.zoom-toolbar')
+    ) {
+      return;
+    }
+
+    // 1. Swipe Left to Right (អូសពីឆ្វេងទៅស្ដាំ ៖ ថយក្រោយ/ត្រឡប់ទៅផ្ទាំងដើម)
+    const isEdgeSwipeRight = startX < 80 && deltaX > 40 && Math.abs(deltaY) < 70;
+    const isGeneralSwipeRight = deltaX > 75 && Math.abs(deltaY) < 60 && deltaTime < 700;
+
+    if (isEdgeSwipeRight || isGeneralSwipeRight) {
+      const handled = handleNavigateBack();
+      if (handled && isHistoryPushedRef.current) {
+        try {
+          window.history.back();
+        } catch (err) {}
+      }
+      return;
+    }
+
+    // 2. Swipe Right to Left (អូសពីស្ដាំទៅឆ្វេង ៖ ប្តូរទៅតម្រង 'មិនទាន់មកដល់' / 'បានមកដល់')
+    const isSwipeLeft = deltaX < -80 && Math.abs(deltaY) < 60 && deltaTime < 700;
+    if (isSwipeLeft && !hasActiveModal && viewMode === 'grid') {
+      if (attendanceFilter === 'ALL') {
+        setAttendanceFilter('notArrived');
+        showToast('▶ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
+      } else if (attendanceFilter === 'notArrived') {
+        setAttendanceFilter('arrived');
+        showToast('▶ ប្តូរទៅតម្រង ៖ បានមកដល់');
+      }
+    }
   };
 
   // Load initial tags & subscribe to Cloud & Firebase Realtime updates
@@ -331,7 +477,11 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-kantumruy">
+    <div
+      className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-kantumruy"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       
       {/* Toast Notification Floating */}
       {toastMessage && (
