@@ -18,6 +18,7 @@ import TempleMapModal from './components/TempleMapModal';
 import RoleManagementModal from './components/RoleManagementModal';
 import LoginModal from './components/LoginModal';
 import InstallAppModal from './components/InstallAppModal';
+import SplashScreen from './components/SplashScreen';
 import { searchTags, westernToKhmerDigits } from './utils/khmerSearch';
 import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER } from './utils/storage';
 import {
@@ -39,6 +40,7 @@ export default function App() {
   const [availableYears, setAvailableYears] = useState(['2026', '2027']);
   const [selectedYear, setSelectedYear] = useState('2026');
   const [isCloudSyncing, setIsCloudSyncing] = useState(true);
+  const [showSplash, setShowSplash] = useState(true);
 
   // User & Role State
   const [users, setUsers] = useState(getSavedUsers());
@@ -628,6 +630,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-kantumruy">
+      
+      {/* 🍃 App Splash Screen Launch Intro with Falling Bodhi Leaves Animation */}
+      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
       
       {/* Toast Notification Floating */}
       {toastMessage && (

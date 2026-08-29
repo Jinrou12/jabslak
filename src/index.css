@@ -15,6 +15,43 @@
   will-change: transform;
 }
 
+/* Animated Falling Bodhi Leaves & Floating Logo */
+@keyframes falling-leaf {
+  0% {
+    transform: translateY(0) translateX(0) rotate(0deg) scale(0.8);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translateY(50vh) translateX(40px) rotate(180deg) scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(105vh) translateX(-30px) rotate(360deg) scale(0.7);
+    opacity: 0;
+  }
+}
+
+.animate-falling-leaf {
+  animation: falling-leaf linear infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes float-logo {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-8px) scale(1.03);
+  }
+}
+
+.animate-float {
+  animation: float-logo 3.5s ease-in-out infinite;
+}
+
 .font-moul {
   font-family: 'Moul', cursive;
 }
