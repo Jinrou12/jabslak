@@ -33,15 +33,10 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('ALL');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table' | 'map' | 'report'
+  const [attendanceFilter, setAttendanceFilter] = useState('ALL'); // 'ALL' | 'notArrived' | 'arrived'
+  const [reportActiveTab, setReportActiveTab] = useState('arrived'); // 'arrived' | 'notArrived' | 'all'
   const [selectedYear, setSelectedYear] = useState('2026');
-
-  const handleToggleYear = () => {
-    const years = ['2026', '2025', '2027', '2024'];
-    const currIdx = years.indexOf(selectedYear);
-    const nextY = years[(currIdx + 1) % years.length];
-    setSelectedYear(nextY);
-    showToast(`បានប្តូរទៅ ៖ ឆ្នាំ ${westernToKhmerDigits(nextY)}`);
-  };
+  const [isCloudSyncing, setIsCloudSyncing] = useState(true);
 
   // User & Role State
   const [users, setUsers] = useState(getSavedUsers());
@@ -70,6 +65,14 @@ export default function App() {
     setTimeout(() => {
       setToastMessage(null);
     }, 3500);
+  };
+
+  const handleToggleYear = () => {
+    const years = ['2026', '2025', '2027', '2024'];
+    const currIdx = years.indexOf(selectedYear);
+    const nextY = years[(currIdx + 1) % years.length];
+    setSelectedYear(nextY);
+    showToast(`បានប្តូរទៅ ៖ ឆ្នាំ ${westernToKhmerDigits(nextY)}`);
   };
 
   // Check if any modal is currently active
