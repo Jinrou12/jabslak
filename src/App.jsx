@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, startTransition } from 'react';
 import confetti from 'canvas-confetti';
 import { Tag, Plus, AlertCircle, RefreshCw, Sparkles, CheckCircle2, Map as MapIcon, ArrowLeft } from 'lucide-react';
 import Header from './components/Header';
@@ -265,45 +265,39 @@ export default function App() {
       const { hasActiveModal: modal, viewMode: vm, attendanceFilter: af } = swipeStateRef.current;
 
       // ── Swipe Right→Left (switch filter forward) ──
-      if (deltaX < -45 && Math.abs(deltaY) < 80 && deltaTime < 750) {
+      if (deltaX < -35 && Math.abs(deltaY) < 120 && deltaTime < 900) {
         if (!modal && vm === 'grid') {
-          requestAnimationFrame(() => {
-            if (af === 'ALL') {
-              setAttendanceFilter('notArrived');
-              showToast('▶ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
-            } else if (af === 'notArrived') {
-              setAttendanceFilter('arrived');
-              showToast('▶ ប្តូរទៅតម្រង ៖ បានមកដល់');
-            } else {
-              setAttendanceFilter('ALL');
-              showToast('▶ ប្តូរទៅតម្រង ៖ ទាំងអស់');
-            }
-          });
+          if (af === 'ALL') {
+            showToast('▶ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
+            startTransition(() => setAttendanceFilter('notArrived'));
+          } else if (af === 'notArrived') {
+            showToast('▶ ប្តូរទៅតម្រង ៖ បានមកដល់');
+            startTransition(() => setAttendanceFilter('arrived'));
+          } else {
+            showToast('▶ ប្តូរទៅតម្រង ៖ ទាំងអស់');
+            startTransition(() => setAttendanceFilter('ALL'));
+          }
         }
         return;
       }
 
       // ── Swipe Left→Right ──
-      if (deltaX > 45 && Math.abs(deltaY) < 80 && deltaTime < 750) {
+      if (deltaX > 35 && Math.abs(deltaY) < 120 && deltaTime < 900) {
         // A. Close modal or go back from map/report view
         if (modal || vm !== 'grid') {
-          requestAnimationFrame(() => {
-            handleNavigateBack();
-          });
+          handleNavigateBack();
           return;
         }
 
         // B. Reset active filter (go back one filter step)
         if (af !== 'ALL') {
-          requestAnimationFrame(() => {
-            if (af === 'arrived') {
-              setAttendanceFilter('notArrived');
-              showToast('◀ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
-            } else {
-              setAttendanceFilter('ALL');
-              showToast('◀ ប្តូរទៅតម្រង ៖ ទាំងអស់');
-            }
-          });
+          if (af === 'arrived') {
+            showToast('◀ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
+            startTransition(() => setAttendanceFilter('notArrived'));
+          } else {
+            showToast('◀ ប្តូរទៅតម្រង ៖ ទាំងអស់');
+            startTransition(() => setAttendanceFilter('ALL'));
+          }
           return;
         }
 
