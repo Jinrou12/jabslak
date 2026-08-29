@@ -63,24 +63,20 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== Warm Cream Background — matches tree image background ====== */}
-      <div className="absolute inset-0" style={{background: '#f4ece0'}}></div>
-
-      {/* ====== Perfectly Centered Bodhi Tree — full tree always visible ====== */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
-        <img
-          src="/bodhi_bg_v6.jpg"
-          alt="ដើមពោធិ៍"
-          className="w-full h-full object-contain object-center animate-tree-sway"
-          style={{maxWidth: '100%', maxHeight: '100%'}}
-        />
+      {/* ====== Bodhi Tree — CSS background, 85% size, dead-centered on cream ====== */}
+      <div
+        className="absolute inset-0 pointer-events-none animate-tree-sway"
+        style={{
+          backgroundColor: '#f4ece0',
+          backgroundImage: 'url(/bodhi_bg_v6.jpg)',
+          backgroundSize: '85%',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat',
+        }}
+      >
         {/* Soft dark-gold top/bottom gradients for title readability */}
-        <div className="absolute inset-0 pointer-events-none"
-          style={{background: 'linear-gradient(to bottom, rgba(25, 16, 6, 0.6) 0%, rgba(25, 16, 6, 0.15) 25%, transparent 45%, transparent 65%, rgba(25, 16, 6, 0.5) 85%, rgba(25, 16, 6, 0.8) 100%)'}}
-        />
-        {/* Subtle warm vignette on extreme edges */}
-        <div className="absolute inset-0 pointer-events-none"
-          style={{background: 'radial-gradient(ellipse at center, transparent 50%, rgba(25, 16, 6, 0.3) 100%)'}}
+        <div className="absolute inset-0"
+          style={{background: 'linear-gradient(to bottom, rgba(25, 16, 6, 0.65) 0%, rgba(25, 16, 6, 0.1) 25%, transparent 45%, transparent 65%, rgba(25, 16, 6, 0.4) 85%, rgba(25, 16, 6, 0.75) 100%)'}}
         />
       </div>
 
