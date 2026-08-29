@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jabslak-app-v15';
+const CACHE_NAME = 'jabslak-app-v16';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',

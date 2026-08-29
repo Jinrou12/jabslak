@@ -68,7 +68,7 @@ export default function SplashScreen({ onFinish }) {
         className="absolute inset-0 pointer-events-none animate-tree-sway"
         style={{
           backgroundColor: '#f4ece0',
-          backgroundImage: 'url(/bodhi_bg_v9.jpg)',
+          backgroundImage: 'url(/bodhi_bg_v10.jpg)',
           backgroundSize: 'contain',
           backgroundPosition: '50% 50%',
           backgroundRepeat: 'no-repeat',
