@@ -1,42 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-// ===========================
-// Dark Brown Heart-Shaped Bodhi Leaf — matches the tree artwork style
-// ===========================
-function BodhiLeaf({ style }) {
-  return (
-    <div className="absolute pointer-events-none animate-falling-leaf z-20" style={style}>
-      <svg viewBox="0 0 50 65" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-full">
-        {/* Heart-shaped leaf body */}
-        <path
-          d="M25 6 C25 6 6 16 6 32 C6 46 15 56 25 58 C35 56 44 46 44 32 C44 16 25 6 25 6 Z"
-          fill="#3d1f00"
-          stroke="#7c4a00"
-          strokeWidth="1"
-          opacity="0.92"
-        />
-        {/* Drip tip */}
-        <path d="M25 58 L25 64" stroke="#3d1f00" strokeWidth="1.8" strokeLinecap="round" opacity="0.8"/>
-        {/* Center vein */}
-        <path d="M25 8 L25 58" stroke="#7c4a00" strokeWidth="1" opacity="0.5"/>
-        {/* Side veins */}
-        <path d="M25 20 L14 28 M25 30 L10 40 M25 42 L15 48 M25 20 L36 28 M25 30 L40 40 M25 42 L35 48"
-          stroke="#7c4a00" strokeWidth="0.7" opacity="0.4"/>
-      </svg>
-    </div>
-  );
-}
 
-// Pre-generate 30 falling leaves — varied size, speed, position
-const LEAVES = Array.from({ length: 30 }).map((_, idx) => ({
-  id: idx,
-  left: `${(idx * 3.4 + 2) % 100}%`,
-  animationDuration: `${4 + (idx % 7) * 0.65}s`,
-  animationDelay: `${(idx % 10) * 0.28}s`,
-  size: `${22 + (idx % 5) * 6}px`,
-  opacity: 0.55 + (idx % 3) * 0.2,
-  rotation: `${(idx * 53) % 360}deg`
-}));
 
 export default function SplashScreen({ onFinish }) {
   const [isFadingOut, setIsFadingOut] = useState(false);
