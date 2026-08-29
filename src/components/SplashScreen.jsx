@@ -59,32 +59,32 @@ export default function SplashScreen({ onFinish }) {
   return (
     <div
       onClick={handleSkip}
-      className={`fixed inset-0 z-50 flex flex-col items-center justify-between overflow-hidden select-none cursor-pointer font-kantumruy transition-opacity duration-500 ${
+      className={`fixed inset-0 z-50 flex flex-col items-center justify-center overflow-hidden select-none cursor-pointer font-kantumruy transition-opacity duration-500 ${
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
       {/* ====== Warm Cream Background Color ====== */}
       <div className="absolute inset-0 bg-[#f4eee0]"></div>
 
-      {/* ====== Bodhi Tree Artwork Background ====== */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      {/* ====== Perfectly Centered Bodhi Tree Artwork Background (1920x1080 16:9) ====== */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center justify-center">
         <img
-          src="/bodhi_bg_v3.jpg"
+          src="/bodhi_bg_v5.jpg"
           alt="ដើមពោធិ៍"
-          className="w-full h-full object-cover animate-tree-sway brightness-102 contrast-102"
+          className="w-full h-full object-cover object-center animate-tree-sway brightness-102 contrast-102"
         />
-        {/* Subtle dark-gold top/bottom gradients for clear title & logo readability */}
+        {/* Soft dark-gold top/bottom gradients for title readability */}
         <div className="absolute inset-0 pointer-events-none"
-          style={{background: 'linear-gradient(to bottom, rgba(25, 16, 6, 0.65) 0%, rgba(25, 16, 6, 0.2) 25%, transparent 45%, transparent 65%, rgba(25, 16, 6, 0.55) 85%, rgba(25, 16, 6, 0.85) 100%)'}}
+          style={{background: 'linear-gradient(to bottom, rgba(25, 16, 6, 0.6) 0%, rgba(25, 16, 6, 0.15) 25%, transparent 45%, transparent 65%, rgba(25, 16, 6, 0.5) 85%, rgba(25, 16, 6, 0.8) 100%)'}}
         />
         {/* Subtle warm vignette on extreme edges */}
         <div className="absolute inset-0 pointer-events-none"
-          style={{background: 'radial-gradient(ellipse at center, transparent 50%, rgba(25, 16, 6, 0.35) 100%)'}}
+          style={{background: 'radial-gradient(ellipse at center, transparent 50%, rgba(25, 16, 6, 0.3) 100%)'}}
         />
       </div>
 
       {/* ====== Falling Dark Bodhi Leaves ====== */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 overflow-hidden pointer-events-none z-20">
         {LEAVES.map((leaf) => (
           <BodhiLeaf
             key={leaf.id}
@@ -102,12 +102,9 @@ export default function SplashScreen({ onFinish }) {
         ))}
       </div>
 
-      {/* Top spacer */}
-      <div className="h-8"></div>
-
-      {/* ====== Center Emblem Logo — glowing warm centre ====== */}
-      <div className="z-10 flex flex-col items-center justify-center">
-        <div className="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center">
+      {/* ====== Center Emblem Logo — Dead-centered on screen & tree ====== */}
+      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
+        <div className="relative w-44 h-44 sm:w-56 sm:h-56 flex items-center justify-center -mt-6">
           {/* Soft warm halo */}
           <div className="absolute w-[130%] h-[130%] rounded-full bg-amber-400/25 blur-[30px]"></div>
           {/* Pulsing ring */}
@@ -124,7 +121,7 @@ export default function SplashScreen({ onFinish }) {
       </div>
 
       {/* ====== Bottom Title ====== */}
-      <div className="z-10 flex flex-col items-center gap-1.5 pb-10">
+      <div className="absolute bottom-6 sm:bottom-10 z-10 flex flex-col items-center gap-1.5 px-4 text-center">
         <h1 className="text-xl sm:text-2xl font-black text-amber-200 font-moul tracking-wide text-center"
           style={{textShadow: '0 2px 16px rgba(180,100,0,0.9), 0 1px 4px rgba(0,0,0,0.9)'}}>
           ប្រព័ន្ធគ្រប់គ្រងស្លាកលេខ
