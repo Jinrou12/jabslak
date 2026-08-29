@@ -70,7 +70,7 @@ export default function SplashScreen({ onFinish }) {
           backgroundColor: '#f4ece0',
           backgroundImage: 'url(/bodhi_bg_v6.jpg)',
           backgroundSize: 'contain',
-          backgroundPosition: '50% 50%',
+          backgroundPosition: 'calc(50% - 0.24vw) calc(50% - 0.88vh)',
           backgroundRepeat: 'no-repeat',
           transformOrigin: '50% 50%',
         }}
