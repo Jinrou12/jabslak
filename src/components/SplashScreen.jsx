@@ -65,7 +65,7 @@ export default function SplashScreen({ onFinish }) {
     >
       {/* ====== Bodhi Tree — full image, inner branch ring aligned dead-center on logo emblem ====== */}
       <div
-        className="absolute inset-0 pointer-events-none animate-tree-sway"
+        className="absolute inset-0 pointer-events-none"
         style={{
           backgroundColor: '#f4ece0',
           backgroundImage: 'url(/bodhi_tree_transparent.png)',
