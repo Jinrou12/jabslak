@@ -68,13 +68,13 @@ export default function SplashScreen({ onFinish }) {
       {/* ====== 1. Base Solid Background Color ====== */}
       <div className="absolute inset-0 bg-[#f4ece0] pointer-events-none" />
 
-      {/* ====== 2. MOBILE TREE BACKGROUND IMAGE (📱 ទូរស័ព្ទដៃ - ប្រើរូបភាពរាងឈរថ្មី) ====== */}
+      {/* ====== 2. MOBILE TREE BACKGROUND IMAGE (📱 ទូរស័ព្ទដៃ - ប្រើរូបភាពរាងឈរថ្មី ពេញអេក្រង់) ====== */}
       <div
         className="block sm:hidden absolute inset-0 pointer-events-none transition-transform duration-300"
         style={{
           backgroundImage: 'url(/bodhi_bg_mobile.jpg)',
-          backgroundSize: 'contain',
-          backgroundPosition: 'center center',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center 45%',
           backgroundRepeat: 'no-repeat',
         }}
       />
