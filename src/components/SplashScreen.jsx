@@ -121,14 +121,14 @@ export default function SplashScreen({ onFinish }) {
         ))}
       </div>
 
-      {/* ====== 5. CENTER EMBLEM LOGO ====== */}
+      {/* ====== 5. CENTER EMBLEM LOGO (Mobile vs PC Independent Controls) ====== */}
       <div className="absolute inset-0 z-10 flex flex-col items-center justify-center pointer-events-none">
         <div
           /* 
-            📱 [សម្រាប់ទូរស័ព្ទ Phone តែមួយមុខ] ៖ w-32 h-32, translate-y-0, translate-x-0
-            💻 [សម្រាប់កុំព្យូទ័រ PC]           ៖ sm:w-56 sm:h-56, sm:translate-y-[-60px], sm:translate-x-0
+            📱 [សម្រាប់ទូរស័ព្ទ Phone តែមួយមុខ] ៖ translate-y-0 (ឧទាហរណ៍៖ translate-y-[15px] ឬ translate-y-[-10px])
+            💻 [សម្រាប់កុំព្យូទ័រ PC]           ៖ sm:translate-y-[-60px] (រក្សា PC ដដែល)
           */
-          className="relative w-32 h-32 translate-y-0 translate-x-0 sm:w-56 sm:h-56 sm:translate-y-[-60px] sm:translate-x-0 flex items-center justify-center transition-all duration-300"
+          className="relative w-32 h-32 translate-y-[-60px] translate-x-0 sm:w-56 sm:h-56 sm:translate-y-[-60px] sm:translate-x-0 flex items-center justify-center transition-all duration-300"
         >
           {/* Soft warm halo */}
           <div className="absolute w-[130%] h-[130%] rounded-full bg-amber-400/25 blur-[30px]"></div>
@@ -145,14 +145,26 @@ export default function SplashScreen({ onFinish }) {
         </div>
       </div>
 
-      {/* ====== Bottom Title ====== */}
-      <div className="absolute bottom-5 sm:bottom-8 z-10 flex flex-col items-center gap-1 px-4 text-center">
+      {/* ====== 6. BOTTOM TITLE & SUBTITLE (Mobile vs PC Independent Controls) ====== */}
+      <div 
+        /* 
+          📱 [សម្រាប់ទូរស័ព្ទ Phone តែមួយមុខ] ៖ bottom-5, translate-y-0 (ឧទាហរណ៍៖ bottom-8 ឬ translate-y-[-15px])
+          💻 [សម្រាប់កុំព្យូទ័រ PC]           ៖ sm:bottom-8, sm:translate-y-0 (រក្សា PC ដដែល)
+        */
+        className="absolute bottom-[60px] translate-y-[-60px] sm:bottom-8 sm:translate-y-0 z-10 flex flex-col items-center gap-1 px-4 text-center transition-all duration-300"
+      >
         <h1 className="text-sm sm:text-base font-black text-amber-200 font-moul tracking-wide text-center"
           style={{textShadow: '0 2px 12px rgba(180,100,0,0.9), 0 1px 4px rgba(0,0,0,0.9)'}}>
           ប្រព័ន្ធគ្រប់គ្រងស្លាកលេខ
         </h1>
-        <p className="text-[10px] text-amber-300/70 font-kantumruy flex items-center gap-1"
-          style={{textShadow: '0 1px 6px rgba(0,0,0,0.9)'}}>
+        <p 
+          /* 
+            📱 សម្រាប់ទូរស័ព្ទ (Mobile) ៖ translate-y-0, mt-1 (អាចកែ translate-y-[-10px] ឬ mt-2)
+            💻 សម្រាប់កុំព្យូទ័រ (PC)    ៖ sm:translate-y-0 (រក្សា PC ដដែល)
+          */
+          className="text-[10px] sm:text-[10px] text-amber-300/70 font-kantumruy flex items-center gap-1 translate-y-[20px] sm:translate-y-0 transition-transform duration-300"
+          style={{textShadow: '0 1px 6px rgba(0,0,0,0.9)'}}
+        >
           <span>🍃 ដើមពោធិ៍ • ស្លឹកធ្លាក់</span>
           <span>•</span>
           <span>ចុចដើម្បីរំលង</span>
