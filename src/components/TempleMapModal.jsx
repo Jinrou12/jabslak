@@ -258,6 +258,7 @@ export default function TempleMapModal({
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedLocationIdsForGroup, setSelectedLocationIdsForGroup] = useState([]);
+  const [tagNumbersBatchInput, setTagNumbersBatchInput] = useState('');
 
   // Group Edit Modal State
   const [isGroupEditModalOpen, setIsGroupEditModalOpen] = useState(false);
@@ -1407,12 +1408,14 @@ export default function TempleMapModal({
     setIsCategoryModalOpen(false);
     setNewCategoryName('');
     setSelectedLocationIdsForGroup([]);
+    setTagNumbersBatchInput('');
   };
 
   // Group Batch Actions (Batch change direction / color / rename / delete)
   const handleOpenGroupEditModal = (catName) => {
     setEditingGroupName(catName);
     setRenameGroupInput(catName);
+    setTagNumbersBatchInput('');
     setIsGroupEditModalOpen(true);
   };
 
@@ -2881,11 +2884,72 @@ export default function TempleMapModal({
                   />
                 </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    ជ្រើសរើសស្លាក/ទីតាំងដាក់ចូលក្នុង Group នេះ ៖
+                {/* Batch Tag Number Input */}
+                <div className="space-y-1 bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
+                  <label className="block text-xs font-bold text-amber-300 flex items-center justify-between">
+                    <span>🔢 វាយបញ្ចូលលេខស្លាក (ឧ. 4 12 19 26 35) ៖</span>
+                    <span className="text-[10px] text-slate-400 font-normal">ដកឃ្លា ឬប្រើ (,)</span>
                   </label>
-                  <div className="max-h-48 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-xl p-2">
+                  <input
+                    type="text"
+                    value={tagNumbersBatchInput}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTagNumbersBatchInput(val);
+
+                      const cleanedStr = khmerToWesternDigits(val);
+                      const numbers = cleanedStr.split(/[\s,،;]+/).map((s) => s.trim()).filter(Boolean);
+
+                      const matchedIds = currentLocations
+                        .filter((loc) => {
+                          const tagNum = String(loc.tagNumber || loc.id);
+                          const tagDisp = String(loc.tagNumberDisplay || loc.id);
+                          return numbers.some((n) => n === tagNum || n === tagDisp || n === khmerToWesternDigits(tagDisp));
+                        })
+                        .map((loc) => loc.id);
+
+                      setSelectedLocationIdsForGroup(matchedIds);
+                    }}
+                    placeholder="វាយបញ្ចូលលេខស្លាក (ឧ. 4 12 19 26 35)..."
+                    className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-sans-en"
+                  />
+
+                  {/* Directly show owner names matching typed numbers */}
+                  {tagNumbersBatchInput.trim() && (
+                    <div className="pt-1.5 border-t border-slate-800 space-y-1">
+                      <div className="text-[10px] font-bold text-amber-400">
+                        ✨ ឈ្មោះម្ចាស់ស្លាកដែលបានរកឃើញ ({selectedLocationIdsForGroup.length}) ៖
+                      </div>
+                      <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                        {currentLocations
+                          .filter((loc) => selectedLocationIdsForGroup.includes(loc.id))
+                          .map((loc) => {
+                            const tagOwnerName = loc.tagOwnerName;
+                            const matchedTag = allTags.find(
+                              (t) =>
+                                String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
+                                String(t.tagNumberDisplay) === String(loc.tagNumberDisplay || loc.id)
+                            );
+                            const ownerDisp = tagOwnerName || (matchedTag ? matchedTag.name : '');
+                            const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : westernToKhmerDigits(loc.id));
+                            return (
+                              <span key={loc.id} className="text-[11px] bg-slate-900 border border-amber-400/40 text-amber-200 px-2 py-0.5 rounded-lg flex items-center gap-1 font-bold">
+                                <span className="font-sans-en text-amber-400">ស្លាក {tagNumDisp} ៖</span>
+                                <span className="text-white">{ownerDisp || loc.name}</span>
+                              </span>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+                    <span>📌 ឬជ្រើសរើសស្លាក/ទីតាំងផ្ទាល់ពីបញ្ជី ៖</span>
+                    <span className="text-[10px] text-amber-400 font-normal">គ្រីក (✓) ដើម្បីជ្រើសរើស</span>
+                  </label>
+                  <div className="max-h-40 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-xl p-2">
                     {currentLocations.map((loc) => {
                       const isChecked = selectedLocationIdsForGroup.includes(loc.id);
                       const tagOwnerName = loc.tagOwnerName;
@@ -3028,13 +3092,85 @@ export default function TempleMapModal({
                 </div>
               </div>
 
+              {/* Batch Tag Number Input for Editing Group */}
+              <div className="space-y-1 bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
+                <label className="block text-xs font-bold text-amber-300 flex items-center justify-between">
+                  <span>🔢 វាយបញ្ចូលលេខស្លាក ដើម្បីដាក់ចូល Group នេះ (ឧ. 4 12 19 26 35) ៖</span>
+                  <span className="text-[10px] text-slate-400 font-normal">ដកឃ្លា ឬប្រើ (,)</span>
+                </label>
+                <input
+                  type="text"
+                  value={tagNumbersBatchInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTagNumbersBatchInput(val);
+
+                    const cleanedStr = khmerToWesternDigits(val);
+                    const numbers = cleanedStr.split(/[\s,،;]+/).map((s) => s.trim()).filter(Boolean);
+
+                    const matchedIds = currentLocations
+                      .filter((loc) => {
+                        const tagNum = String(loc.tagNumber || loc.id);
+                        const tagDisp = String(loc.tagNumberDisplay || loc.id);
+                        return numbers.some((n) => n === tagNum || n === tagDisp || n === khmerToWesternDigits(tagDisp));
+                      })
+                      .map((loc) => loc.id);
+
+                    if (matchedIds.length > 0) {
+                      const { setter, saver } = getTabDataFunctions();
+                      const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+                      const updated = baseLocations.map((l) =>
+                        matchedIds.includes(l.id) ? { ...l, category: editingGroupName } : l
+                      );
+                      setter(updated);
+                      saver(updated);
+                      if (activeTab === 'interactive') {
+                        setTab3Locations(updated);
+                        saveTab3LocationsToFirebase(updated);
+                      }
+                    }
+                  }}
+                  placeholder="វាយបញ្ចូលលេខស្លាក (ឧ. 4 12 19 26 35)..."
+                  className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-sans-en"
+                />
+
+                {/* Directly show owner names matching typed numbers */}
+                {tagNumbersBatchInput.trim() && (
+                  <div className="pt-1.5 border-t border-slate-800 space-y-1">
+                    <div className="text-[10px] font-bold text-amber-400">
+                      ✨ ឈ្មោះម្ចាស់ស្លាកដែលត្រូវដាក់ចូល Group នេះ ៖
+                    </div>
+                    <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
+                      {currentLocations
+                        .filter((loc) => (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName)
+                        .map((loc) => {
+                          const tagOwnerName = loc.tagOwnerName;
+                          const matchedTag = allTags.find(
+                            (t) =>
+                              String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
+                              String(t.tagNumberDisplay) === String(loc.tagNumberDisplay || loc.id)
+                          );
+                          const ownerDisp = tagOwnerName || (matchedTag ? matchedTag.name : '');
+                          const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : westernToKhmerDigits(loc.id));
+                          return (
+                            <span key={loc.id} className="text-[11px] bg-slate-900 border border-amber-400/40 text-amber-200 px-2 py-0.5 rounded-lg flex items-center gap-1 font-bold">
+                              <span className="font-sans-en text-amber-400">ស្លាក {tagNumDisp} ៖</span>
+                              <span className="text-white">{ownerDisp || loc.name}</span>
+                            </span>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Checkbox List of Pins in / to add to this Group */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-300 flex items-center justify-between">
-                  <span>📌 ជ្រើសរើស Pin ទីតាំង ដាក់ចូលក្នុង Group «{editingGroupName}» នេះ ៖</span>
+                <label className="block text-xs font-bold text-slate-300 mb-1 flex items-center justify-between">
+                  <span>📌 ឬជ្រើសរើស Pin ទីតាំងផ្ទាល់ពីបញ្ជី ៖</span>
                   <span className="text-[10px] text-amber-400 font-normal">គ្រីក (✓) ដើម្បីដាក់ចូល Group</span>
                 </label>
-                <div className="max-h-48 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-2xl p-2">
+                <div className="max-h-40 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-2xl p-2">
                   {currentLocations.map((loc) => {
                     const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
                     const isInGroup = locCat === editingGroupName;
