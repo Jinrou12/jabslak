@@ -1437,11 +1437,54 @@ export default function TempleMapModal({
 
   const handleDeleteGroup = () => {
     if (!editingGroupName) return;
-    if (!window.confirm(`តើអ្នកប្រាកដជាចង់លុប Group «${editingGroupName}» នេះមែនទេ?`)) return;
+
+    const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+    const itemsInGroup = baseLocations.filter(
+      (loc) => (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName
+    );
+
+    const choice = window.confirm(
+      `តើអ្នកពិតជាចង់លុប Group «${editingGroupName}» នេះមែនទេ?\n\n` +
+      `• ចុច «OK» ៖ ដើម្បីលុប Group នេះ និងលុបទាំង Pin ទីតាំងចំនួន ${itemsInGroup.length} ក្នុង Group នេះចោលទាំងអស់\n` +
+      `• ចុច «Cancel» ៖ ដើម្បីបោះបង់`
+    );
+
+    if (!choice) return;
+
+    pushHistorySnapshot(baseLocations);
 
     const { setter, saver } = getTabDataFunctions();
-    const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+    const updated = baseLocations.filter((loc) => {
+      const cat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+      return cat !== editingGroupName;
+    });
 
+    setter(updated);
+    saver(updated);
+
+    if (activeTab === 'interactive') {
+      setTab3Locations((prev3) => {
+        const final3 = prev3.filter((loc) => {
+          const cat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+          return cat !== editingGroupName;
+        });
+        saveTab3LocationsToFirebase(final3);
+        return final3;
+      });
+    }
+
+    setUndoToast(`🗑️ បានលុប Group «${editingGroupName}» និងទីតាំងក្នុង Group នេះរួចរាល់ (Ctrl+Z ដើម្បីថយក្រោយ)`);
+    setTimeout(() => setUndoToast(''), 3000);
+    setIsGroupEditModalOpen(false);
+  };
+
+  const handleUnassignGroupLocations = () => {
+    if (!editingGroupName) return;
+
+    const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+    pushHistorySnapshot(baseLocations);
+
+    const { setter, saver } = getTabDataFunctions();
     const updated = baseLocations.map((loc) => {
       const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
       if (catMatches) {
@@ -1452,6 +1495,20 @@ export default function TempleMapModal({
 
     setter(updated);
     saver(updated);
+
+    if (activeTab === 'interactive') {
+      setTab3Locations((prev3) => {
+        const final3 = prev3.map((loc) => {
+          const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
+          return catMatches ? { ...loc, category: '🏢 ក្រុមអគារ និង កុដិ' } : loc;
+        });
+        saveTab3LocationsToFirebase(final3);
+        return final3;
+      });
+    }
+
+    setUndoToast(`🔓 បានផ្ដាច់ទីតាំងទាំងអស់ចេញពី Group «${editingGroupName}» រួចរាល់ (Ctrl+Z ដើម្បីថយក្រោយ)`);
+    setTimeout(() => setUndoToast(''), 3000);
     setIsGroupEditModalOpen(false);
   };
 
@@ -3066,18 +3123,30 @@ export default function TempleMapModal({
                 </div>
               </div>
 
-              {/* Delete Group button */}
-              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-                <button
-                  onClick={handleDeleteGroup}
-                  className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold rounded-xl transition-all"
-                >
-                  🗑️ លុប Group នេះ
-                </button>
+              {/* Delete Group & Unassign Buttons */}
+              <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    onClick={handleDeleteGroup}
+                    className="px-2.5 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold rounded-xl transition-all flex items-center gap-1 active:scale-95"
+                    title="លុប Group នេះ និងលុបទីតាំងទាំងអស់ក្នុង Group នេះ"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>លុប Group & ទីតាំង</span>
+                  </button>
+
+                  <button
+                    onClick={handleUnassignGroupLocations}
+                    className="px-2.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold rounded-xl transition-all flex items-center gap-1 active:scale-95"
+                    title="ផ្ដាច់ទីតាំងទាំងអស់ចេញពី Group នេះ ទៅកាន់ ក្រុមទូទៅ"
+                  >
+                    <span>🔓 ផ្ដាច់ចេញពី Group</span>
+                  </button>
+                </div>
 
                 <button
                   onClick={() => setIsGroupEditModalOpen(false)}
-                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition-all"
+                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition-all ml-auto"
                 >
                   រួចរាល់
                 </button>
