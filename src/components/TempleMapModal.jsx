@@ -2805,39 +2805,63 @@ export default function TempleMapModal({
                     type="text"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="ឧ. កុដិព្រះសង្ឃ, សាលាឆាន់..."
+                    placeholder="ឧ. ធម្មសភា, សាលាឆាន់, កុដិព្រះសង្ឃ..."
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
                   />
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-slate-300 mb-1">
-                    ជ្រើសរើសទីតាំងដាក់ចូលក្នុង Group នេះ ៖
+                    ជ្រើសរើសស្លាក/ទីតាំងដាក់ចូលក្នុង Group នេះ ៖
                   </label>
-                  <div className="max-h-40 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-xl p-2">
+                  <div className="max-h-48 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-xl p-2">
                     {currentLocations.map((loc) => {
                       const isChecked = selectedLocationIdsForGroup.includes(loc.id);
+                      const tagOwnerName = loc.tagOwnerName;
+                      const matchedTag = allTags.find(
+                        (t) =>
+                          String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
+                          String(t.tagNumberDisplay) === String(loc.tagNumberDisplay || loc.id)
+                      );
+                      const ownerDisp = tagOwnerName || (matchedTag ? matchedTag.name : '');
+                      const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(loc.id) : null));
+
                       return (
                         <label
                           key={loc.id}
-                          className="flex items-center gap-2 text-xs text-slate-300 hover:text-white cursor-pointer p-1 rounded-lg hover:bg-slate-900"
+                          className="flex items-center justify-between text-xs text-slate-300 hover:text-white cursor-pointer p-1.5 rounded-lg hover:bg-slate-900 border border-transparent hover:border-slate-800 transition-all"
                         >
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={(e) => {
-                              if (e.target.checked) {
-                                setSelectedLocationIdsForGroup((prev) => [...prev, loc.id]);
-                              } else {
-                                setSelectedLocationIdsForGroup((prev) =>
-                                  prev.filter((id) => id !== loc.id)
-                                );
-                              }
-                            }}
-                            className="rounded border-slate-700 text-amber-500 focus:ring-0"
-                          />
-                          <span className="font-bold text-amber-400 font-moul">{loc.id}.</span>
-                          <span>{loc.name}</span>
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedLocationIdsForGroup((prev) => [...prev, loc.id]);
+                                } else {
+                                  setSelectedLocationIdsForGroup((prev) =>
+                                    prev.filter((id) => id !== loc.id)
+                                  );
+                                }
+                              }}
+                              className="rounded border-slate-700 text-amber-500 focus:ring-0 shrink-0"
+                            />
+                            <div className="truncate min-w-0">
+                              {tagNumDisp ? (
+                                <span className="font-bold text-amber-400 font-sans-en mr-1">
+                                  ស្លាកលេខ {tagNumDisp} ៖
+                                </span>
+                              ) : (
+                                <span className="font-bold text-amber-400 font-moul mr-1">{loc.id}.</span>
+                              )}
+                              <span className="text-slate-100 font-bold">{ownerDisp || loc.name}</span>
+                            </div>
+                          </div>
+                          {ownerDisp && loc.name && (
+                            <span className="text-[10px] text-amber-300/80 bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 shrink-0 ml-1">
+                              📍 {loc.name}
+                            </span>
+                          )}
                         </label>
                       );
                     })}
@@ -2944,6 +2968,15 @@ export default function TempleMapModal({
                     const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
                     const isInGroup = locCat === editingGroupName;
 
+                    const tagOwnerName = loc.tagOwnerName;
+                    const matchedTag = allTags.find(
+                      (t) =>
+                        String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
+                        String(t.tagNumberDisplay) === String(loc.tagNumberDisplay || loc.id)
+                    );
+                    const ownerDisp = tagOwnerName || (matchedTag ? matchedTag.name : '');
+                    const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(loc.id) : null));
+
                     return (
                       <label
                         key={loc.id}
@@ -2953,7 +2986,7 @@ export default function TempleMapModal({
                             : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
                         }`}
                       >
-                        <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
                           <input
                             type="checkbox"
                             checked={isInGroup}
@@ -2967,13 +3000,21 @@ export default function TempleMapModal({
                               setter(updated);
                               saver(updated);
                             }}
-                            className="rounded border-slate-700 text-amber-500 focus:ring-0"
+                            className="rounded border-slate-700 text-amber-500 focus:ring-0 shrink-0"
                           />
-                          <span className="font-bold text-amber-400 font-moul shrink-0">#{loc.id}.</span>
-                          <span className="truncate">{loc.name}</span>
+                          <div className="truncate min-w-0">
+                            {tagNumDisp ? (
+                              <span className="font-bold text-amber-400 font-sans-en mr-1">
+                                ស្លាកលេខ {tagNumDisp} ៖
+                              </span>
+                            ) : (
+                              <span className="font-bold text-amber-400 font-moul mr-1">#{loc.id}.</span>
+                            )}
+                            <span className="text-slate-100 font-bold">{ownerDisp || loc.name}</span>
+                          </div>
                         </div>
 
-                        <span className="text-[10px] text-slate-400 shrink-0 font-sans-en">
+                        <span className="text-[10px] text-slate-400 shrink-0 font-sans-en ml-1">
                           {isInGroup ? '✓ ក្នុង Group នេះ' : locCat}
                         </span>
                       </label>
