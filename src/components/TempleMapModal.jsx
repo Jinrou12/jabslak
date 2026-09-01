@@ -218,7 +218,7 @@ export default function TempleMapModal({
   }, [locations]);
 
   // Computed: which locations array to use based on active tab
-  const currentLocations = activeTab === 'tagger' ? effectiveTab3Locations : baseMapLocations;
+  const currentLocations = effectiveTab3Locations;
   const [zoomScale, setZoomScale] = useState(1.0);
   const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin circle size in px (14px)
   const [selectedSizeGroup, setSelectedSizeGroup] = useState('all'); // 'all' | categoryName
@@ -1381,8 +1381,7 @@ export default function TempleMapModal({
     const numbers = cleanedStr.split(/[\s,،;]+/).map((s) => s.trim()).filter(Boolean);
     if (numbers.length === 0) return { matchedIds: [], warnings: [] };
 
-    const { setter, saver } = getTabDataFunctions();
-    const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+    const baseLocations = tab3Locations.length > 0 ? tab3Locations : locations;
     let updatedLocations = [...baseLocations];
     let hasChanges = false;
     const matchedIds = [];
@@ -1390,13 +1389,19 @@ export default function TempleMapModal({
 
     numbers.forEach((numStr) => {
       const numClean = khmerToWesternDigits(numStr);
+      const khmerNum = westernToKhmerDigits(numClean);
+
       // 1. Check if location pin already exists
       const existingLoc = updatedLocations.find(
         (loc) =>
           String(loc.tagNumber) === numClean ||
-          String(loc.tagNumberDisplay) === westernToKhmerDigits(numClean) ||
+          khmerToWesternDigits(String(loc.tagNumber || '')) === numClean ||
+          String(loc.tagNumberDisplay) === khmerNum ||
+          String(loc.tagNumberDisplay) === numClean ||
+          khmerToWesternDigits(String(loc.tagNumberDisplay || '')) === numClean ||
           String(loc.id) === numClean ||
-          String(loc.id) === westernToKhmerDigits(numClean)
+          String(loc.id) === khmerNum ||
+          khmerToWesternDigits(String(loc.id || '')) === numClean
       );
 
       if (existingLoc) {
@@ -1406,10 +1411,14 @@ export default function TempleMapModal({
           const matchedTag = allTags.find(
             (t) =>
               String(t.tagNumber) === numClean ||
-              String(t.tagNumberDisplay) === westernToKhmerDigits(numClean)
+              khmerToWesternDigits(String(t.tagNumber || '')) === numClean ||
+              String(t.tagNumberDisplay) === khmerNum ||
+              khmerToWesternDigits(String(t.tagNumberDisplay || '')) === numClean ||
+              String(t.id) === numClean ||
+              khmerToWesternDigits(String(t.id || '')) === numClean
           );
           const ownerDisp = existingLoc.tagOwnerName || (matchedTag ? matchedTag.name : '') || existingLoc.name;
-          const tagNumDisp = existingLoc.tagNumberDisplay || westernToKhmerDigits(numClean);
+          const tagNumDisp = existingLoc.tagNumberDisplay || khmerNum;
           warnings.push({
             id: existingLoc.id,
             tagNumDisp,
@@ -1431,10 +1440,14 @@ export default function TempleMapModal({
         const matchedTag = allTags.find(
           (t) =>
             String(t.tagNumber) === numClean ||
-            String(t.tagNumberDisplay) === westernToKhmerDigits(numClean)
+            khmerToWesternDigits(String(t.tagNumber || '')) === numClean ||
+            String(t.tagNumberDisplay) === khmerNum ||
+            khmerToWesternDigits(String(t.tagNumberDisplay || '')) === numClean ||
+            String(t.id) === numClean ||
+            khmerToWesternDigits(String(t.id || '')) === numClean
         );
 
-        const newLocId = westernToKhmerDigits(numClean);
+        const newLocId = khmerNum;
         matchedIds.push(newLocId);
 
         const ownerName = matchedTag ? matchedTag.name : '';
@@ -1464,12 +1477,11 @@ export default function TempleMapModal({
     });
 
     if (hasChanges) {
-      setter(updatedLocations);
-      saver(updatedLocations);
-      if (activeTab === 'interactive') {
-        setTab3Locations(updatedLocations);
-        saveTab3LocationsToFirebase(updatedLocations);
-      }
+      setTab3Locations(updatedLocations);
+      saveTab3LocationsToFirebase(updatedLocations);
+      saveTab3Locations(updatedLocations);
+      setLocations(updatedLocations);
+      saveTempleLocations(updatedLocations);
     }
 
     return { matchedIds, warnings };
