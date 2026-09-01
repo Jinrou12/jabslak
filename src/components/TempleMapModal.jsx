@@ -2965,6 +2965,21 @@ export default function TempleMapModal({
                       + Group ថ្មី
                     </button>
                   </div>
+
+                  {/* Pin Entire Group On Map Button right in Add/Edit Pin Modal */}
+                  {modalForm.category && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditModalOpen(false);
+                        setPinningGroupMode(modalForm.category);
+                      }}
+                      className="w-full mt-2 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 font-kantumruy"
+                    >
+                      <MapPin className="w-4 h-4 text-slate-950 shrink-0" />
+                      <span>📍 ដៅទីតាំងគ្រប់ Pin ក្នុង Group «{modalForm.category}» លើ Map ទាំងអស់តែម្តង</span>
+                    </button>
+                  )}
                 </div>
 
                 {/* Badge Color options (ONLY VISIBLE ON TAB 3) */}
