@@ -87,7 +87,6 @@ export default function LoginModal({
               <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               <input
                 type="email"
-                required
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
                 placeholder="User@gmail.com"
@@ -104,7 +103,6 @@ export default function LoginModal({
               <Key className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               <input
                 type="password"
-                required
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 placeholder="123"

@@ -1,5 +1,4 @@
-import { INITIAL_TAG_DATA, locationsList } from '../data/sampleData';
-import { INITIAL_TEMPLE_LOCATIONS } from '../data/templeLocations';
+import { INITIAL_TAG_DATA } from '../data/sampleData';
 
 const STORAGE_KEY = 'KHMER_TAG_SYSTEM_DATA_V2';
 const OLD_STORAGE_KEY = 'KHMER_TAG_SYSTEM_DATA_V1';

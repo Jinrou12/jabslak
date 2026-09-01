@@ -2434,6 +2434,10 @@ export default function TempleMapModal({
                       );
                     })
                     .map((t) => {
+                      // Recompute isPinned inside .map() -- it was only in scope in .filter() before (bug)
+                      const isPinned = currentLocations.some(
+                        (loc) => String(loc.id || '').trim().toLowerCase() === String(t.tagNumber || '').trim().toLowerCase()
+                      );
                       return (
                         <div
                           key={t.id || t.tagNumber}

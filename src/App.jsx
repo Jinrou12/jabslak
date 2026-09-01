@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, startTransition } from 'react';
+import React, { useState, useMemo, useEffect, useRef, startTransition, useCallback } from 'react';
 import confetti from 'canvas-confetti';
 import { Tag, Plus, AlertCircle, RefreshCw, Sparkles, CheckCircle2, Map as MapIcon, ArrowLeft } from 'lucide-react';
 import Header from './components/Header';
@@ -10,8 +10,9 @@ import TagFormModal from './components/TagFormModal';
 import QRScannerModal from './components/QRScannerModal';
 import ImportExportModal from './components/ImportExportModal';
 import LocationStatsModal from './components/LocationStatsModal';
-import AttendanceReportModal from './components/AttendanceReportModal';
+
 import AttendanceReportView from './components/AttendanceReportView';
+// Note: AttendanceReportModal was removed — report is shown inline as viewMode='report'
 import FirebaseConfigModal from './components/FirebaseConfigModal';
 import MobileConnectModal from './components/MobileConnectModal';
 import TempleMapModal from './components/TempleMapModal';
@@ -19,7 +20,7 @@ import RoleManagementModal from './components/RoleManagementModal';
 import LoginModal from './components/LoginModal';
 import InstallAppModal from './components/InstallAppModal';
 import SplashScreen from './components/SplashScreen';
-import { searchTags, westernToKhmerDigits } from './utils/khmerSearch';
+import { searchTags, westernToKhmerDigits, khmerToWesternDigits } from './utils/khmerSearch';
 import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER } from './utils/storage';
 import {
   subscribeToFirebaseTags,
@@ -42,6 +43,9 @@ export default function App() {
   const [isCloudSyncing, setIsCloudSyncing] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
 
+  // Stable callback — must NOT be an inline arrow or the SplashScreen timer resets on every re-render
+  const handleSplashFinish = useCallback(() => setShowSplash(false), []);
+
   // User & Role State
   const [users, setUsers] = useState(getSavedUsers());
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
@@ -55,7 +59,7 @@ export default function App() {
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
   const [isImportExportOpen, setIsImportExportOpen] = useState(false);
   const [isLocationStatsOpen, setIsLocationStatsOpen] = useState(false);
-  const [isAttendanceReportOpen, setIsAttendanceReportOpen] = useState(false);
+
   const [isCloudConfigOpen, setIsCloudConfigOpen] = useState(false);
   const [isMobileConnectOpen, setIsMobileConnectOpen] = useState(false);
   const [isTempleMapOpen, setIsTempleMapOpen] = useState(false);
@@ -107,11 +111,11 @@ export default function App() {
   const handleAddYear = () => {
     const input = window.prompt('សូមបញ្ចូលឆ្នាំថ្មី (ឧទាហរណ៍ ៖ ២០២៨):', '2028');
     if (!input) return;
-    
-    const khmerDigits = '០១២៣៤៥៦៧៨៩';
-    const cleanYear = input.trim().replace(/[០-៩]/g, (d) => khmerDigits.indexOf(d));
-    if (!cleanYear || isNaN(cleanYear)) {
-      alert('សូមបញ្ចូលលេខឆ្នាំឱ្យបានត្រឹមត្រូវ!');
+
+    // Use existing utility to convert any Khmer digits to Western digits
+    const cleanYear = khmerToWesternDigits(input.trim());
+    if (!cleanYear || isNaN(Number(cleanYear)) || cleanYear.length < 4) {
+      alert('សូមបញ្ចូលលេខឆ្នាំឱ្យបានត្រឹមត្រូវ! (ឧ. 2028 ឬ ២០២៨)');
       return;
     }
 
@@ -631,7 +635,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-kantumruy relative overflow-x-hidden">
       {/* 🍃 App Splash Screen Launch Intro with Falling Bodhi Leaves Animation */}
-      {showSplash && <SplashScreen onFinish={() => setShowSplash(false)} />}
+      {showSplash && <SplashScreen onFinish={handleSplashFinish} />}
       
       {/* Toast Notification Floating */}
       {toastMessage && (
@@ -888,7 +892,7 @@ export default function App() {
       {/* 🗺️ Interactive Temple Map Modal */}
       {isTempleMapOpen && (
         <TempleMapModal
-          allTags={tags}
+          allTags={yearTags}
           currentUser={currentUser}
           highlightLocationName={templeMapTargetLoc}
           onClose={() => {

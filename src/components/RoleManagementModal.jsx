@@ -77,10 +77,6 @@ export default function RoleManagementModal({
       alert('មិនអាចលុបគណនី Owner បានទេ! (ត្រូវផ្ទេរ Owner ទៅអ្នកផ្សេងជាមុនសិន)');
       return;
     }
-    if (isAdmin && u.role === 'owner') {
-      alert('Admin គ្មានសិទ្ធិលុប Owner ឡើយ!');
-      return;
-    }
     if (window.confirm(`តើអ្នកពិតជាចង់លុបគណនី ${u.name} (${u.role}) មែនទេ?`)) {
       onDeleteUser(u.id);
     }

@@ -139,7 +139,7 @@ export default function SplashScreen({ onFinish }) {
             src="/app_logo.png"
             alt="ចាប់ស្លាកលេខ"
             className="relative w-full h-full object-contain rounded-full animate-float filter drop-shadow-[0_8px_30px_rgba(200,130,0,0.8)]"
-            fetchpriority="high"
+            fetchPriority="high"
             decoding="async"
           />
         </div>

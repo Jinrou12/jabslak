@@ -36,16 +36,9 @@ let db = null;
 let isConnected = false;
 
 try {
-  if (firebaseConfig.databaseURL && !firebaseConfig.databaseURL.includes('default-rtdb.firebaseio.com')) {
-    app = initializeApp(firebaseConfig);
-    db = getDatabase(app);
-    isConnected = true;
-  } else {
-    // Attempt init with fallback
-    app = initializeApp(firebaseConfig);
-    db = getDatabase(app);
-    isConnected = true;
-  }
+  app = initializeApp(firebaseConfig);
+  db = getDatabase(app);
+  isConnected = true;
 } catch (err) {
   console.warn('Firebase init warning (running in offline mode):', err);
 }
