@@ -15,6 +15,7 @@ import {
   Plus,
   Edit2,
   Trash2,
+  Folder,
   FolderPlus,
   Compass,
   Users,
