@@ -65,8 +65,8 @@ export default function SplashScreen({ onFinish }) {
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
     >
-      {/* ====== 1. Base Solid Background Color ====== */}
-      <div className="absolute inset-0 bg-[#f4ece0] pointer-events-none" />
+      {/* ====== 1. Base Solid Background Color (Dark Theme) ====== */}
+      <div className="absolute inset-0 bg-slate-950 pointer-events-none" />
 
       {/* ====== 2. MOBILE TREE BACKGROUND IMAGE (📱 ទូរស័ព្ទដៃ - ប្រើរូបភាពរាងឈរថ្មី ពេញអេក្រង់) ====== */}
       <div
