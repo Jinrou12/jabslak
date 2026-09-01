@@ -259,6 +259,7 @@ export default function TempleMapModal({
   const [newCategoryName, setNewCategoryName] = useState('');
   const [selectedLocationIdsForGroup, setSelectedLocationIdsForGroup] = useState([]);
   const [tagNumbersBatchInput, setTagNumbersBatchInput] = useState('');
+  const [batchTagWarnings, setBatchTagWarnings] = useState([]);
 
   // Group Edit Modal State
   const [isGroupEditModalOpen, setIsGroupEditModalOpen] = useState(false);
@@ -1374,17 +1375,18 @@ export default function TempleMapModal({
     reader.readAsText(file);
   };
 
-  // Process batch tag numbers input (handles both existing pins and unpinned new tags)
+  // Process batch tag numbers input (protects existing groups from being overwritten)
   const processBatchTagInput = (inputVal, targetGroupName) => {
     const cleanedStr = khmerToWesternDigits(inputVal);
     const numbers = cleanedStr.split(/[\s,،;]+/).map((s) => s.trim()).filter(Boolean);
-    if (numbers.length === 0) return [];
+    if (numbers.length === 0) return { matchedIds: [], warnings: [] };
 
     const { setter, saver } = getTabDataFunctions();
     const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
     let updatedLocations = [...baseLocations];
     let hasChanges = false;
     const matchedIds = [];
+    const warnings = [];
 
     numbers.forEach((numStr) => {
       const numClean = khmerToWesternDigits(numStr);
@@ -1398,12 +1400,31 @@ export default function TempleMapModal({
       );
 
       if (existingLoc) {
-        matchedIds.push(existingLoc.id);
-        if (targetGroupName && existingLoc.category !== targetGroupName) {
-          updatedLocations = updatedLocations.map((l) =>
-            l.id === existingLoc.id ? { ...l, category: targetGroupName } : l
+        const existingCat = existingLoc.category || '';
+        // If it ALREADY belongs to ANOTHER Group, DO NOT OVERWRITE/MOVE IT!
+        if (existingCat && targetGroupName && existingCat !== targetGroupName) {
+          const matchedTag = allTags.find(
+            (t) =>
+              String(t.tagNumber) === numClean ||
+              String(t.tagNumberDisplay) === westernToKhmerDigits(numClean)
           );
-          hasChanges = true;
+          const ownerDisp = existingLoc.tagOwnerName || (matchedTag ? matchedTag.name : '') || existingLoc.name;
+          const tagNumDisp = existingLoc.tagNumberDisplay || westernToKhmerDigits(numClean);
+          warnings.push({
+            id: existingLoc.id,
+            tagNumDisp,
+            ownerDisp,
+            existingGroup: existingCat
+          });
+        } else {
+          // Free or already in this target group -> assign to target group
+          matchedIds.push(existingLoc.id);
+          if (targetGroupName && existingCat !== targetGroupName) {
+            updatedLocations = updatedLocations.map((l) =>
+              l.id === existingLoc.id ? { ...l, category: targetGroupName } : l
+            );
+            hasChanges = true;
+          }
         }
       } else {
         // 2. Pin does not exist yet! Search allTags for donor information
@@ -1451,7 +1472,7 @@ export default function TempleMapModal({
       }
     }
 
-    return matchedIds;
+    return { matchedIds, warnings };
   };
 
   // Save Custom Category (routes to correct tab data)
@@ -1489,6 +1510,7 @@ export default function TempleMapModal({
     setNewCategoryName('');
     setSelectedLocationIdsForGroup([]);
     setTagNumbersBatchInput('');
+    setBatchTagWarnings([]);
   };
 
   // Group Batch Actions (Batch change direction / color / rename / delete)
@@ -1496,6 +1518,7 @@ export default function TempleMapModal({
     setEditingGroupName(catName);
     setRenameGroupInput(catName);
     setTagNumbersBatchInput('');
+    setBatchTagWarnings([]);
     setIsGroupEditModalOpen(true);
   };
 
@@ -2976,8 +2999,9 @@ export default function TempleMapModal({
                     onChange={(e) => {
                       const val = e.target.value;
                       setTagNumbersBatchInput(val);
-                      const matchedIds = processBatchTagInput(val, newCategoryName.trim());
+                      const { matchedIds, warnings } = processBatchTagInput(val, newCategoryName.trim());
                       setSelectedLocationIdsForGroup(matchedIds);
+                      setBatchTagWarnings(warnings);
                     }}
                     placeholder="វាយបញ្ចូលលេខស្លាក (ឧ. 4 12 19 26 35)..."
                     className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-sans-en"
@@ -2985,7 +3009,27 @@ export default function TempleMapModal({
 
                   {/* Directly show owner names matching typed numbers */}
                   {tagNumbersBatchInput.trim() && (
-                    <div className="pt-1.5 border-t border-slate-800 space-y-1">
+                    <div className="pt-1.5 border-t border-slate-800 space-y-1.5">
+                      {/* Warning notice pop-up badges for tags already in other groups */}
+                      {batchTagWarnings.length > 0 && (
+                        <div className="space-y-1 bg-rose-500/10 border border-rose-500/30 p-2 rounded-xl">
+                          <div className="text-[11px] font-bold text-rose-300 flex items-center gap-1">
+                            <span>⚠️ មិនអាចលោតចូល Group នេះទេ ព្រោះស្ថិតក្នុង Group ផ្សេងរួចហើយ ៖</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                            {batchTagWarnings.map((w) => (
+                              <span key={w.id} className="text-[11px] bg-slate-900 border border-rose-500/40 text-rose-300 px-2 py-0.5 rounded-lg flex items-center gap-1.5 font-bold">
+                                <span className="font-sans-en text-amber-400">ស្លាក {w.tagNumDisp} ៖</span>
+                                <span className="text-white">{w.ownerDisp}</span>
+                                <span className="text-[10px] text-amber-300 bg-amber-500/20 px-1.5 py-0.2 rounded font-normal">
+                                  ស្ថិតនៅ Group «{w.existingGroup}» ស្រាប់
+                                </span>
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <div className="text-[10px] font-bold text-amber-400">
                         ✨ ឈ្មោះម្ចាស់ស្លាកដែលបានរកឃើញ ({selectedLocationIdsForGroup.length}) ៖
                       </div>
@@ -3184,31 +3228,8 @@ export default function TempleMapModal({
                   onChange={(e) => {
                     const val = e.target.value;
                     setTagNumbersBatchInput(val);
-
-                    const cleanedStr = khmerToWesternDigits(val);
-                    const numbers = cleanedStr.split(/[\s,،;]+/).map((s) => s.trim()).filter(Boolean);
-
-                    const matchedIds = currentLocations
-                      .filter((loc) => {
-                        const tagNum = String(loc.tagNumber || loc.id);
-                        const tagDisp = String(loc.tagNumberDisplay || loc.id);
-                        return numbers.some((n) => n === tagNum || n === tagDisp || n === khmerToWesternDigits(tagDisp));
-                      })
-                      .map((loc) => loc.id);
-
-                    if (matchedIds.length > 0) {
-                      const { setter, saver } = getTabDataFunctions();
-                      const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
-                      const updated = baseLocations.map((l) =>
-                        matchedIds.includes(l.id) ? { ...l, category: editingGroupName } : l
-                      );
-                      setter(updated);
-                      saver(updated);
-                      if (activeTab === 'interactive') {
-                        setTab3Locations(updated);
-                        saveTab3LocationsToFirebase(updated);
-                      }
-                    }
+                    const { warnings } = processBatchTagInput(val, editingGroupName);
+                    setBatchTagWarnings(warnings);
                   }}
                   placeholder="វាយបញ្ចូលលេខស្លាក (ឧ. 4 12 19 26 35)..."
                   className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-sans-en"
@@ -3216,13 +3237,33 @@ export default function TempleMapModal({
 
                 {/* Directly show owner names matching typed numbers */}
                 {tagNumbersBatchInput.trim() && (
-                  <div className="pt-1.5 border-t border-slate-800 space-y-1">
+                  <div className="pt-1.5 border-t border-slate-800 space-y-1.5">
+                    {/* Warning notice pop-up badges for tags already in other groups */}
+                    {batchTagWarnings.length > 0 && (
+                      <div className="space-y-1 bg-rose-500/10 border border-rose-500/30 p-2 rounded-xl">
+                        <div className="text-[11px] font-bold text-rose-300 flex items-center gap-1">
+                          <span>⚠️ មិនអាចលោតចូល Group នេះទេ ព្រោះស្ថិតក្នុង Group ផ្សេងរួចហើយ ៖</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto">
+                          {batchTagWarnings.map((w) => (
+                            <span key={w.id} className="text-[11px] bg-slate-900 border border-rose-500/40 text-rose-300 px-2 py-0.5 rounded-lg flex items-center gap-1.5 font-bold">
+                              <span className="font-sans-en text-amber-400">ស្លាក {w.tagNumDisp} ៖</span>
+                              <span className="text-white">{w.ownerDisp}</span>
+                              <span className="text-[10px] text-amber-300 bg-amber-500/20 px-1.5 py-0.2 rounded font-normal">
+                                ស្ថិតនៅ Group «{w.existingGroup}» ស្រាប់
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="text-[10px] font-bold text-amber-400">
-                      ✨ ឈ្មោះម្ចាស់ស្លាកដែលត្រូវដាក់ចូល Group នេះ ៖
+                      ✨ ឈ្មោះម្ចាស់ស្លាកក្នុង Group «{editingGroupName}» ៖
                     </div>
                     <div className="flex flex-wrap gap-1 max-h-24 overflow-y-auto">
                       {currentLocations
-                        .filter((loc) => (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName)
+                        .filter((loc) => loc.category === editingGroupName)
                         .map((loc) => {
                           const tagOwnerName = loc.tagOwnerName;
                           const matchedTag = allTags.find(
@@ -3232,10 +3273,16 @@ export default function TempleMapModal({
                           );
                           const ownerDisp = tagOwnerName || (matchedTag ? matchedTag.name : '');
                           const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : westernToKhmerDigits(loc.id));
+                          const isUnpinned = loc.isUnpinned || (loc.x === 50 && loc.y === 50);
                           return (
-                            <span key={loc.id} className="text-[11px] bg-slate-900 border border-amber-400/40 text-amber-200 px-2 py-0.5 rounded-lg flex items-center gap-1 font-bold">
+                            <span key={loc.id} className="text-[11px] bg-slate-900 border border-amber-400/40 text-amber-200 px-2 py-0.5 rounded-lg flex items-center gap-1.5 font-bold">
                               <span className="font-sans-en text-amber-400">ស្លាក {tagNumDisp} ៖</span>
                               <span className="text-white">{ownerDisp || loc.name}</span>
+                              {isUnpinned && (
+                                <span className="text-[9px] text-amber-300 bg-amber-500/20 px-1 rounded font-normal">
+                                  📍 មិនទាន់ដៅលើ Map
+                                </span>
+                              )}
                             </span>
                           );
                         })}
