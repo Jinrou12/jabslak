@@ -264,8 +264,11 @@ export default function TempleMapModal({
   // Group Edit Modal State
   const [isGroupEditModalOpen, setIsGroupEditModalOpen] = useState(false);
   const [editingGroupName, setEditingGroupName] = useState('');
-  const [renameGroupInput, setRenameGroupInput] = useState('');
   const [pinningGroupMode, setPinningGroupMode] = useState(null);
+
+  // Add/Edit Location Pin Modal mode ('single' | 'group')
+  const [pinModalMode, setPinModalMode] = useState('single');
+  const [selectedGroupForBatchPin, setSelectedGroupForBatchPin] = useState('');
 
   // History & Redo stack for Ctrl+Z and Ctrl+U
   const [history, setHistory] = useState([]);
@@ -2765,260 +2768,410 @@ export default function TempleMapModal({
                 </div>
               )}
 
-              {/* Tag selector dropdown for manual tagging (ONLY VISIBLE ON TAB 3) */}
-              {activeTab === 'tagger' && allTags && allTags.length > 0 && (
-                <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-2.5 mb-3">
-                  <label className="block text-xs font-bold text-amber-300 mb-1 flex items-center gap-1">
-                    <Tag className="w-3.5 h-3.5 text-amber-400" />
-                    <span>🔗 ជ្រើសរើសស្លាកលេខដែលមានក្នុងប្រព័ន្ធដើម្បីដៅលើ Map ៖</span>
-                  </label>
-                  <select
-                    value={selectedTagForPin || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setSelectedTagForPin(val);
-                      if (val) {
-                        const found =
-                          groupedAllTags.find(
-                            (t) => String(t.tagNumber) === String(val) || String(t.tagNumberDisplay) === String(val)
-                          ) || allTags.find((t) => String(t.tagNumber) === String(val));
+              {/* 2-Section Switcher: Single Tag vs Group Pinning */}
+              <div className="grid grid-cols-2 p-1 bg-slate-950 border border-slate-800 rounded-2xl gap-1 mb-3.5 text-xs font-bold font-kantumruy">
+                <button
+                  type="button"
+                  onClick={() => setPinModalMode('single')}
+                  className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                    pinModalMode === 'single'
+                      ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>១. ដៅស្លាកលេខម្ដង១ៗ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPinModalMode('group');
+                    if (!selectedGroupForBatchPin && availableCategories.length > 0) {
+                      setSelectedGroupForBatchPin(availableCategories[0]);
+                    }
+                  }}
+                  className={`py-2 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
+                    pinModalMode === 'group'
+                      ? 'bg-amber-500 text-slate-950 shadow-md font-extrabold'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Folder className="w-3.5 h-3.5" />
+                  <span>២. ដៅស្លាកលេខជា Group</span>
+                </button>
+              </div>
 
-                        if (found) {
-                          const tagDisp = found.tagNumberDisplay || String(found.tagNumber);
-                          const latinId = String(found.tagNumber || khmerToWesternDigits(tagDisp));
-                          setModalForm((prev) => ({
-                            ...prev,
-                            id: latinId,
-                            tagNumber: found.tagNumber,
-                            tagNumberDisplay: tagDisp,
-                            isTagPin: true,
-                            name: found.name || found.location || `ស្លាកលេខ #${latinId}`,
-                            badgeColor: prev.badgeColor || 'orange',
-                            category: (found.baseLocation && found.baseLocation !== 'មើលទីកន្លែង' && found.baseLocation !== 'មិនទាន់ដៅលើ Map') ? found.baseLocation : (prev.category || '🏢 ក្រុមអគារ និង កុដិ')
-                          }));
-                          setFormError('');
-                        }
-                      }
-                    }}
-                    className="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-xs text-amber-200 focus:outline-none focus:border-amber-400 font-kantumruy"
-                  >
-                    <option value="">-- ជ្រើសរើសស្លាកលេខពីប្រព័ន្ធ ឬ បញ្ចូលព័ត៌មានដោយដៃ --</option>
-                    {groupedAllTags
-                      .filter((t) => {
-                        const tNum = Number(t.tagNumber);
-                        const tagNumStr = String(t.tagNumber || '').trim().toLowerCase();
-                        const tagDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
-                        const tagNumWestern = khmerToWesternDigits(tagDispStr || tagNumStr).trim().toLowerCase();
+              {/* ════════ SECTION 1: SINGLE TAG PINNING ════════ */}
+              {pinModalMode === 'single' && (
+                <div className="space-y-3">
+                  {/* Tag selector dropdown for manual tagging (ONLY VISIBLE ON TAB 3) */}
+                  {activeTab === 'tagger' && allTags && allTags.length > 0 && (
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-2.5 mb-3">
+                      <label className="block text-xs font-bold text-amber-300 mb-1 flex items-center gap-1">
+                        <Tag className="w-3.5 h-3.5 text-amber-400" />
+                        <span>🔗 ជ្រើសរើសទីតាំង (ស្លាកលេខនីមួយៗ) ៖</span>
+                      </label>
+                      <select
+                        value={selectedTagForPin || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSelectedTagForPin(val);
+                          if (val) {
+                            const found =
+                              groupedAllTags.find(
+                                (t) => String(t.tagNumber) === String(val) || String(t.tagNumberDisplay) === String(val)
+                              ) || allTags.find((t) => String(t.tagNumber) === String(val));
 
-                        if (
-                          editingLoc &&
-                          ((editingLoc.tagNumber && Number(editingLoc.tagNumber) === tNum) ||
-                            (editingLoc.isTagPin &&
-                              (khmerToWesternDigits(String(editingLoc.id || '')) === tagNumWestern ||
-                                String(editingLoc.id || '').trim().toLowerCase() === tagNumStr ||
-                                String(editingLoc.id || '').trim().toLowerCase() === tagDispStr)))
-                        ) {
-                          return true;
-                        }
-
-                        // Filter out tag ONLY if it is ALREADY pinned on Tab 3 as a tag pin
-                        return !currentLocations.some((loc) => {
-                          if (!loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay) return false;
-
-                          const locTagNum = loc.tagNumber ? Number(loc.tagNumber) : null;
-                          if (locTagNum && locTagNum === tNum) {
-                            return true;
-                          }
-
-                          if (loc.tagNumberDisplay) {
-                            const locDispWestern = khmerToWesternDigits(String(loc.tagNumberDisplay)).trim().toLowerCase();
-                            if (locDispWestern === tagNumWestern || String(loc.tagNumberDisplay).trim().toLowerCase() === tagDispStr) {
-                              return true;
+                            if (found) {
+                              const tagDisp = found.tagNumberDisplay || String(found.tagNumber);
+                              const latinId = String(found.tagNumber || khmerToWesternDigits(tagDisp));
+                              setModalForm((prev) => ({
+                                ...prev,
+                                id: latinId,
+                                tagNumber: found.tagNumber,
+                                tagNumberDisplay: tagDisp,
+                                isTagPin: true,
+                                name: found.name || found.location || `ស្លាកលេខ #${latinId}`,
+                                badgeColor: prev.badgeColor || 'orange',
+                                category: (found.baseLocation && found.baseLocation !== 'មើលទីកន្លែង' && found.baseLocation !== 'មិនទាន់ដៅលើ Map') ? found.baseLocation : (prev.category || '🏢 ក្រុមអគារ និង កុដិ')
+                              }));
+                              setFormError('');
                             }
                           }
+                        }}
+                        className="w-full bg-slate-950 border border-amber-500/50 rounded-xl px-3 py-2 text-xs text-amber-200 focus:outline-none focus:border-amber-400 font-kantumruy"
+                      >
+                        <option value="">-- ជ្រើសរើសស្លាកលេខពីប្រព័ន្ធ ឬ បញ្ចូលព័ត៌មានដោយដៃ --</option>
+                        {groupedAllTags
+                          .filter((t) => {
+                            const tNum = Number(t.tagNumber);
+                            const tagNumStr = String(t.tagNumber || '').trim().toLowerCase();
+                            const tagDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
+                            const tagNumWestern = khmerToWesternDigits(tagDispStr || tagNumStr).trim().toLowerCase();
 
-                          if (loc.isTagPin) {
-                            const locIdWestern = khmerToWesternDigits(String(loc.id || '')).trim().toLowerCase();
-                            if (locIdWestern === tagNumWestern || String(loc.id).trim().toLowerCase() === tagNumStr || String(loc.id).trim().toLowerCase() === tagDispStr) {
+                            if (
+                              editingLoc &&
+                              ((editingLoc.tagNumber && Number(editingLoc.tagNumber) === tNum) ||
+                                (editingLoc.isTagPin &&
+                                  (khmerToWesternDigits(String(editingLoc.id || '')) === tagNumWestern ||
+                                    String(editingLoc.id || '').trim().toLowerCase() === tagNumStr ||
+                                    String(editingLoc.id || '').trim().toLowerCase() === tagDispStr)))
+                            ) {
                               return true;
                             }
-                          }
 
-                          return false;
-                        });
-                      })
-                      .map((t) => {
-                        const tagDisplay = t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber);
-                        const countLabel = t.count > 1 ? ` (${westernToKhmerDigits(t.count)} អង្គ)` : '';
-                        return (
-                          <option key={t.id || t.tagNumber} value={t.tagNumberDisplay || t.tagNumber}>
-                            ស្លាកលេខ {tagDisplay}{countLabel} ៖ {t.name || 'គ្មានឈ្មោះ'}
+                            // Filter out tag ONLY if it is ALREADY pinned on Tab 3 as a tag pin
+                            return !currentLocations.some((loc) => {
+                              if (!loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay) return false;
+
+                              const locTagNum = loc.tagNumber ? Number(loc.tagNumber) : null;
+                              if (locTagNum && locTagNum === tNum) {
+                                return true;
+                              }
+
+                              if (loc.tagNumberDisplay) {
+                                const locDispWestern = khmerToWesternDigits(String(loc.tagNumberDisplay)).trim().toLowerCase();
+                                if (locDispWestern === tagNumWestern || String(loc.tagNumberDisplay).trim().toLowerCase() === tagDispStr) {
+                                  return true;
+                                }
+                              }
+
+                              if (loc.isTagPin) {
+                                const locIdWestern = khmerToWesternDigits(String(loc.id || '')).trim().toLowerCase();
+                                if (locIdWestern === tagNumWestern || String(loc.id).trim().toLowerCase() === tagNumStr || String(loc.id).trim().toLowerCase() === tagDispStr) {
+                                  return true;
+                                }
+                              }
+
+                              return false;
+                            });
+                          })
+                          .map((t) => {
+                            const tagDisplay = t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber);
+                            const countLabel = t.count > 1 ? ` (${westernToKhmerDigits(t.count)} អង្គ)` : '';
+                            return (
+                              <option key={t.id || t.tagNumber} value={t.tagNumberDisplay || t.tagNumber}>
+                                ស្លាកលេខ {tagDisplay}{countLabel} ៖ {t.name || 'គ្មានឈ្មោះ'}
+                              </option>
+                            );
+                          })}
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">
+                      លេខ ឬ អក្សរស្លាក ៖
+                    </label>
+                    <input
+                      type="text"
+                      value={modalForm.id}
+                      onChange={(e) => {
+                        const rawVal = e.target.value;
+                        const latinVal = khmerToWesternDigits(rawVal);
+                        setFormError('');
+
+                        if (latinVal) {
+                          const searchVal = latinVal.trim().toLowerCase();
+                          const found =
+                            groupedAllTags.find((t) => {
+                              const tNoStr = String(t.tagNumber || '').trim().toLowerCase();
+                              const tDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
+                              const tDispWestern = khmerToWesternDigits(tDispStr).trim().toLowerCase();
+                              return tNoStr === searchVal || tDispStr === searchVal || tDispWestern === searchVal;
+                            }) ||
+                            allTags.find((t) => {
+                              const tNoStr = String(t.tagNumber || '').trim().toLowerCase();
+                              const tDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
+                              const tDispWestern = khmerToWesternDigits(tDispStr).trim().toLowerCase();
+                              return tNoStr === searchVal || tDispStr === searchVal || tDispWestern === searchVal;
+                            });
+
+                          if (found) {
+                            const tagDisp = found.tagNumberDisplay || String(found.tagNumber);
+                            const latinId = String(found.tagNumber || khmerToWesternDigits(tagDisp));
+                            const autoName = found.name || found.location || `ស្លាកលេខ #${latinId}`;
+
+                            setSelectedTagForPin(tagDisp);
+                            setModalForm((prev) => ({
+                              ...prev,
+                              id: latinVal,
+                              tagNumber: found.tagNumber,
+                              tagNumberDisplay: tagDisp,
+                              isTagPin: true,
+                              name: autoName,
+                              badgeColor: prev.badgeColor || 'orange',
+                              category:
+                                found.baseLocation &&
+                                found.baseLocation !== 'មើលទីកន្លែង' &&
+                                found.baseLocation !== 'មិនទាន់ដៅលើ Map'
+                                  ? found.baseLocation
+                                  : prev.category || '🏢 ក្រុមអគារ និង កុដិ'
+                            }));
+                            return;
+                          }
+                        }
+
+                        setSelectedTagForPin('');
+                        setModalForm((prev) => ({ ...prev, id: latinVal }));
+                      }}
+                      placeholder="ឧ. 17, 18, F, G..."
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400 font-sans-en"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">
+                      ឈ្មោះទីតាំង ៖
+                    </label>
+                    <input
+                      type="text"
+                      value={modalForm.name}
+                      onChange={(e) => {
+                        setModalForm((prev) => ({ ...prev, name: e.target.value }));
+                        setFormError('');
+                      }}
+                      placeholder="ឧ. កុដិថ្មី, អាហារដ្ឋាន..."
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+
+                  {/* Group / Category Select Dropdown */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">
+                      📁 ជ្រើសរើស Group ទីតាំង (Category) ៖
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'}
+                        onChange={(e) => setModalForm((prev) => ({ ...prev, category: e.target.value }))}
+                        className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-400"
+                      >
+                        {availableCategories.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
                           </option>
-                        );
-                      })}
-                  </select>
+                        ))}
+                      </select>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsCategoryModalOpen(true)}
+                        className="px-3 py-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold rounded-xl transition-all shrink-0"
+                        title="បង្កើត Group ថ្មី"
+                      >
+                        + Group ថ្មី
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Badge Color options (ONLY VISIBLE ON TAB 3) */}
+                  {activeTab === 'tagger' && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+                        <span>🎨 ជ្រើសរើសពណ៌ស្លាកលេខ (Badge Color) ៖</span>
+                        <span className="text-[10px] text-amber-400 font-normal">ចុចលើពណ៌ដែលពេញចិត្ត</span>
+                      </label>
+
+                      {/* Visual Color Swatch Grid */}
+                      <div className="grid grid-cols-6 gap-2 p-2.5 bg-slate-950 border border-slate-800 rounded-2xl">
+                        {COLOR_SWATCHES.map((swatch) => {
+                          const isSelected = (modalForm.badgeColor || 'orange') === swatch.key;
+                          return (
+                            <button
+                              key={swatch.key}
+                              type="button"
+                              onClick={() =>
+                                setModalForm((prev) => ({
+                                  ...prev,
+                                  badgeColor: swatch.key,
+                                  type: swatch.key === 'gold' ? 'gate' : 'building'
+                                }))
+                              }
+                              className={`h-9 rounded-xl flex items-center justify-center transition-all ${swatch.bg} ${
+                                isSelected
+                                  ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105 shadow-lg'
+                                  : 'opacity-70 hover:opacity-100 hover:scale-100'
+                              }`}
+                              title={swatch.label}
+                            >
+                              {isSelected && <span className="text-slate-950 font-bold text-xs">✓</span>}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    លេខ ឬ អក្សរស្លាក ៖
-                  </label>
-                  <input
-                    type="text"
-                    value={modalForm.id}
-                    onChange={(e) => {
-                      const rawVal = e.target.value;
-                      const latinVal = khmerToWesternDigits(rawVal);
-                      setFormError('');
+              {/* ════════ SECTION 2: GROUP TAG PINNING ════════ */}
+              {pinModalMode === 'group' && (
+                <div className="space-y-3 bg-slate-950 p-3 rounded-2xl border border-amber-500/30">
+                  {/* Select Group Dropdown */}
+                  <div>
+                    <label className="block text-xs font-bold text-amber-300 mb-1">
+                      📂 ជ្រើសរើស Group ដែលត្រូវដៅលើ Map ៖
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={selectedGroupForBatchPin || availableCategories[0] || ''}
+                        onChange={(e) => setSelectedGroupForBatchPin(e.target.value)}
+                        className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-bold"
+                      >
+                        {availableCategories.map((cat) => (
+                          <option key={cat} value={cat}>
+                            {cat}
+                          </option>
+                        ))}
+                      </select>
 
-                      if (latinVal) {
-                        const searchVal = latinVal.trim().toLowerCase();
-                        const found =
-                          groupedAllTags.find((t) => {
-                            const tNoStr = String(t.tagNumber || '').trim().toLowerCase();
-                            const tDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
-                            const tDispWestern = khmerToWesternDigits(tDispStr).trim().toLowerCase();
-                            return tNoStr === searchVal || tDispStr === searchVal || tDispWestern === searchVal;
-                          }) ||
-                          allTags.find((t) => {
-                            const tNoStr = String(t.tagNumber || '').trim().toLowerCase();
-                            const tDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
-                            const tDispWestern = khmerToWesternDigits(tDispStr).trim().toLowerCase();
-                            return tNoStr === searchVal || tDispStr === searchVal || tDispWestern === searchVal;
-                          });
-
-                        if (found) {
-                          const tagDisp = found.tagNumberDisplay || String(found.tagNumber);
-                          const latinId = String(found.tagNumber || khmerToWesternDigits(tagDisp));
-                          const autoName = found.name || found.location || `ស្លាកលេខ #${latinId}`;
-
-                          setSelectedTagForPin(tagDisp);
-                          setModalForm((prev) => ({
-                            ...prev,
-                            id: latinVal,
-                            tagNumber: found.tagNumber,
-                            tagNumberDisplay: tagDisp,
-                            isTagPin: true,
-                            name: autoName,
-                            badgeColor: prev.badgeColor || 'orange',
-                            category:
-                              found.baseLocation &&
-                              found.baseLocation !== 'មើលទីកន្លែង' &&
-                              found.baseLocation !== 'មិនទាន់ដៅលើ Map'
-                                ? found.baseLocation
-                                : prev.category || '🏢 ក្រុមអគារ និង កុដិ'
-                          }));
-                          return;
-                        }
-                      }
-
-                      setSelectedTagForPin('');
-                      setModalForm((prev) => ({ ...prev, id: latinVal }));
-                    }}
-                    placeholder="ឧ. 17, 18, F, G..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400 font-sans-en"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    ឈ្មោះទីតាំង ៖
-                  </label>
-                  <input
-                    type="text"
-                    value={modalForm.name}
-                    onChange={(e) => {
-                      setModalForm((prev) => ({ ...prev, name: e.target.value }));
-                      setFormError('');
-                    }}
-                    placeholder="ឧ. កុដិថ្មី, អាហារដ្ឋាន..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
-                  />
-                </div>
-
-                {/* Group / Category Select Dropdown */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-300 mb-1">
-                    📁 ជ្រើសរើស Group ទីតាំង (Category) ៖
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <select
-                      value={modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'}
-                      onChange={(e) => setModalForm((prev) => ({ ...prev, category: e.target.value }))}
-                      className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-400"
-                    >
-                      {availableCategories.map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
-
-                    <button
-                      type="button"
-                      onClick={() => setIsCategoryModalOpen(true)}
-                      className="px-3 py-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold rounded-xl transition-all shrink-0"
-                      title="បង្កើត Group ថ្មី"
-                    >
-                      + Group ថ្មី
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditModalOpen(false);
+                          setIsCategoryModalOpen(true);
+                        }}
+                        className="px-3 py-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs font-bold rounded-xl transition-all shrink-0"
+                      >
+                        + Group ថ្មី
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Pin Entire Group On Map Button right in Add/Edit Pin Modal */}
-                  {modalForm.category && (
+                  {/* Display ONLY the tags contained inside the selected Group! */}
+                  {selectedGroupForBatchPin && (
+                    <div className="space-y-2 pt-2 border-t border-slate-800">
+                      <div className="text-[11px] font-bold text-amber-400 flex items-center justify-between">
+                        <span>✨ ស្លាកលេខដែលមានក្នុង Group «{selectedGroupForBatchPin}» ៖</span>
+                        <span className="text-[10px] text-slate-400 font-normal">
+                          ({westernToKhmerDigits(currentLocations.filter((l) => l.category === selectedGroupForBatchPin).length)} ស្លាក)
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2 bg-slate-900 rounded-xl border border-slate-800">
+                        {currentLocations.filter((l) => l.category === selectedGroupForBatchPin).length === 0 ? (
+                          <div className="text-xs text-slate-400 p-3 text-center w-full">
+                            ⚠️ គ្មានស្លាកលេខនៅក្នុង Group នេះទេ! (អ្នកអាចបន្ថែមស្លាកតាមរយៈប៊ូតុង + Group ថ្មី)
+                          </div>
+                        ) : (
+                          currentLocations
+                            .filter((l) => l.category === selectedGroupForBatchPin)
+                            .map((loc) => {
+                              const tagOwnerName = loc.tagOwnerName;
+                              const matchedTag = allTags.find(
+                                (t) =>
+                                  String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
+                                  String(t.tagNumberDisplay) === String(loc.tagNumberDisplay || loc.id)
+                              );
+                              const ownerDisp = tagOwnerName || (matchedTag ? matchedTag.name : '');
+                              const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : westernToKhmerDigits(loc.id));
+                              const isUnpinned = loc.isUnpinned || (loc.x === 50 && loc.y === 50);
+
+                              return (
+                                <span
+                                  key={loc.id}
+                                  className="text-[11px] bg-slate-950 border border-amber-400/40 text-amber-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 font-bold"
+                                >
+                                  <span className="font-sans-en text-amber-400">ស្លាក {tagNumDisp} ៖</span>
+                                  <span className="text-white">{ownerDisp || loc.name}</span>
+                                  {isUnpinned && (
+                                    <span className="text-[9px] text-amber-300 bg-amber-500/20 px-1 rounded font-normal">
+                                      📍 មិនទាន់ដៅ
+                                    </span>
+                                  )}
+                                </span>
+                              );
+                            })
+                        )}
+                      </div>
+
+                      {/* Large prominent Action Button to Pin this Group on Map */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsEditModalOpen(false);
+                          setPinningGroupMode(selectedGroupForBatchPin);
+                        }}
+                        className="w-full mt-2 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-95 font-kantumruy"
+                      >
+                        <MapPin className="w-4 h-4 text-slate-950 shrink-0" />
+                        <span>📍 ចុចទីនេះដើម្បីដៅ Group «{selectedGroupForBatchPin}» លើ Map ទាំងអស់ព្រមគ្នា</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                {!editingLoc?.isNew && pinModalMode === 'single' ? (
+                  <button
+                    onClick={() => handleDeleteLocation(editingLoc.id)}
+                    className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold rounded-xl transition-all"
+                  >
+                    លុបទីតាំង
+                  </button>
+                ) : (
+                  <div></div>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all"
+                  >
+                    បោះបង់
+                  </button>
+
+                  {pinModalMode === 'single' && (
                     <button
-                      type="button"
-                      onClick={() => {
-                        setIsEditModalOpen(false);
-                        setPinningGroupMode(modalForm.category);
-                      }}
-                      className="w-full mt-2 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-1.5 active:scale-95 font-kantumruy"
+                      onClick={handleSaveLocationEdit}
+                      className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all active:scale-95"
                     >
-                      <MapPin className="w-4 h-4 text-slate-950 shrink-0" />
-                      <span>📍 ដៅទីតាំងគ្រប់ Pin ក្នុង Group «{modalForm.category}» លើ Map ទាំងអស់តែម្តង</span>
+                      រក្សាទុក
                     </button>
                   )}
                 </div>
-
-                {/* Badge Color options (ONLY VISIBLE ON TAB 3) */}
-                {activeTab === 'tagger' && (
-                  <div>
-                    <label className="block text-xs font-bold text-slate-300 mb-1.5 flex items-center justify-between">
-                      <span>🎨 ជ្រើសរើសពណ៌ស្លាកលេខ (Badge Color) ៖</span>
-                      <span className="text-[10px] text-amber-400 font-normal">ចុចលើពណ៌ដែលពេញចិត្ត</span>
-                    </label>
-
-                    {/* Visual Color Swatch Grid */}
-                    <div className="grid grid-cols-6 gap-2 p-2.5 bg-slate-950 border border-slate-800 rounded-2xl">
-                      {COLOR_SWATCHES.map((swatch) => {
-                        const isSelected = (modalForm.badgeColor || 'orange') === swatch.key;
-                        return (
-                          <button
-                            key={swatch.key}
-                            type="button"
-                            onClick={() =>
-                              setModalForm((prev) => ({
-                                ...prev,
-                                badgeColor: swatch.key,
-                                type: swatch.key === 'gold' ? 'gate' : 'building'
-                              }))
-                            }
-                            className={`h-9 rounded-xl flex items-center justify-center transition-all ${swatch.bg} ${
-                              isSelected
-                                ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-105 shadow-lg'
-                                : 'opacity-70 hover:opacity-100 hover:scale-100'
-                            }`}
-                            title={swatch.label}
-                          >
-                            {isSelected && <span className="text-slate-950 font-bold text-xs">✓</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
