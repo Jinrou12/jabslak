@@ -1374,6 +1374,86 @@ export default function TempleMapModal({
     reader.readAsText(file);
   };
 
+  // Process batch tag numbers input (handles both existing pins and unpinned new tags)
+  const processBatchTagInput = (inputVal, targetGroupName) => {
+    const cleanedStr = khmerToWesternDigits(inputVal);
+    const numbers = cleanedStr.split(/[\s,،;]+/).map((s) => s.trim()).filter(Boolean);
+    if (numbers.length === 0) return [];
+
+    const { setter, saver } = getTabDataFunctions();
+    const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+    let updatedLocations = [...baseLocations];
+    let hasChanges = false;
+    const matchedIds = [];
+
+    numbers.forEach((numStr) => {
+      const numClean = khmerToWesternDigits(numStr);
+      // 1. Check if location pin already exists
+      const existingLoc = updatedLocations.find(
+        (loc) =>
+          String(loc.tagNumber) === numClean ||
+          String(loc.tagNumberDisplay) === westernToKhmerDigits(numClean) ||
+          String(loc.id) === numClean ||
+          String(loc.id) === westernToKhmerDigits(numClean)
+      );
+
+      if (existingLoc) {
+        matchedIds.push(existingLoc.id);
+        if (targetGroupName && existingLoc.category !== targetGroupName) {
+          updatedLocations = updatedLocations.map((l) =>
+            l.id === existingLoc.id ? { ...l, category: targetGroupName } : l
+          );
+          hasChanges = true;
+        }
+      } else {
+        // 2. Pin does not exist yet! Search allTags for donor information
+        const matchedTag = allTags.find(
+          (t) =>
+            String(t.tagNumber) === numClean ||
+            String(t.tagNumberDisplay) === westernToKhmerDigits(numClean)
+        );
+
+        const newLocId = westernToKhmerDigits(numClean);
+        matchedIds.push(newLocId);
+
+        const ownerName = matchedTag ? matchedTag.name : '';
+        const baseLocName = (matchedTag && matchedTag.baseLocation && matchedTag.baseLocation !== 'មិនទាន់ដៅលើ Map' && matchedTag.baseLocation !== 'មើលទីកន្លែង')
+          ? matchedTag.baseLocation
+          : (targetGroupName || `ស្លាកលេខ ${newLocId}`);
+
+        const newUnpinnedLoc = {
+          id: newLocId,
+          name: baseLocName,
+          x: 50,
+          y: 50,
+          type: 'building',
+          pos: 'R',
+          badgeColor: 'cyan',
+          category: targetGroupName || '',
+          tagNumber: parseInt(numClean, 10) || numClean,
+          tagNumberDisplay: newLocId,
+          tagOwnerName: ownerName,
+          isTagPin: true,
+          isUnpinned: true
+        };
+
+        updatedLocations.push(newUnpinnedLoc);
+        hasChanges = true;
+      }
+    });
+
+    if (hasChanges) {
+      setter(updatedLocations);
+      saver(updatedLocations);
+      if (activeTab === 'interactive') {
+        setTab3Locations(updatedLocations);
+        saveTab3LocationsToFirebase(updatedLocations);
+      }
+    }
+
+    return matchedIds;
+  };
+
   // Save Custom Category (routes to correct tab data)
   const handleSaveCustomCategory = () => {
     const name = newCategoryName.trim();
@@ -2896,18 +2976,7 @@ export default function TempleMapModal({
                     onChange={(e) => {
                       const val = e.target.value;
                       setTagNumbersBatchInput(val);
-
-                      const cleanedStr = khmerToWesternDigits(val);
-                      const numbers = cleanedStr.split(/[\s,،;]+/).map((s) => s.trim()).filter(Boolean);
-
-                      const matchedIds = currentLocations
-                        .filter((loc) => {
-                          const tagNum = String(loc.tagNumber || loc.id);
-                          const tagDisp = String(loc.tagNumberDisplay || loc.id);
-                          return numbers.some((n) => n === tagNum || n === tagDisp || n === khmerToWesternDigits(tagDisp));
-                        })
-                        .map((loc) => loc.id);
-
+                      const matchedIds = processBatchTagInput(val, newCategoryName.trim());
                       setSelectedLocationIdsForGroup(matchedIds);
                     }}
                     placeholder="វាយបញ្ចូលលេខស្លាក (ឧ. 4 12 19 26 35)..."
@@ -2932,10 +3001,16 @@ export default function TempleMapModal({
                             );
                             const ownerDisp = tagOwnerName || (matchedTag ? matchedTag.name : '');
                             const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : westernToKhmerDigits(loc.id));
+                            const isUnpinned = loc.isUnpinned || (loc.x === 50 && loc.y === 50);
                             return (
-                              <span key={loc.id} className="text-[11px] bg-slate-900 border border-amber-400/40 text-amber-200 px-2 py-0.5 rounded-lg flex items-center gap-1 font-bold">
+                              <span key={loc.id} className="text-[11px] bg-slate-900 border border-amber-400/40 text-amber-200 px-2 py-0.5 rounded-lg flex items-center gap-1.5 font-bold">
                                 <span className="font-sans-en text-amber-400">ស្លាក {tagNumDisp} ៖</span>
                                 <span className="text-white">{ownerDisp || loc.name}</span>
+                                {isUnpinned && (
+                                  <span className="text-[9px] text-amber-300 bg-amber-500/20 px-1 rounded font-normal">
+                                    📍 មិនទាន់ដៅលើ Map
+                                  </span>
+                                )}
                               </span>
                             );
                           })}
