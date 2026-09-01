@@ -1,4 +1,4 @@
-const CACHE_NAME = 'jabslak-app-v31';
+const CACHE_NAME = 'jabslak-app-v32';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
