@@ -269,10 +269,29 @@ export default function TempleMapModal({
   const [redoStack, setRedoStack] = useState([]);
   const [undoToast, setUndoToast] = useState('');
 
+  // Track deleted categories so deleted groups disappear completely
+  const [deletedCategories, setDeletedCategories] = useState(() => {
+    try {
+      const saved = localStorage.getItem('TEMPLE_DELETED_GROUPS_V1');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const saveDeletedCategories = (list) => {
+    setDeletedCategories(list);
+    try {
+      localStorage.setItem('TEMPLE_DELETED_GROUPS_V1', JSON.stringify(list));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   // Helper to record history before mutation
   const pushHistorySnapshot = (locationsSnapshot) => {
     if (!locationsSnapshot) return;
-    setHistory((prev) => [...prev.slice(-20), JSON.parse(JSON.stringify(locationsSnapshot))]);
+    setHistory((prev) => [...prev.slice(-20), JSON.parse(JSON.stringify({ locations: locationsSnapshot, deletedCategories }))]);
     setRedoStack([]);
   };
 
@@ -282,18 +301,22 @@ export default function TempleMapModal({
     const { setter, saver } = getTabDataFunctions();
     const currentBaseLocs = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
 
-    const previousState = history[history.length - 1];
+    const previousSnapshot = history[history.length - 1];
     const newHistory = history.slice(0, history.length - 1);
 
-    setRedoStack((prev) => [...prev, JSON.parse(JSON.stringify(currentBaseLocs))]);
+    const previousLocs = Array.isArray(previousSnapshot) ? previousSnapshot : (previousSnapshot.locations || []);
+    const previousDeleted = (!Array.isArray(previousSnapshot) && previousSnapshot.deletedCategories) ? previousSnapshot.deletedCategories : deletedCategories;
+
+    setRedoStack((prev) => [...prev, JSON.parse(JSON.stringify({ locations: currentBaseLocs, deletedCategories }))]);
     setHistory(newHistory);
 
-    setter(previousState);
-    saver(previousState);
+    setter(previousLocs);
+    saver(previousLocs);
+    saveDeletedCategories(previousDeleted);
 
     if (activeTab === 'interactive') {
-      setTab3Locations(previousState);
-      saveTab3LocationsToFirebase(previousState);
+      setTab3Locations(previousLocs);
+      saveTab3LocationsToFirebase(previousLocs);
     }
 
     setUndoToast('↩️ បានថយក្រោយ (Undo - Ctrl+Z)');
@@ -306,18 +329,22 @@ export default function TempleMapModal({
     const { setter, saver } = getTabDataFunctions();
     const currentBaseLocs = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
 
-    const nextState = redoStack[redoStack.length - 1];
+    const nextSnapshot = redoStack[redoStack.length - 1];
     const newRedo = redoStack.slice(0, redoStack.length - 1);
 
-    setHistory((prev) => [...prev, JSON.parse(JSON.stringify(currentBaseLocs))]);
+    const nextLocs = Array.isArray(nextSnapshot) ? nextSnapshot : (nextSnapshot.locations || []);
+    const nextDeleted = (!Array.isArray(nextSnapshot) && nextSnapshot.deletedCategories) ? nextSnapshot.deletedCategories : deletedCategories;
+
+    setHistory((prev) => [...prev, JSON.parse(JSON.stringify({ locations: currentBaseLocs, deletedCategories }))]);
     setRedoStack(newRedo);
 
-    setter(nextState);
-    saver(nextState);
+    setter(nextLocs);
+    saver(nextLocs);
+    saveDeletedCategories(nextDeleted);
 
     if (activeTab === 'interactive') {
-      setTab3Locations(nextState);
-      saveTab3LocationsToFirebase(nextState);
+      setTab3Locations(nextLocs);
+      saveTab3LocationsToFirebase(nextLocs);
     }
 
     setUndoToast('↪️ បានទៅមុខ (Redo - Ctrl+U)');
@@ -595,18 +622,26 @@ export default function TempleMapModal({
   const categoryGroups = useMemo(() => {
     const groups = {};
     currentLocations.forEach((loc) => {
-      const cat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+      const rawCat = loc.category;
+      let cat = (rawCat && !deletedCategories.includes(rawCat)) ? rawCat : null;
+      if (!cat) {
+        const defaultCat = loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ';
+        cat = deletedCategories.includes(defaultCat) ? '🌐 ទីតាំងទូទៅ (មិនទាន់បែងចែក Group)' : defaultCat;
+      }
+      if (deletedCategories.includes(cat)) return;
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(loc);
     });
     return groups;
-  }, [currentLocations]);
+  }, [currentLocations, deletedCategories]);
 
   const availableCategories = useMemo(() => {
-    const cats = new Set(['🏢 ក្រុមអគារ និង កុដិ', '⛩️ ក្រុមខ្លោងទ្វារវត្ត']);
-    Object.keys(categoryGroups).forEach((c) => cats.add(c));
+    const cats = new Set();
+    Object.keys(categoryGroups).forEach((c) => {
+      if (!deletedCategories.includes(c)) cats.add(c);
+    });
     return Array.from(cats);
-  }, [categoryGroups]);
+  }, [categoryGroups, deletedCategories]);
 
   // Zoom handlers (clamped between 0.4x and 5.0x with center focal preservation)
   const handleZoom = (delta) => {
@@ -1352,6 +1387,11 @@ export default function TempleMapModal({
       return;
     }
 
+    // Remove category from deletedCategories if it was deleted previously
+    if (deletedCategories.includes(name)) {
+      saveDeletedCategories(deletedCategories.filter((c) => c !== name));
+    }
+
     const { setter, saver } = getTabDataFunctions();
     // Use raw base locations to avoid saving computed tagOwnerName/tagNumber
     const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
@@ -1419,6 +1459,10 @@ export default function TempleMapModal({
     const trimmedNew = renameGroupInput.trim();
     if (!trimmedNew || trimmedNew === editingGroupName) return;
 
+    if (deletedCategories.includes(trimmedNew)) {
+      saveDeletedCategories(deletedCategories.filter((c) => c !== trimmedNew));
+    }
+
     const { setter, saver } = getTabDataFunctions();
     const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
 
@@ -1440,6 +1484,7 @@ export default function TempleMapModal({
 
     const isConfirmed = window.confirm(
       `តើអ្នកពិតជាចង់លុប Group «${editingGroupName}» នេះមែនទេ?\n\n` +
+      `• Group នេះនឹងត្រូវលុបបាត់ពីប្រព័ន្ធ\n` +
       `• ទីតាំងទាំងអស់ក្នុង Group នេះនឹងត្រូវរក្សាទុកដដែល (មិនត្រូវលុបចោលឡើយ)`
     );
 
@@ -1448,13 +1493,17 @@ export default function TempleMapModal({
     const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
     pushHistorySnapshot(baseLocations);
 
+    // Save editingGroupName into deletedCategories so it disappears permanently
+    const nextDeleted = Array.from(new Set([...deletedCategories, editingGroupName]));
+    saveDeletedCategories(nextDeleted);
+
     const { setter, saver } = getTabDataFunctions();
 
-    // Reset category for all locations in this group to default/unassigned ('')
+    // Reset category for all locations in this group to unassigned ('')
     const updated = baseLocations.map((loc) => {
-      const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
-      if (catMatches) {
-        return { ...loc, category: '🏢 ក្រុមអគារ និង កុដិ' };
+      const currentCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+      if (currentCat === editingGroupName || loc.category === editingGroupName) {
+        return { ...loc, category: '' };
       }
       return loc;
     });
@@ -1465,8 +1514,11 @@ export default function TempleMapModal({
     if (activeTab === 'interactive') {
       setTab3Locations((prev3) => {
         const final3 = prev3.map((loc) => {
-          const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
-          return catMatches ? { ...loc, category: '🏢 ក្រុមអគារ និង កុដិ' } : loc;
+          const currentCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+          if (currentCat === editingGroupName || loc.category === editingGroupName) {
+            return { ...loc, category: '' };
+          }
+          return loc;
         });
         saveTab3LocationsToFirebase(final3);
         return final3;
