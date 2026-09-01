@@ -265,6 +265,7 @@ export default function TempleMapModal({
   const [isGroupEditModalOpen, setIsGroupEditModalOpen] = useState(false);
   const [editingGroupName, setEditingGroupName] = useState('');
   const [renameGroupInput, setRenameGroupInput] = useState('');
+  const [pinningGroupMode, setPinningGroupMode] = useState(null);
 
   // History & Redo stack for Ctrl+Z and Ctrl+U
   const [history, setHistory] = useState([]);
@@ -941,15 +942,60 @@ export default function TempleMapModal({
     });
   };
 
-  // Map Click (Add new pin on Tab 2 or Tab 3)
+  // Map Click (Add new pin on Tab 2 or Tab 3 or Pin Group)
   const handleMapClick = (e) => {
-    if (!canCustomizeTab) return; // Only Admin & Owner can add pins on Tab 2 & Tab 3
+    if (!canCustomizeTab) return; // Only Admin & Owner can customize pins
     if (draggingPinId || pinMovedFlagRef.current) return;
     const rect = mapContainerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
     const pctX = parseFloat(((clickX / rect.width) * 100).toFixed(2));
     const pctY = parseFloat(((clickY / rect.height) * 100).toFixed(2));
+
+    // Handle Pinning Entire Group Mode
+    if (pinningGroupMode) {
+      const groupLocations = currentLocations.filter((loc) => loc.category === pinningGroupMode);
+
+      if (groupLocations.length === 0) {
+        alert(`គ្មាន Pin នៅក្នុង Group «${pinningGroupMode}» ទេ!`);
+        setPinningGroupMode(null);
+        return;
+      }
+
+      saveStateForUndo();
+
+      // Cluster pins belonging to this group around clicked (pctX, pctY)
+      const count = groupLocations.length;
+      const cols = Math.ceil(Math.sqrt(count));
+      const updated = currentLocations.map((loc) => {
+        if (loc.category === pinningGroupMode) {
+          const index = groupLocations.findIndex((g) => g.id === loc.id);
+          const row = Math.floor(index / cols);
+          const col = index % cols;
+          const offsetX = (col - (cols - 1) / 2) * 3.5;
+          const offsetY = (row - (Math.ceil(count / cols) - 1) / 2) * 3.5;
+
+          return {
+            ...loc,
+            x: Math.max(2, Math.min(98, parseFloat((pctX + offsetX).toFixed(2)))),
+            y: Math.max(2, Math.min(98, parseFloat((pctY + offsetY).toFixed(2)))),
+            isUnpinned: false
+          };
+        }
+        return loc;
+      });
+
+      setTab3Locations(updated);
+      saveTab3LocationsToFirebase(updated);
+      saveTab3Locations(updated);
+      setLocations(updated);
+      saveTempleLocations(updated);
+
+      setUndoToast(`✅ បានដៅទីតាំង Group «${pinningGroupMode}» លើ Map រួចរាល់ (${westernToKhmerDigits(count)} Pin)!`);
+      setTimeout(() => setUndoToast(''), 3500);
+      setPinningGroupMode(null);
+      return;
+    }
 
     setEditingLoc({
       isNew: true,
@@ -1937,6 +1983,20 @@ export default function TempleMapModal({
                 touchAction: zoomScale > 1.0 ? 'none' : 'pan-y'
               }}
             >
+              {/* Top Indicator Banner when Pinning Group Mode is Active */}
+              {pinningGroupMode && (
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-slate-950 font-bold text-xs sm:text-sm px-4 py-2 rounded-2xl shadow-2xl border-2 border-slate-900 flex items-center gap-2.5 animate-bounce font-kantumruy">
+                  <MapPin className="w-5 h-5 text-slate-950 shrink-0" />
+                  <span>📍 កំពុងដៅទីតាំង Group «{pinningGroupMode}» ៖ សូមចុចលើ Map ត្រង់ចំណុចដែលចង់ដាក់!</span>
+                  <button
+                    onClick={() => setPinningGroupMode(null)}
+                    className="ml-2 px-2.5 py-1 bg-slate-950 text-amber-300 rounded-xl text-xs hover:bg-slate-900 font-sans-en font-bold"
+                  >
+                    បោះបង់ (X)
+                  </button>
+                </div>
+              )}
+
               {/* Scalable Map Box */}
               <div
                 ref={mapContainerRef}
@@ -2557,6 +2617,20 @@ export default function TempleMapModal({
                           >
                             <Plus className="w-3.5 h-3.5" />
                             <span className="text-[10px] font-bold hidden sm:inline">+ Pin</span>
+                          </button>
+                        )}
+
+                        {canCustomizeTab && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPinningGroupMode(catName);
+                              viewportRef.current?.scrollIntoView({ behavior: 'smooth' });
+                            }}
+                            className="p-1.5 rounded-lg border bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500 hover:text-slate-950 transition-all font-bold"
+                            title={`📍 ដៅទីតាំងរាល់ Pin ក្នុង Group «${catName}» លើ Map`}
+                          >
+                            <MapPin className="w-3.5 h-3.5" />
                           </button>
                         )}
 
@@ -3184,6 +3258,18 @@ export default function TempleMapModal({
                   <X className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Pin Entire Group On Map Button */}
+              <button
+                onClick={() => {
+                  setIsGroupEditModalOpen(false);
+                  setPinningGroupMode(editingGroupName);
+                }}
+                className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-95 font-kantumruy"
+              >
+                <MapPin className="w-4 h-4 text-slate-950" />
+                <span>📍 ដៅទីតាំងរាល់ Pin ក្នុង Group «{editingGroupName}» លើ Map ទាំងអស់តែម្តង</span>
+              </button>
 
               {/* Add Pin Into This Group Button */}
               <button
