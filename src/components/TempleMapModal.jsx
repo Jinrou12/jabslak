@@ -5,6 +5,7 @@ import {
   ZoomIn,
   ZoomOut,
   RotateCcw,
+  RotateCw,
   Download,
   Upload,
   Eye,
@@ -262,6 +263,96 @@ export default function TempleMapModal({
   const [isGroupEditModalOpen, setIsGroupEditModalOpen] = useState(false);
   const [editingGroupName, setEditingGroupName] = useState('');
   const [renameGroupInput, setRenameGroupInput] = useState('');
+
+  // History & Redo stack for Ctrl+Z and Ctrl+U
+  const [history, setHistory] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
+  const [undoToast, setUndoToast] = useState('');
+
+  // Helper to record history before mutation
+  const pushHistorySnapshot = (locationsSnapshot) => {
+    if (!locationsSnapshot) return;
+    setHistory((prev) => [...prev.slice(-20), JSON.parse(JSON.stringify(locationsSnapshot))]);
+    setRedoStack([]);
+  };
+
+  // Undo function (Ctrl+Z)
+  const handleUndo = () => {
+    if (history.length === 0) return;
+    const { setter, saver } = getTabDataFunctions();
+    const currentBaseLocs = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+
+    const previousState = history[history.length - 1];
+    const newHistory = history.slice(0, history.length - 1);
+
+    setRedoStack((prev) => [...prev, JSON.parse(JSON.stringify(currentBaseLocs))]);
+    setHistory(newHistory);
+
+    setter(previousState);
+    saver(previousState);
+
+    if (activeTab === 'interactive') {
+      setTab3Locations(previousState);
+      saveTab3LocationsToFirebase(previousState);
+    }
+
+    setUndoToast('↩️ បានថយក្រោយ (Undo - Ctrl+Z)');
+    setTimeout(() => setUndoToast(''), 2200);
+  };
+
+  // Redo function (Ctrl+U / Ctrl+Y)
+  const handleRedo = () => {
+    if (redoStack.length === 0) return;
+    const { setter, saver } = getTabDataFunctions();
+    const currentBaseLocs = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+
+    const nextState = redoStack[redoStack.length - 1];
+    const newRedo = redoStack.slice(0, redoStack.length - 1);
+
+    setHistory((prev) => [...prev, JSON.parse(JSON.stringify(currentBaseLocs))]);
+    setRedoStack(newRedo);
+
+    setter(nextState);
+    saver(nextState);
+
+    if (activeTab === 'interactive') {
+      setTab3Locations(nextState);
+      saveTab3LocationsToFirebase(nextState);
+    }
+
+    setUndoToast('↪️ បានទៅមុខ (Redo - Ctrl+U)');
+    setTimeout(() => setUndoToast(''), 2200);
+  };
+
+  // Keyboard shortcut listener for Ctrl+Z and Ctrl+U
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        const key = e.key.toLowerCase();
+
+        if (key === 'z' && !e.shiftKey) {
+          const activeEl = document.activeElement;
+          const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+
+          if (!isInput && history.length > 0) {
+            e.preventDefault();
+            handleUndo();
+          }
+        } else if (key === 'u' || key === 'y' || (key === 'z' && e.shiftKey)) {
+          const activeEl = document.activeElement;
+          const isInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA');
+
+          if (!isInput && redoStack.length > 0) {
+            e.preventDefault();
+            handleRedo();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [history, redoStack, activeTab, tab3Locations, locations]);
 
   // Panning, wheel zoom & dragging ref
   const viewportRef = useRef(null);
@@ -906,6 +997,10 @@ export default function TempleMapModal({
     setDraggingPinId(loc.id);
     const dragTab = activeTab; // capture which tab we started dragging in
 
+    // Push history snapshot before moving pin
+    const currentLocs = dragTab === 'tagger' ? tab3Locations : baseMapLocations;
+    pushHistorySnapshot(currentLocs);
+
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
     let hasMoved = false;
@@ -982,13 +1077,41 @@ export default function TempleMapModal({
   // Open Edit Modal for a specific location
   const handleOpenEditModal = (loc) => {
     setEditingLoc(loc);
+
+    const locIdWestern = khmerToWesternDigits(String(loc.id || '')).trim().toLowerCase();
+    const tagDisp = loc.tagNumberDisplay || (loc.tagNumber ? String(loc.tagNumber) : (loc.isTagPin ? String(loc.id) : ''));
+
+    const found =
+      groupedAllTags.find(
+        (t) =>
+          String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
+          String(t.tagNumberDisplay) === String(tagDisp) ||
+          khmerToWesternDigits(String(t.tagNumberDisplay || '')).toLowerCase() === locIdWestern
+      ) ||
+      allTags.find(
+        (t) =>
+          String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
+          String(t.tagNumberDisplay) === String(tagDisp) ||
+          khmerToWesternDigits(String(t.tagNumberDisplay || '')).toLowerCase() === locIdWestern
+      );
+
+    if (found) {
+      const matchDisp = found.tagNumberDisplay || String(found.tagNumber);
+      setSelectedTagForPin(matchDisp);
+    } else {
+      setSelectedTagForPin(tagDisp);
+    }
+
     setModalForm({
       id: loc.id,
       name: loc.name,
       badgeColor: loc.badgeColor || (loc.type === 'gate' ? 'emerald' : 'emerald'),
       type: loc.type || 'building',
       pos: loc.pos || 'R',
-      category: loc.category || '🏢 ក្រុមអគារ និង កុដិ'
+      category: loc.category || '🏢 ក្រុមអគារ និង កុដិ',
+      isTagPin: loc.isTagPin !== undefined ? loc.isTagPin : Boolean(found),
+      tagNumber: loc.tagNumber || (found ? found.tagNumber : null),
+      tagNumberDisplay: loc.tagNumberDisplay || (found ? (found.tagNumberDisplay || String(found.tagNumber)) : null)
     });
     setFormError('');
     setIsEditModalOpen(true);
@@ -1057,11 +1180,11 @@ export default function TempleMapModal({
       return;
     }
 
-    const { setter, saver } = getTabDataFunctions();
-
-    // IMPORTANT: Always use RAW base locations (not computed effectiveTab3Locations)
-    // to avoid baking computed tagOwnerName/tagNumber into saved data.
+    // Push history snapshot before saving
     const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+    pushHistorySnapshot(baseLocations);
+
+    const { setter, saver } = getTabDataFunctions();
 
     // Helper: strip computed-only properties before saving to state/Firebase
     const stripComputed = (loc) => {
@@ -1138,7 +1261,6 @@ export default function TempleMapModal({
         return finalTab3;
       });
     }
-    // Rule 2: Edits/Adds on Tab 3 (tagger) stay 100% inside Tab 3 (tab3Locations) without affecting Tab 1 or Tab 2!
 
     setIsEditModalOpen(false);
     setEditingLoc(null);
@@ -1147,9 +1269,10 @@ export default function TempleMapModal({
   // Delete Location (routes to correct tab data)
   const handleDeleteLocation = (id) => {
     if (window.confirm(`តើអ្នកពិតជាចង់លុបទីតាំង #${id} នេះមែនទេ?`)) {
-      const { setter, saver } = getTabDataFunctions();
-      // Use raw base locations (not computed effectiveTab3Locations) to avoid saving computed props
       const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+      pushHistorySnapshot(baseLocations);
+
+      const { setter, saver } = getTabDataFunctions();
       const updated = baseLocations.filter((l) => l.id !== id);
       setter(updated);
       saver(updated);
@@ -1166,6 +1289,9 @@ export default function TempleMapModal({
   // Reset to default (routes to correct tab data)
   const handleResetLocations = () => {
     if (window.confirm('តើអ្នកពិតជាចង់កំណត់ទីតាំងឡើងវិញទៅទិន្នន័យដើមទាំង ២១ ចំណុចមែនទេ?')) {
+      const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+      pushHistorySnapshot(baseLocations);
+
       if (activeTab === 'tagger') {
         const reset = resetTab3Locations();
         setTab3Locations(reset);
@@ -1471,6 +1597,38 @@ export default function TempleMapModal({
                 <EyeOff className="w-4 h-4 text-rose-400 shrink-0" />
               )}
             </button>
+
+            <div className="h-4 w-px bg-slate-800 mx-0.5 shrink-0"></div>
+
+            {/* Undo Button (Ctrl+Z) */}
+            <button
+              onClick={handleUndo}
+              disabled={history.length === 0}
+              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all ${
+                history.length > 0
+                  ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 cursor-pointer'
+                  : 'bg-slate-900/60 border border-slate-800/80 text-slate-600 cursor-not-allowed opacity-50'
+              }`}
+              title="ថយក្រោយ (Ctrl+Z)"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Ctrl+Z</span>
+            </button>
+
+            {/* Redo Button (Ctrl+U) */}
+            <button
+              onClick={handleRedo}
+              disabled={redoStack.length === 0}
+              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all ${
+                redoStack.length > 0
+                  ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 cursor-pointer'
+                  : 'bg-slate-900/60 border border-slate-800/80 text-slate-600 cursor-not-allowed opacity-50'
+              }`}
+              title="ទៅមុខ (Ctrl+U)"
+            >
+              <RotateCw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Ctrl+U</span>
+            </button>
           </div>
 
           {/* Eye & Compass & Customizable Group Size Controls */}
@@ -1539,6 +1697,13 @@ export default function TempleMapModal({
         </div>
 
 
+
+        {/* ════════ UNDO / REDO TOAST NOTIFICATION ════════ */}
+        {undoToast && (
+          <div className="px-4 py-2 bg-amber-500/20 border-b border-amber-500/40 flex items-center justify-center text-amber-300 text-xs font-extrabold animate-bounce shrink-0 shadow-lg">
+            <span>{undoToast}</span>
+          </div>
+        )}
 
         {/* ════════ PENDING PIN TAG NOTIFICATION ════════ */}
         {pendingPinTag && (
@@ -2441,9 +2606,53 @@ export default function TempleMapModal({
                     type="text"
                     value={modalForm.id}
                     onChange={(e) => {
-                      const latinVal = khmerToWesternDigits(e.target.value);
-                      setModalForm((prev) => ({ ...prev, id: latinVal }));
+                      const rawVal = e.target.value;
+                      const latinVal = khmerToWesternDigits(rawVal);
                       setFormError('');
+
+                      if (latinVal) {
+                        const searchVal = latinVal.trim().toLowerCase();
+                        const found =
+                          groupedAllTags.find((t) => {
+                            const tNoStr = String(t.tagNumber || '').trim().toLowerCase();
+                            const tDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
+                            const tDispWestern = khmerToWesternDigits(tDispStr).trim().toLowerCase();
+                            return tNoStr === searchVal || tDispStr === searchVal || tDispWestern === searchVal;
+                          }) ||
+                          allTags.find((t) => {
+                            const tNoStr = String(t.tagNumber || '').trim().toLowerCase();
+                            const tDispStr = String(t.tagNumberDisplay || '').trim().toLowerCase();
+                            const tDispWestern = khmerToWesternDigits(tDispStr).trim().toLowerCase();
+                            return tNoStr === searchVal || tDispStr === searchVal || tDispWestern === searchVal;
+                          });
+
+                        if (found) {
+                          const tagDisp = found.tagNumberDisplay || String(found.tagNumber);
+                          const latinId = String(found.tagNumber || khmerToWesternDigits(tagDisp));
+                          const autoName = found.name || found.location || `ស្លាកលេខ #${latinId}`;
+
+                          setSelectedTagForPin(tagDisp);
+                          setModalForm((prev) => ({
+                            ...prev,
+                            id: latinVal,
+                            tagNumber: found.tagNumber,
+                            tagNumberDisplay: tagDisp,
+                            isTagPin: true,
+                            name: autoName,
+                            badgeColor: prev.badgeColor || 'orange',
+                            category:
+                              found.baseLocation &&
+                              found.baseLocation !== 'មើលទីកន្លែង' &&
+                              found.baseLocation !== 'មិនទាន់ដៅលើ Map'
+                                ? found.baseLocation
+                                : prev.category || '🏢 ក្រុមអគារ និង កុដិ'
+                          }));
+                          return;
+                        }
+                      }
+
+                      setSelectedTagForPin('');
+                      setModalForm((prev) => ({ ...prev, id: latinVal }));
                     }}
                     placeholder="ឧ. 17, 18, F, G..."
                     className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400 font-sans-en"
