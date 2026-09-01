@@ -3025,7 +3025,12 @@ export default function TempleMapModal({
                     <span className="text-[10px] text-amber-400 font-normal">គ្រីក (✓) ដើម្បីជ្រើសរើស</span>
                   </label>
                   <div className="max-h-40 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-xl p-2">
-                    {currentLocations.map((loc) => {
+                    {currentLocations
+                      .filter((loc) => {
+                        const cat = loc.category || '';
+                        return cat === '' || !cat || selectedLocationIdsForGroup.includes(loc.id);
+                      })
+                      .map((loc) => {
                       const isChecked = selectedLocationIdsForGroup.includes(loc.id);
                       const tagOwnerName = loc.tagOwnerName;
                       const matchedTag = allTags.find(
@@ -3246,62 +3251,66 @@ export default function TempleMapModal({
                   <span className="text-[10px] text-amber-400 font-normal">គ្រីក (✓) ដើម្បីដាក់ចូល Group</span>
                 </label>
                 <div className="max-h-40 overflow-y-auto space-y-1 bg-slate-950 border border-slate-800 rounded-2xl p-2">
-                  {currentLocations.map((loc) => {
-                    const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
-                    const isInGroup = locCat === editingGroupName;
+                  {currentLocations
+                    .filter((loc) => {
+                      const cat = loc.category || '';
+                      return cat === editingGroupName || cat === '' || !cat;
+                    })
+                    .map((loc) => {
+                      const isInGroup = loc.category === editingGroupName;
 
-                    const tagOwnerName = loc.tagOwnerName;
-                    const matchedTag = allTags.find(
-                      (t) =>
-                        String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
-                        String(t.tagNumberDisplay) === String(loc.tagNumberDisplay || loc.id)
-                    );
-                    const ownerDisp = tagOwnerName || (matchedTag ? matchedTag.name : '');
-                    const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(loc.id) : null));
+                      const tagOwnerName = loc.tagOwnerName;
+                      const matchedTag = allTags.find(
+                        (t) =>
+                          String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
+                          String(t.tagNumberDisplay) === String(loc.tagNumberDisplay || loc.id)
+                      );
+                      const ownerDisp = tagOwnerName || (matchedTag ? matchedTag.name : '');
+                      const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(loc.id) : null));
 
-                    return (
-                      <label
-                        key={loc.id}
-                        className={`flex items-center justify-between text-xs p-1.5 rounded-xl cursor-pointer transition-all ${
-                          isInGroup
-                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold'
-                            : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <input
-                            type="checkbox"
-                            checked={isInGroup}
-                            onChange={(e) => {
-                              const targetCategory = e.target.checked ? editingGroupName : '';
-                              const { setter, saver } = getTabDataFunctions();
-                              const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
-                              const updated = baseLocations.map((l) =>
-                                l.id === loc.id ? { ...l, category: targetCategory } : l
-                              );
-                              setter(updated);
-                              saver(updated);
-                            }}
-                            className="rounded border-slate-700 text-amber-500 focus:ring-0 shrink-0"
-                          />
-                          <div className="truncate min-w-0">
-                            {tagNumDisp ? (
-                              <span className="font-bold text-amber-400 font-sans-en mr-1">
-                                ស្លាកលេខ {tagNumDisp} ៖
-                              </span>
-                            ) : (
-                              <span className="font-bold text-amber-400 font-moul mr-1">#{loc.id}.</span>
-                            )}
-                            <span className="text-slate-100 font-bold">{ownerDisp || loc.name}</span>
+                      return (
+                        <label
+                          key={loc.id}
+                          className={`flex items-center justify-between text-xs p-1.5 rounded-xl cursor-pointer transition-all ${
+                            isInGroup
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 font-bold'
+                              : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <input
+                              type="checkbox"
+                              checked={isInGroup}
+                              onChange={(e) => {
+                                const targetCategory = e.target.checked ? editingGroupName : '';
+                                const { setter, saver } = getTabDataFunctions();
+                                const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+                                const updated = baseLocations.map((l) =>
+                                  l.id === loc.id ? { ...l, category: targetCategory } : l
+                                );
+                                setter(updated);
+                                saver(updated);
+                              }}
+                              className="rounded border-slate-700 text-amber-500 focus:ring-0 shrink-0"
+                            />
+                            <div className="truncate min-w-0">
+                              {tagNumDisp ? (
+                                <span className="font-bold text-amber-400 font-sans-en mr-1">
+                                  ស្លាកលេខ {tagNumDisp} ៖
+                                </span>
+                              ) : (
+                                <span className="font-bold text-amber-400 font-moul mr-1">#{loc.id}.</span>
+                              )}
+                              <span className="text-slate-100 font-bold">{ownerDisp || loc.name}</span>
+                            </div>
                           </div>
-                        </div>
 
-                        <span className="text-[10px] text-slate-400 shrink-0 font-sans-en ml-1">
-                          {isInGroup ? '✓ ក្នុង Group នេះ' : locCat}
-                        </span>
-                      </label>
-                    );
-                  })}
+                          <span className="text-[10px] text-slate-400 shrink-0 font-sans-en ml-1">
+                            {isInGroup ? '✓ ក្នុង Group នេះ' : 'មិនទាន់មាន Group'}
+                          </span>
+                        </label>
+                      );
+                    })}
                 </div>
               </div>
 
