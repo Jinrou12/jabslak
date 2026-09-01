@@ -622,13 +622,8 @@ export default function TempleMapModal({
   const categoryGroups = useMemo(() => {
     const groups = {};
     currentLocations.forEach((loc) => {
-      const rawCat = loc.category;
-      let cat = (rawCat && !deletedCategories.includes(rawCat)) ? rawCat : null;
-      if (!cat) {
-        const defaultCat = loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ';
-        cat = deletedCategories.includes(defaultCat) ? '🌐 ទីតាំងទូទៅ (មិនទាន់បែងចែក Group)' : defaultCat;
-      }
-      if (deletedCategories.includes(cat)) return;
+      const cat = loc.category;
+      if (!cat || deletedCategories.includes(cat)) return;
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(loc);
     });
@@ -1539,8 +1534,9 @@ export default function TempleMapModal({
         String(loc.name || '').toLowerCase().includes(q) ||
         String(loc.id || '').toLowerCase().includes(q) ||
         String(loc.category || '').toLowerCase().includes(q);
+      const locCat = (loc.category && !deletedCategories.includes(loc.category)) ? loc.category : '';
       const matchesCat =
-        selectedCategory === 'all' || (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === selectedCategory;
+        selectedCategory === 'all' || locCat === selectedCategory;
       return matchesSearch && matchesCat;
     });
   }, [currentLocations, searchQuery, selectedCategory]);
@@ -3066,7 +3062,7 @@ export default function TempleMapModal({
                             type="checkbox"
                             checked={isInGroup}
                             onChange={(e) => {
-                              const targetCategory = e.target.checked ? editingGroupName : '🏢 ក្រុមអគារ និង កុដិ';
+                              const targetCategory = e.target.checked ? editingGroupName : '';
                               const { setter, saver } = getTabDataFunctions();
                               const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
                               const updated = baseLocations.map((l) =>
