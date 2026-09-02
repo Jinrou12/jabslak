@@ -361,6 +361,236 @@ export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3L
   return initialMatch ? initialMatch.name : loc.name;
 }
 
+// ════════ MEMOIZED COMPASS ROSE SVG COMPONENT (Zero re-render during pin/zoom updates) ════════
+const CompassRose = React.memo(function CompassRose({ isVisible, isExpanded, onToggleExpand }) {
+  if (!isVisible) return null;
+
+  return (
+    <div className="absolute top-3 right-3 pointer-events-auto z-30 transition-all hover:scale-[1.02]">
+      <div className="flex flex-col items-center select-none bg-transparent font-kantumruy">
+        {/* Compact Expand/Collapse Button */}
+        <button
+          onClick={onToggleExpand}
+          className="self-end mb-1 text-[10px] sm:text-xs bg-slate-900/80 hover:bg-slate-800 text-amber-300 font-bold px-2 py-0.5 rounded-full transition-all border border-amber-500/50 shadow-md backdrop-blur-sm"
+        >
+          {isExpanded ? '➖ បង្រួម' : '🔍 ពង្រីកត្រីវិស័យ'}
+        </button>
+
+        {/* Pure 100% Transparent PNG Compass Canvas */}
+        <div className={`relative flex items-center justify-center transition-all bg-transparent ${
+          isExpanded ? 'w-48 h-48 sm:w-80 sm:h-80' : 'w-28 h-28 sm:w-52 sm:h-52'
+        }`}>
+          <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-2xl select-none">
+            {/* 8 COLOR STAR POINTS */}
+            <polygon points="200,200 180,145 200,60" fill="#0f172a" />
+            <polygon points="200,200 220,145 200,60" fill="#334155" />
+
+            <polygon points="200,200 230,150 299,101" fill="#c2410c" />
+            <polygon points="200,200 250,170 299,101" fill="#f97316" />
+
+            <polygon points="200,200 255,180 332,200" fill="#15803d" />
+            <polygon points="200,200 255,220 332,200" fill="#22c55e" />
+
+            <polygon points="200,200 250,230 299,299" fill="#4d7c0f" />
+            <polygon points="200,200 230,250 299,299" fill="#84cc16" />
+
+            <polygon points="200,200 180,255 200,340" fill="#ca8a04" />
+            <polygon points="200,200 220,255 200,340" fill="#eab308" />
+
+            <polygon points="200,200 170,250 101,299" fill="#0e7490" />
+            <polygon points="200,200 150,230 101,299" fill="#06b6d4" />
+
+            <polygon points="200,200 145,180 68,200" fill="#b91c1c" />
+            <polygon points="200,200 145,220 68,200" fill="#ef4444" />
+
+            <polygon points="200,200 150,170 101,101" fill="#be185d" />
+            <polygon points="200,200 170,150 101,101" fill="#ec4899" />
+
+            {/* Center Golden Ring */}
+            <circle cx="200" cy="200" r="22" fill="#fef08a" stroke="#ca8a04" strokeWidth="4" />
+            <circle cx="200" cy="200" r="8" fill="#0f172a" />
+
+            {/* 8 DIRECTION TEXT BADGES TOUCHING STAR TIPS */}
+            <g transform="translate(200, 32)">
+              <rect x="-34" y="-22" width="68" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
+              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ឧត្តរ</text>
+              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ជើង</text>
+            </g>
+
+            <g transform="translate(325, 75)">
+              <rect x="-30" y="-14" width="60" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
+              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ឦសាន</text>
+            </g>
+
+            <g transform="translate(366, 200)">
+              <rect x="-32" y="-22" width="64" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
+              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">បូព៌</text>
+              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">កើត</text>
+            </g>
+
+            <g transform="translate(325, 325)">
+              <rect x="-34" y="-14" width="68" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
+              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">អាគ្នេយ៍</text>
+            </g>
+
+            <g transform="translate(200, 368)">
+              <rect x="-34" y="-22" width="68" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
+              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ត្បូង</text>
+              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ទក្សិណ</text>
+            </g>
+
+            <g transform="translate(75, 325)">
+              <rect x="-30" y="-14" width="60" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
+              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">និរតី</text>
+            </g>
+
+            <g transform="translate(34, 200)">
+              <rect x="-32" y="-22" width="64" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
+              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">លិច</text>
+              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">បស្ចឹម</text>
+            </g>
+
+            <g transform="translate(75, 75)">
+              <rect x="-32" y="-14" width="64" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
+              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ពាយ័ព្យ</text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+// ════════ MEMOIZED MAP PIN ITEM COMPONENT (Fastest 120fps Rendering) ════════
+const PinItem = React.memo(function PinItem({
+  loc,
+  locIdx,
+  activeTab,
+  currentPinSize,
+  isHighlighted,
+  isHovered,
+  isCurrentlyDragging,
+  canDragThisPin,
+  onPinDragStart,
+  onMapClick,
+  pinMovedFlagRef,
+  pinningGroupMode,
+  setSelectedLocation,
+  setHoveredLocation
+}) {
+  const isGate = loc.type === 'gate';
+  const pos = loc.pos || (loc.x > 75 ? 'L' : 'R');
+  const badgeText = getPinBadgeText(loc, activeTab);
+  const svgFontSize = badgeText.length > 3 ? 8 : badgeText.length > 2 ? 9.5 : badgeText.length > 1 ? 11.5 : 15.5;
+  const displayName = loc.displayName || loc.name;
+
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: `${loc.x}%`,
+        top: `${loc.y}%`
+      }}
+      className="pointer-events-auto"
+    >
+      <div
+        data-draggable={canDragThisPin ? 'true' : 'false'}
+        onMouseDown={(e) => canDragThisPin && onPinDragStart(e, loc)}
+        onTouchStart={(e) => canDragThisPin && onPinDragStart(e, loc)}
+        onClick={(e) => {
+          if (pinMovedFlagRef.current) return;
+          if (pinningGroupMode) {
+            onMapClick(e);
+            return;
+          }
+          e.stopPropagation();
+          setSelectedLocation(loc);
+        }}
+        onMouseEnter={() => setHoveredLocation(loc)}
+        onMouseLeave={() => setHoveredLocation(null)}
+        className={`map-pin-element relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 ${
+          canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-125' : 'cursor-pointer hover:scale-115'
+        } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-50' : 'z-20'}`}
+        style={{ touchAction: canDragThisPin ? 'none' : 'auto' }}
+      >
+        {isHighlighted && (
+          <div className="absolute -inset-3 rounded-full bg-amber-400/50 animate-ping pointer-events-none z-0"></div>
+        )}
+
+        <div
+          style={{
+            width: `${currentPinSize}px`,
+            height: `${currentPinSize}px`
+          }}
+          className={`rounded-full flex items-center justify-center border border-white/90 shrink-0 z-10 overflow-hidden select-none shadow-md ${getPinBadgeColorClass(
+            loc,
+            locIdx,
+            activeTab
+          )} ${
+            isHighlighted
+              ? 'ring-4 ring-amber-400 ring-offset-2 animate-bounce scale-125 z-50 shadow-2xl'
+              : ''
+          }`}
+        >
+          <svg viewBox="0 0 32 32" className="w-full h-full overflow-hidden block">
+            <text
+              x="16"
+              y="16.2"
+              textAnchor="middle"
+              dominantBaseline="central"
+              fontSize={svgFontSize}
+              fontWeight="700"
+              fill="currentColor"
+              style={{
+                fontFamily: '"Kantumruy Pro", "Battambang", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+              }}
+            >
+              {badgeText}
+            </text>
+          </svg>
+        </div>
+
+        {activeTab === 'labeled' && (
+          <div
+            className={`absolute text-[7.5px] sm:text-[9px] md:text-[10.5px] font-bold py-0.5 px-1.5 rounded-lg border shadow-lg whitespace-nowrap pointer-events-none z-0 ${
+              isGate
+                ? 'bg-slate-950/92 border-amber-400/90 text-amber-200'
+                : 'bg-slate-950/92 border-sky-400/90 text-sky-100'
+            } ${isHighlighted ? 'ring-1.5 ring-amber-400 bg-slate-950 z-50' : ''} ${
+              pos === 'L'
+                ? 'right-full mr-1 top-1/2 -translate-y-1/2'
+                : pos === 'T'
+                ? 'bottom-full mb-1 left-1/2 -translate-x-1/2'
+                : pos === 'B'
+                ? 'top-full mt-1 left-1/2 -translate-x-1/2'
+                : 'left-full ml-1 top-1/2 -translate-y-1/2'
+            }`}
+            style={{
+              boxShadow: '0 2px 8px rgba(0,0,0,0.6)'
+            }}
+          >
+            <span>{loc.name}</span>
+          </div>
+        )}
+
+        {activeTab !== 'labeled' && (
+          <div
+            className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 bg-slate-950/95 text-white font-bold text-[10px] sm:text-xs px-2 py-0.5 rounded-lg border shadow-2xl pointer-events-none whitespace-nowrap transition-opacity duration-150 z-50 ${
+              loc.isTagPin ? 'border-amber-400 text-amber-200 ring-1 ring-amber-400/50' : isGate ? 'border-amber-400 text-amber-200' : 'border-sky-400 text-sky-100'
+            } ${
+              isHighlighted || isHovered
+                ? 'opacity-100 scale-100'
+                : 'opacity-0 scale-90 pointer-events-none'
+            }`}
+          >
+            <span>{displayName}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+});
+
 export default function TempleMapModal({
   onClose,
   allTags = [],
@@ -482,6 +712,7 @@ export default function TempleMapModal({
         ...loc,
         category: autoMigrateCategory(loc.category),
         name: finalName, // ALWAYS KEEP FULL FORMATTED NAME WITH OWNER NAME!
+        displayName: finalName, // Pre-computed for zero O(N) lookup in render
         tagOwnerName: tagOwner,
         tagNumber: tagNum,
         tagNumberDisplay: tagDisp
@@ -1008,6 +1239,10 @@ export default function TempleMapModal({
   };
 
   // PC Mouse Scroll Wheel Zoom (zooms directly into exact mouse cursor focal position)
+  const zoomScaleRef = useRef(zoomScale);
+  zoomScaleRef.current = zoomScale;
+  const wheelCommitTimerRef = useRef(null);
+
   useEffect(() => {
     const vp = viewportRef.current;
     if (!vp) return;
@@ -1016,7 +1251,7 @@ export default function TempleMapModal({
       e.preventDefault();
 
       const delta = e.deltaY < 0 ? 0.15 : -0.15;
-      const currentScale = zoomScale;
+      const currentScale = zoomScaleRef.current;
       const nextScale = Math.max(0.4, Math.min(5.0, parseFloat((currentScale + delta).toFixed(2))));
       if (nextScale === currentScale) return;
 
@@ -1030,20 +1265,25 @@ export default function TempleMapModal({
         const targetScrollLeft = Math.max(0, (vp.scrollLeft + focalX) * ratio - focalX);
         const targetScrollTop = Math.max(0, (vp.scrollTop + focalY) * ratio - focalY);
 
-        // Pre-expand map width in DOM so scrollWidth expands dynamically without clamping
         mapBox.style.width = `${nextScale * 100}%`;
         vp.scrollLeft = targetScrollLeft;
         vp.scrollTop = targetScrollTop;
 
-        setZoomScale(nextScale);
+        zoomScaleRef.current = nextScale;
+
+        if (wheelCommitTimerRef.current) clearTimeout(wheelCommitTimerRef.current);
+        wheelCommitTimerRef.current = setTimeout(() => {
+          setZoomScale(nextScale);
+        }, 120);
       }
     };
 
     vp.addEventListener('wheel', handleWheel, { passive: false });
     return () => {
       vp.removeEventListener('wheel', handleWheel);
+      if (wheelCommitTimerRef.current) clearTimeout(wheelCommitTimerRef.current);
     };
-  }, [zoomScale]);
+  }, []);
 
   // Viewport Mouse Panning (Works in all tabs & zoom scales)
   const handleMouseDown = (e) => {
@@ -2582,116 +2822,11 @@ export default function TempleMapModal({
 
                 {/* ════════ PURE TRANSPARENT PNG KHMER COMPASS ROSE ════════ */}
                 <div className="absolute inset-0 pointer-events-none z-10">
-                  {isCompassVisible && (
-                    <div className="absolute top-3 right-3 pointer-events-auto z-30 transition-all hover:scale-[1.02]">
-                      <div className="flex flex-col items-center select-none bg-transparent font-kantumruy">
-                        {/* Compact Expand/Collapse Button */}
-                        <button
-                          onClick={() => setIsCompassExpanded(!isCompassExpanded)}
-                          className="self-end mb-1 text-[10px] sm:text-xs bg-slate-900/80 hover:bg-slate-800 text-amber-300 font-bold px-2 py-0.5 rounded-full transition-all border border-amber-500/50 shadow-md backdrop-blur-sm"
-                        >
-                          {isCompassExpanded ? '➖ បង្រួម' : '🔍 ពង្រីកត្រីវិស័យ'}
-                        </button>
-
-                        {/* Pure 100% Transparent PNG Compass Canvas */}
-                        <div className={`relative flex items-center justify-center transition-all bg-transparent ${
-                          isCompassExpanded ? 'w-48 h-48 sm:w-80 sm:h-80' : 'w-28 h-28 sm:w-52 sm:h-52'
-                        }`}>
-                          <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-2xl select-none">
-                            {/* ════════ 8 COLOR STAR POINTS ════════ */}
-                            {/* North Point (Black / Dark Slate - 0°) */}
-                            <polygon points="200,200 180,145 200,60" fill="#0f172a" />
-                            <polygon points="200,200 220,145 200,60" fill="#334155" />
-
-                            {/* NE Point (Orange - 45°) */}
-                            <polygon points="200,200 230,150 299,101" fill="#c2410c" />
-                            <polygon points="200,200 250,170 299,101" fill="#f97316" />
-
-                            {/* East Point (Green - 90°) */}
-                            <polygon points="200,200 255,180 332,200" fill="#15803d" />
-                            <polygon points="200,200 255,220 332,200" fill="#22c55e" />
-
-                            {/* SE Point (Lime Green - 135°) */}
-                            <polygon points="200,200 250,230 299,299" fill="#4d7c0f" />
-                            <polygon points="200,200 230,250 299,299" fill="#84cc16" />
-
-                            {/* South Point (Yellow - 180°) */}
-                            <polygon points="200,200 180,255 200,340" fill="#ca8a04" />
-                            <polygon points="200,200 220,255 200,340" fill="#eab308" />
-
-                            {/* SW Point (Cyan - 225°) */}
-                            <polygon points="200,200 170,250 101,299" fill="#0e7490" />
-                            <polygon points="200,200 150,230 101,299" fill="#06b6d4" />
-
-                            {/* West Point (Red - 270°) */}
-                            <polygon points="200,200 145,180 68,200" fill="#b91c1c" />
-                            <polygon points="200,200 145,220 68,200" fill="#ef4444" />
-
-                            {/* NW Point (Pink - 315°) */}
-                            <polygon points="200,200 150,170 101,101" fill="#be185d" />
-                            <polygon points="200,200 170,150 101,101" fill="#ec4899" />
-
-                            {/* Center Golden Ring */}
-                            <circle cx="200" cy="200" r="22" fill="#fef08a" stroke="#ca8a04" strokeWidth="4" />
-                            <circle cx="200" cy="200" r="8" fill="#0f172a" />
-
-                            {/* ════════ 8 DIRECTION TEXT BADGES TOUCHING STAR TIPS ════════ */}
-                            {/* 1. North Badges (Top) */}
-                            <g transform="translate(200, 32)">
-                              <rect x="-34" y="-22" width="68" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
-                              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ឧត្តរ</text>
-                              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ជើង</text>
-                            </g>
-
-                            {/* 2. NE Badge (Top-Right) */}
-                            <g transform="translate(325, 75)">
-                              <rect x="-30" y="-14" width="60" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
-                              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ឦសាន</text>
-                            </g>
-
-                            {/* 3. East Badges (Right) */}
-                            <g transform="translate(366, 200)">
-                              <rect x="-32" y="-22" width="64" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
-                              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">បូព៌</text>
-                              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">កើត</text>
-                            </g>
-
-                            {/* 4. SE Badge (Bottom-Right) */}
-                            <g transform="translate(325, 325)">
-                              <rect x="-34" y="-14" width="68" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
-                              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">អាគ្នេយ៍</text>
-                            </g>
-
-                            {/* 5. South Badges (Bottom) */}
-                            <g transform="translate(200, 368)">
-                              <rect x="-34" y="-22" width="68" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
-                              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ត្បូង</text>
-                              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ទក្សិណ</text>
-                            </g>
-
-                            {/* 6. SW Badge (Bottom-Left) */}
-                            <g transform="translate(75, 325)">
-                              <rect x="-30" y="-14" width="60" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
-                              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">និរតី</text>
-                            </g>
-
-                            {/* 7. West Badges (Left) */}
-                            <g transform="translate(34, 200)">
-                              <rect x="-32" y="-22" width="64" height="44" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
-                              <text x="0" y="-5" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">លិច</text>
-                              <text x="0" y="13" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">បស្ចឹម</text>
-                            </g>
-
-                            {/* 8. NW Badge (Top-Left) */}
-                            <g transform="translate(75, 75)">
-                              <rect x="-32" y="-14" width="64" height="28" rx="8" fill="#ffffff" stroke="#1e293b" strokeWidth="2.5" filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.3))" />
-                              <text x="0" y="2" textAnchor="middle" dominantBaseline="middle" fontFamily="Moul, Kantumruy, sans-serif" fontWeight="bold" fontSize="12" fill="#0f172a">ពាយ័ព្យ</text>
-                            </g>
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                  <CompassRose
+                    isVisible={isCompassVisible}
+                    isExpanded={isCompassExpanded}
+                    onToggleExpand={() => setIsCompassExpanded(!isCompassExpanded)}
+                  />
                 </div>
 
                 {/* ════════ MAP PIN MARKERS & MATHEMATICALLY LOCKED BADGES ════════ */}
@@ -2706,130 +2841,29 @@ export default function TempleMapModal({
                       const isHighlighted =
                         selectedLocation?.id === loc.id ||
                         hoveredLocation?.id === loc.id;
+                      const isHovered = hoveredLocation?.id === loc.id;
 
-                      const isGate = loc.type === 'gate';
                       const isCurrentlyDragging = draggingPinId === loc.id;
                       const canDragThisPin = activeTab !== 'labeled' && !isCategoryLocked;
-                      
-                      const pos = loc.pos || (loc.x > 75 ? 'L' : 'R');
 
                       return (
-                        <div
+                        <PinItem
                           key={loc.id}
-                          style={{
-                            position: 'absolute',
-                            left: `${loc.x}%`,
-                            top: `${loc.y}%`
-                          }}
-                          className="pointer-events-auto"
-                        >
-                          {/* Central Anchor Wrapper */}
-                          <div
-                            data-draggable={canDragThisPin ? 'true' : 'false'}
-                            onMouseDown={(e) => canDragThisPin && handlePinDragStart(e, loc)}
-                            onTouchStart={(e) => canDragThisPin && handlePinDragStart(e, loc)}
-                            onClick={(e) => {
-                              if (pinMovedFlagRef.current) return;
-                              if (pinningGroupMode) {
-                                handleMapClick(e);
-                                return;
-                              }
-                              e.stopPropagation();
-                              setSelectedLocation(loc);
-                            }}
-                            onMouseEnter={() => setHoveredLocation(loc)}
-                            onMouseLeave={() => setHoveredLocation(null)}
-                            className={`map-pin-element relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 ${
-                              canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-125' : 'cursor-pointer hover:scale-115'
-                            } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-50' : 'z-20'}`}
-                            style={{ touchAction: canDragThisPin ? 'none' : 'auto' }}
-                          >
-                            {/* Animated Pulse Beacon Aura Ring for Highlighted/Selected Target Location */}
-                            {isHighlighted && (
-                              <div className="absolute -inset-3 rounded-full bg-amber-400/50 animate-ping pointer-events-none z-0"></div>
-                            )}
-
-                            {/* Pure Vector SVG Pin Badge - 100% Mathematically Centered on PC, iPhone & Android */}
-                            {(() => {
-                              const badgeText = getPinBadgeText(loc, activeTab);
-                              const svgFontSize = badgeText.length > 3 ? 8 : badgeText.length > 2 ? 9.5 : badgeText.length > 1 ? 11.5 : 15.5;
-
-                              return (
-                                <div
-                                  style={{
-                                    width: `${currentPinSize}px`,
-                                    height: `${currentPinSize}px`
-                                  }}
-                                  className={`rounded-full flex items-center justify-center border border-white/90 shrink-0 z-10 overflow-hidden select-none shadow-md ${getPinBadgeColorClass(
-                                    loc,
-                                    locIdx,
-                                    activeTab
-                                  )} ${
-                                    isHighlighted
-                                      ? 'ring-4 ring-amber-400 ring-offset-2 animate-bounce scale-125 z-50 shadow-2xl'
-                                      : ''
-                                  }`}
-                                >
-                                  <svg viewBox="0 0 32 32" className="w-full h-full overflow-hidden block">
-                                    <text
-                                      x="16"
-                                      y="16.2"
-                                      textAnchor="middle"
-                                      dominantBaseline="central"
-                                      fontSize={svgFontSize}
-                                      fontWeight="700"
-                                      fill="currentColor"
-                                      style={{
-                                        fontFamily: '"Kantumruy Pro", "Battambang", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
-                                      }}
-                                    >
-                                      {badgeText}
-                                    </text>
-                                  </svg>
-                                </div>
-                              );
-                            })()}
-
-                            {/* Floating Name Label: PERMANENTLY RENDERED IN TAB 1 ONLY */}
-                            {activeTab === 'labeled' && (
-                              <div
-                                className={`absolute text-[7.5px] sm:text-[9px] md:text-[10.5px] font-bold py-0.5 px-1.5 rounded-lg border shadow-lg whitespace-nowrap pointer-events-none z-0 ${
-                                  isGate
-                                    ? 'bg-slate-950/92 border-amber-400/90 text-amber-200'
-                                    : 'bg-slate-950/92 border-sky-400/90 text-sky-100'
-                                } ${isHighlighted ? 'ring-1.5 ring-amber-400 bg-slate-950 z-50' : ''} ${
-                                  pos === 'L'
-                                    ? 'right-full mr-1 top-1/2 -translate-y-1/2'
-                                    : pos === 'T'
-                                    ? 'bottom-full mb-1 left-1/2 -translate-x-1/2'
-                                    : pos === 'B'
-                                    ? 'top-full mt-1 left-1/2 -translate-x-1/2'
-                                    : 'left-full ml-1 top-1/2 -translate-y-1/2'
-                                }`}
-                                style={{
-                                  boxShadow: '0 2px 8px rgba(0,0,0,0.6)'
-                                }}
-                              >
-                                <span>{loc.name}</span>
-                              </div>
-                            )}
-
-                            {/* Floating Tooltip: In Tab 2 and Tab 3 on Hover/Focus/Click */}
-                            {activeTab !== 'labeled' && (
-                              <div
-                                className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 bg-slate-950/95 text-white font-bold text-[10px] sm:text-xs px-2 py-0.5 rounded-lg border shadow-2xl pointer-events-none whitespace-nowrap transition-all duration-150 z-50 ${
-                                  loc.isTagPin ? 'border-amber-400 text-amber-200 ring-1 ring-amber-400/50' : isGate ? 'border-amber-400 text-amber-200' : 'border-sky-400 text-sky-100'
-                                } ${
-                                  isHighlighted || hoveredLocation?.id === loc.id
-                                    ? 'opacity-100 scale-100'
-                                    : 'opacity-0 scale-90 pointer-events-none'
-                                }`}
-                              >
-                                <span>{getDisplayPinName(loc, allTags, activeTab)}</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                          loc={loc}
+                          locIdx={locIdx}
+                          activeTab={activeTab}
+                          currentPinSize={currentPinSize}
+                          isHighlighted={isHighlighted}
+                          isHovered={isHovered}
+                          isCurrentlyDragging={isCurrentlyDragging}
+                          canDragThisPin={canDragThisPin}
+                          onPinDragStart={handlePinDragStart}
+                          onMapClick={handleMapClick}
+                          pinMovedFlagRef={pinMovedFlagRef}
+                          pinningGroupMode={pinningGroupMode}
+                          setSelectedLocation={setSelectedLocation}
+                          setHoveredLocation={setHoveredLocation}
+                        />
                       );
                     })}
                   </div>
