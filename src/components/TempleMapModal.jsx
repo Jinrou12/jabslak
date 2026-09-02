@@ -193,7 +193,7 @@ export function getPinBadgeText(loc, activeTab = 'tagger') {
   if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
     if (loc.tagNumberDisplay) return loc.tagNumberDisplay;
     if (loc.tagNumber) return westernToKhmerDigits(loc.tagNumber);
-    if (/^\d+$/.test(String(loc.id))) return westernToKhmerDigits(loc.id);
+    if (/^\d+$/.test(String(loc.id)) && loc.isTagPin) return westernToKhmerDigits(loc.id);
   }
   return getLocationAbbreviation(loc.name, loc.type);
 }
@@ -202,15 +202,16 @@ export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3L
   if (!loc) return '';
   const locIdStr = String(loc.id || '').trim();
 
-  const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(loc.id) : null));
-  const matchedTag = allTags.find(
-    (t) =>
-      String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
-      String(t.tagNumberDisplay) === String(loc.tagNumberDisplay || loc.id)
-  );
-  const tagOwner = loc.tagOwnerName || (matchedTag ? matchedTag.name : '');
+  if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
+    const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(loc.id) : null));
+    const matchedTag = allTags.find(
+      (t) =>
+        (loc.tagNumber && String(t.tagNumber) === String(loc.tagNumber)) ||
+        (loc.tagNumberDisplay && String(t.tagNumberDisplay) === String(loc.tagNumberDisplay)) ||
+        (loc.isTagPin && (String(t.tagNumber) === String(loc.id) || String(t.tagNumberDisplay) === String(loc.id)))
+    );
+    const tagOwner = loc.tagOwnerName || (matchedTag ? matchedTag.name : '');
 
-  if (activeTab === 'tagger' || loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
     if (tagNumDisp && tagOwner) return `ស្លាក ${tagNumDisp} ៖ ${tagOwner}`;
     if (tagNumDisp) return `ស្លាក ${tagNumDisp}`;
     if (tagOwner) return tagOwner;
@@ -280,8 +281,8 @@ export default function TempleMapModal({
       return {
         ...loc,
         name: locationName, // ALWAYS KEEP LOCATION NAME! (ឈ្មោះទីតាំង)
-        tagOwnerName: matchedTag && matchedTag.name ? matchedTag.name : loc.tagOwnerName,
-        tagNumber: matchedTag && matchedTag.tagNumber ? matchedTag.tagNumber : loc.tagNumber
+        tagOwnerName: loc.isTagPin ? (matchedTag && matchedTag.name ? matchedTag.name : loc.tagOwnerName) : loc.tagOwnerName,
+        tagNumber: loc.isTagPin ? (matchedTag && matchedTag.tagNumber ? matchedTag.tagNumber : loc.tagNumber) : loc.tagNumber
       };
     });
   }, [tab3Locations, allTags]);
@@ -632,35 +633,69 @@ export default function TempleMapModal({
     });
   };
 
-  // Focus on highlighted location if passed from parent
+  // Focus on highlighted location or tag if passed from parent
   useEffect(() => {
     if (highlightLocationName) {
       setActiveTab('tagger');
-      const searchTarget = String(highlightLocationName).toLowerCase().trim();
-      const westernTarget = khmerToWesternDigits(searchTarget);
 
-      // Search in effectiveTab3Locations (which has person names)
-      const match = effectiveTab3Locations.find((l) => {
-        const pinIdStr = String(l.id || '').trim();
-        const pinNameStr = String(l.name || '').toLowerCase().trim();
+      let targetLoc = null;
 
-        return (
-          pinNameStr === searchTarget ||
-          pinNameStr.includes(searchTarget) ||
-          searchTarget.includes(pinNameStr) ||
-          pinIdStr === searchTarget ||
-          pinIdStr === westernTarget
-        );
-      }) || locations.find((l) => {
-        const pinIdStr = String(l.id || '').trim();
-        const pinNameStr = String(l.name || '').toLowerCase().trim();
-        return pinNameStr.includes(searchTarget) || pinIdStr === searchTarget;
-      });
+      if (typeof highlightLocationName === 'object' && highlightLocationName !== null) {
+        const tagObj = highlightLocationName;
+        const tagNoStr = String(tagObj.tagNumber || '').trim();
+        const tagDispStr = String(tagObj.tagNumberDisplay || '').trim();
+        const tagLocStr = String(tagObj.baseLocation || tagObj.location || '').trim().toLowerCase();
 
-      const targetLoc = match || effectiveTab3Locations[0] || locations[0];
-      if (targetLoc) {
-        setSelectedLocation(targetLoc);
+        // Search by Tag Pin
+        targetLoc = effectiveTab3Locations.find((l) => {
+          if (!l.isTagPin && !l.tagNumber && !l.tagNumberDisplay) return false;
+          const lNumStr = String(l.tagNumber || '').trim();
+          const lDispStr = String(l.tagNumberDisplay || '').trim();
+          const lIdStr = String(l.id || '').trim();
+          return (
+            (tagNoStr && lNumStr === tagNoStr) ||
+            (tagDispStr && lDispStr === tagDispStr) ||
+            (l.isTagPin && (lIdStr === tagNoStr || lIdStr === tagDispStr))
+          );
+        });
+
+        // Search by Location Name if tag has explicit valid location
+        if (!targetLoc && tagLocStr && tagLocStr !== 'មើលទីកន្លែង' && tagLocStr !== 'មិនទាន់ដៅលើ map' && tagLocStr !== 'ទីតាំងមិនទាន់កំណត់') {
+          targetLoc = effectiveTab3Locations.find((l) => {
+            const lName = String(l.name || '').toLowerCase().trim();
+            return lName === tagLocStr || lName.includes(tagLocStr) || tagLocStr.includes(lName);
+          }) || locations.find((l) => {
+            const lName = String(l.name || '').toLowerCase().trim();
+            return lName === tagLocStr || lName.includes(tagLocStr) || tagLocStr.includes(lName);
+          });
+        }
+      } else {
+        const searchTarget = String(highlightLocationName).toLowerCase().trim();
+        const westernTarget = khmerToWesternDigits(searchTarget);
+
+        if (searchTarget && searchTarget !== 'មើលទីកន្លែង' && searchTarget !== 'មិនទាន់ដៅលើ map' && searchTarget !== 'ទីតាំងមិនទាន់កំណត់') {
+          targetLoc = effectiveTab3Locations.find((l) => {
+            const pinIdStr = String(l.id || '').trim();
+            const pinNameStr = String(l.name || '').toLowerCase().trim();
+            const lNumStr = String(l.tagNumber || '').trim();
+
+            return (
+              pinNameStr === searchTarget ||
+              pinNameStr.includes(searchTarget) ||
+              searchTarget.includes(pinNameStr) ||
+              (l.isTagPin && (pinIdStr === searchTarget || pinIdStr === westernTarget)) ||
+              (lNumStr && lNumStr === searchTarget)
+            );
+          }) || locations.find((l) => {
+            const pinIdStr = String(l.id || '').trim();
+            const pinNameStr = String(l.name || '').toLowerCase().trim();
+            return pinNameStr.includes(searchTarget) || (l.isTagPin && pinIdStr === searchTarget);
+          });
+        }
       }
+
+      // DO NOT FALLBACK TO RANDOM FIRST LOCATION!
+      setSelectedLocation(targetLoc || null);
     }
   }, [highlightLocationName, effectiveTab3Locations, locations]);
 
@@ -1314,18 +1349,20 @@ export default function TempleMapModal({
     const tagDisp = loc.tagNumberDisplay || (loc.tagNumber ? String(loc.tagNumber) : (loc.isTagPin ? String(loc.id) : ''));
 
     const found =
-      groupedAllTags.find(
-        (t) =>
-          String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
-          String(t.tagNumberDisplay) === String(tagDisp) ||
-          khmerToWesternDigits(String(t.tagNumberDisplay || '')).toLowerCase() === locIdWestern
-      ) ||
-      allTags.find(
-        (t) =>
-          String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
-          String(t.tagNumberDisplay) === String(tagDisp) ||
-          khmerToWesternDigits(String(t.tagNumberDisplay || '')).toLowerCase() === locIdWestern
-      );
+      (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay)
+        ? (groupedAllTags.find(
+            (t) =>
+              (loc.tagNumber && String(t.tagNumber) === String(loc.tagNumber)) ||
+              (loc.tagNumberDisplay && String(t.tagNumberDisplay) === String(tagDisp)) ||
+              (loc.isTagPin && (String(t.tagNumber) === String(loc.id) || String(t.tagNumberDisplay) === String(tagDisp) || khmerToWesternDigits(String(t.tagNumberDisplay || '')).toLowerCase() === locIdWestern))
+          ) ||
+          allTags.find(
+            (t) =>
+              (loc.tagNumber && String(t.tagNumber) === String(loc.tagNumber)) ||
+              (loc.tagNumberDisplay && String(t.tagNumberDisplay) === String(tagDisp)) ||
+              (loc.isTagPin && (String(t.tagNumber) === String(loc.id) || String(t.tagNumberDisplay) === String(tagDisp) || khmerToWesternDigits(String(t.tagNumberDisplay || '')).toLowerCase() === locIdWestern))
+          ))
+        : null;
 
     if (found) {
       const matchDisp = found.tagNumberDisplay || String(found.tagNumber);
@@ -2866,6 +2903,22 @@ export default function TempleMapModal({
                               onClick={() => {
                                 setSelectedLocation(loc);
                                 setHoveredLocation(loc);
+                                if (onSelectTag && (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay)) {
+                                  const matchedTag = groupedAllTags.find(
+                                    (t) =>
+                                      (loc.tagNumber && String(t.tagNumber) === String(loc.tagNumber)) ||
+                                      (loc.tagNumberDisplay && String(t.tagNumberDisplay) === String(loc.tagNumberDisplay)) ||
+                                      (loc.isTagPin && (String(t.tagNumber) === String(loc.id) || String(t.tagNumberDisplay) === String(loc.id)))
+                                  ) || allTags.find(
+                                    (t) =>
+                                      (loc.tagNumber && String(t.tagNumber) === String(loc.tagNumber)) ||
+                                      (loc.tagNumberDisplay && String(t.tagNumberDisplay) === String(loc.tagNumberDisplay)) ||
+                                      (loc.isTagPin && (String(t.tagNumber) === String(loc.id) || String(t.tagNumberDisplay) === String(loc.id)))
+                                  );
+                                  if (matchedTag) {
+                                    onSelectTag(matchedTag);
+                                  }
+                                }
                               }}
                               className={`p-2 rounded-xl border flex items-center justify-between gap-2 cursor-pointer transition-all ${
                                 isSel
@@ -2889,31 +2942,58 @@ export default function TempleMapModal({
                                 </div>
                               </div>
 
-                              {/* Edit & Delete Action Buttons */}
-                              {canCustomizeTab && (
-                                <div className="flex items-center gap-1 shrink-0">
+                              {/* Action Buttons */}
+                              <div className="flex items-center gap-1 shrink-0">
+                                {onSelectTag && (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      handleOpenEditModal(loc);
+                                      const matchedTag = groupedAllTags.find(
+                                        (t) =>
+                                          (loc.tagNumber && String(t.tagNumber) === String(loc.tagNumber)) ||
+                                          (loc.tagNumberDisplay && String(t.tagNumberDisplay) === String(loc.tagNumberDisplay)) ||
+                                          (loc.isTagPin && (String(t.tagNumber) === String(loc.id) || String(t.tagNumberDisplay) === String(loc.id)))
+                                      ) || allTags.find(
+                                        (t) =>
+                                          (loc.tagNumber && String(t.tagNumber) === String(loc.tagNumber)) ||
+                                          (loc.tagNumberDisplay && String(t.tagNumberDisplay) === String(loc.tagNumberDisplay)) ||
+                                          (loc.isTagPin && (String(t.tagNumber) === String(loc.id) || String(t.tagNumberDisplay) === String(loc.id)))
+                                      );
+                                      if (matchedTag) {
+                                        onSelectTag(matchedTag);
+                                      }
                                     }}
-                                    className="p-1 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-md transition-colors"
-                                    title="កែប្រែទីតាំងនេះ"
+                                    className="px-1.5 py-0.5 text-[10px] font-bold text-amber-300 bg-amber-500/10 hover:bg-amber-500 hover:text-slate-950 rounded-md border border-amber-500/30 transition-colors"
+                                    title="មើលលម្អិតស្លាកលេខនេះ"
                                   >
-                                    <Edit2 className="w-3.5 h-3.5" />
+                                    មើល
                                   </button>
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDeleteLocation(loc.id);
-                                    }}
-                                    className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-md transition-colors"
-                                    title="លុបទីតាំងនេះ"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              )}
+                                )}
+                                {canCustomizeTab && (
+                                  <>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenEditModal(loc);
+                                      }}
+                                      className="p-1 text-slate-400 hover:text-amber-400 hover:bg-slate-800 rounded-md transition-colors"
+                                      title="កែប្រែទីតាំងនេះ"
+                                    >
+                                      <Edit2 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteLocation(loc.id);
+                                      }}
+                                      className="p-1 text-slate-400 hover:text-rose-400 hover:bg-slate-800 rounded-md transition-colors"
+                                      title="លុបទីតាំងនេះ"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           );
                         })}

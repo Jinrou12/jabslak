@@ -151,7 +151,7 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
           <div
             onClick={() => {
               if (onViewOnMap) {
-                onViewOnMap(tag.baseLocation || tag.location);
+                onViewOnMap(tag);
               }
             }}
             className="rounded-2xl p-4 flex items-start gap-3.5 group transition-all duration-200 hover:scale-[1.01] cursor-pointer"
@@ -249,7 +249,7 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
                         : 'bg-slate-900/80 text-slate-300 border-slate-700'
                     }`}
                   >
-                    <span>#{westernToKhmerDigits(subTag.tagNumber)}</span>
+                    <span>#{subTag.tagNumberDisplay || westernToKhmerDigits(subTag.tagNumber)}</span>
                     {subTag.arrived ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : null}
                   </span>
                 ))}
