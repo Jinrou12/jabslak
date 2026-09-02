@@ -202,22 +202,43 @@ export function getPinBadgeText(loc, activeTab = 'tagger') {
   return getLocationAbbreviation(loc.name, loc.type);
 }
 
+export function formatTagPinLocationName(tag) {
+  if (!tag) return '';
+  const tagDisp = tag.tagNumberDisplay || (tag.tagNumber ? westernToKhmerDigits(tag.tagNumber) : '');
+  const ownerName = String(tag.name || tag.tagOwnerName || '').trim();
+
+  if (ownerName.includes('ស្លាកលេខ') && ownerName.includes('៖')) {
+    return ownerName;
+  }
+
+  if (tagDisp && ownerName && ownerName !== `ស្លាកលេខ ${tagDisp}`) {
+    return `ស្លាកលេខ ${tagDisp} ៖ ${ownerName}`;
+  }
+  if (ownerName) return ownerName;
+  if (tagDisp) return `ស្លាកលេខ ${tagDisp}`;
+  return tag.location || '';
+}
+
 export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3Locations = []) {
   if (!loc) return '';
   const locIdStr = String(loc.id || '').trim();
 
   if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
-    const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(loc.id.replace('tag-', '')) : null));
+    if (loc.name && loc.name.includes('ស្លាក') && loc.name.includes('៖')) {
+      return loc.name;
+    }
+
+    const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(String(loc.id).replace('tag-', '')) : null));
     const matchedTag = allTags.find(
       (t) =>
         (loc.tagNumber && String(t.tagNumber) === String(loc.tagNumber)) ||
         (loc.tagNumberDisplay && String(t.tagNumberDisplay) === String(loc.tagNumberDisplay)) ||
         (loc.isTagPin && (String(t.tagNumber) === String(loc.id).replace('tag-', '') || String(t.tagNumberDisplay) === String(loc.id)))
     );
-    const tagOwner = loc.tagOwnerName || (matchedTag ? matchedTag.name : '');
+    const tagOwner = loc.tagOwnerName || (matchedTag ? matchedTag.name : '') || loc.name || '';
 
-    if (tagNumDisp && tagOwner) return `ស្លាក ${tagNumDisp} ៖ ${tagOwner}`;
-    if (tagNumDisp) return `ស្លាក ${tagNumDisp}`;
+    if (tagNumDisp && tagOwner && !tagOwner.startsWith('ស្លាក')) return `ស្លាកលេខ ${tagNumDisp} ៖ ${tagOwner}`;
+    if (tagNumDisp) return `ស្លាកលេខ ${tagNumDisp}`;
     if (tagOwner) return tagOwner;
   }
 
@@ -1104,7 +1125,7 @@ export default function TempleMapModal({
       const tagDispStr = t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber);
       return {
         id: tagDispStr,
-        name: t.name || `ស្លាកលេខ ${tagDispStr}`,
+        name: formatTagPinLocationName(t),
         x: 50,
         y: 50,
         type: 'building',
@@ -1232,7 +1253,8 @@ export default function TempleMapModal({
         tagNumber: pendingPinTag.tagNumber,
         tagNumberDisplay: tagDisp,
         isTagPin: true,
-        name: pendingPinTag.name || pendingPinTag.location || `ស្លាកលេខ #${latinId}`,
+        name: formatTagPinLocationName(pendingPinTag),
+        tagOwnerName: pendingPinTag.name || '',
         type: 'building',
         pos: 'R',
         category: (pendingPinTag.baseLocation && pendingPinTag.baseLocation !== 'មើលទីកន្លែង' && pendingPinTag.baseLocation !== 'មិនទាន់ដៅលើ Map') ? pendingPinTag.baseLocation : '🏢 ក្រុមអគារ និង កុដិ'
@@ -1249,7 +1271,8 @@ export default function TempleMapModal({
           tagNumber: firstAvailable.tagNumber,
           tagNumberDisplay: tagDisp,
           isTagPin: true,
-          name: firstAvailable.name || firstAvailable.location || `ស្លាកលេខ #${latinId}`,
+          name: formatTagPinLocationName(firstAvailable),
+          tagOwnerName: firstAvailable.name || '',
           badgeColor: 'orange',
           type: 'building',
           pos: 'R',
@@ -3136,7 +3159,8 @@ export default function TempleMapModal({
                                 tagNumber: found.tagNumber,
                                 tagNumberDisplay: tagDisp,
                                 isTagPin: true,
-                                name: found.name || found.location || `ស្លាកលេខ #${latinId}`,
+                                name: formatTagPinLocationName(found),
+                                tagOwnerName: found.name || '',
                                 badgeColor: prev.badgeColor || 'orange',
                                 category: (found.baseLocation && found.baseLocation !== 'មើលទីកន្លែង' && found.baseLocation !== 'មិនទាន់ដៅលើ Map') ? found.baseLocation : (prev.category || '🏢 ក្រុមអគារ និង កុដិ')
                               }));
