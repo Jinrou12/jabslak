@@ -630,7 +630,15 @@ export default function TempleMapModal({
     'សាលារៀន': 'ផែន៨ ៖ សាលារៀន'
   };
 
-  const autoMigrateCategory = (cat) => {
+  const autoMigrateCategory = (cat, locName = '', locId = '') => {
+    const locStr = String(locName || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
+    const idStr = String(locId || '').trim();
+
+    // 1. If location is specifically ធម្មសាលាសភា or ID 1 or contains ធម្មសភា / សាលាធម្មសភា and has no valid category or old category, assign to ផែន១ ៖ ធម្មសភា
+    if ((locStr.includes('ធម្មសភា') || locStr.includes('ធម្មសាលាសភា') || idStr === '១' || idStr === '1') && (!cat || cat === 'ដើម' || cat === 'ធម្មសភា' || cat === 'សាលាធម្មសភា')) {
+      return 'ផែន១ ៖ ធម្មសភា';
+    }
+
     if (!cat) return cat;
     const norm = String(cat).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
     for (const [oldKey, newName] of Object.entries(categoryMigrationMap)) {
@@ -701,7 +709,7 @@ export default function TempleMapModal({
 
       return {
         ...loc,
-        category: autoMigrateCategory(loc.category),
+        category: autoMigrateCategory(loc.category, loc.name, loc.id),
         name: finalName, // ALWAYS KEEP FULL FORMATTED NAME WITH OWNER NAME!
         displayName: finalName, // Pre-computed for zero O(N) lookup in render
         tagOwnerName: tagOwner,
@@ -794,11 +802,26 @@ export default function TempleMapModal({
   const [redoStack, setRedoStack] = useState([]);
   const [undoToast, setUndoToast] = useState('');
 
-  // Track deleted categories so deleted groups disappear completely
+  // Track deleted categories so deleted groups disappear completely (PROTECT core preset 8 zones!)
+  const CORE_PRESET_ZONES = useMemo(() => [
+    'ផែន១ ៖ ធម្មសភា',
+    'ផែន២ ៖ សាលាឆាន់ចាស់',
+    'ផែន៣ ៖ មុខសាលាឆាន់ចាស់',
+    'ផែន៤ ៖ ព្រះបរិនិព្វាន',
+    'ផែន៥ ៖ បណ្ណាល័យ',
+    'ផែន៦ ៖ ព្រះផ្ទម',
+    'ផែន៧ ៖ តាមកុដិ',
+    'ផែន៨ ៖ សាលារៀន',
+    'ធម្មសភា',
+    'សាលាធម្មសភា',
+    'ធម្មសាលាសភា'
+  ], []);
+
   const [deletedCategories, setDeletedCategories] = useState(() => {
     try {
       const saved = localStorage.getItem('TEMPLE_DELETED_GROUPS_V1');
-      return saved ? JSON.parse(saved) : [];
+      const list = saved ? JSON.parse(saved) : [];
+      return list.filter((c) => !['ផែន១ ៖ ធម្មសភា', 'ផែន២ ៖ សាលាឆាន់ចាស់', 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់', 'ផែន៤ ៖ ព្រះបរិនិព្វាន', 'ផែន៥ ៖ បណ្ណាល័យ', 'ផែន៦ ៖ ព្រះផ្ទម', 'ផែន៧ ៖ តាមកុដិ', 'ផែន៨ ៖ សាលារៀន', 'ធម្មសភា', 'សាលាធម្មសភា', 'ធម្មសាលាសភា'].includes(c));
     } catch {
       return [];
     }
@@ -1211,13 +1234,14 @@ export default function TempleMapModal({
   const categoryGroups = useMemo(() => {
     const groups = {};
     currentLocations.forEach((loc) => {
-      const cat = loc.category;
-      if (!cat || deletedCategories.includes(cat)) return;
+      const cat = autoMigrateCategory(loc.category, loc.name, loc.id);
+      if (!cat) return;
+      if (deletedCategories.includes(cat) && !CORE_PRESET_ZONES.includes(cat)) return;
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(loc);
     });
     return groups;
-  }, [currentLocations, deletedCategories]);
+  }, [currentLocations, deletedCategories, CORE_PRESET_ZONES]);
 
   const availableCategories = useMemo(() => {
     const cats = new Set();
