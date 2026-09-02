@@ -1012,7 +1012,7 @@ export default function TempleMapModal({
     if (!loc || typeof loc.x !== 'number' || typeof loc.y !== 'number') return;
 
     const isMobile = window.innerWidth < 640;
-    const targetZoom = isMobile ? 2.8 : 3.2; // Deep close-up zoom for mobile screens when viewing specific location
+    const targetZoom = isMobile ? 3.5 : 4.0; // Deep close-up zoom like Image 2 when viewing specific location
 
     // 1. Immediately set zoom scale
     setZoomScale(targetZoom);
@@ -1023,6 +1023,9 @@ export default function TempleMapModal({
 
       const vp = viewportRef.current;
       const mapBox = mapContainerRef.current;
+
+      // Force immediate DOM width update to guarantee exact width calculation instantly
+      mapBox.style.width = `${targetZoom * 100}%`;
 
       const containerWidth = mapBox.offsetWidth;
       const containerHeight = mapBox.offsetHeight;
