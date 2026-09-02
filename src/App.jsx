@@ -268,7 +268,7 @@ export default function App() {
   // Store latest state values in a ref so they're accessible inside document event listener
   const swipeStateRef = useRef({});
   useEffect(() => {
-    swipeStateRef.current = { hasActiveModal, viewMode, attendanceFilter, selectedLocation, searchQuery };
+    swipeStateRef.current = { hasActiveModal, viewMode, attendanceFilter, selectedLocation, searchQuery, isTempleMapOpen };
   });
 
   useEffect(() => {
@@ -285,13 +285,18 @@ export default function App() {
     const handleTouchEnd = (e) => {
       if (!e.changedTouches || e.changedTouches.length !== 1) return;
 
+      const { isTempleMapOpen: mapOpen } = swipeStateRef.current;
+      if (mapOpen) return; // IGNORE all global swipe gestures when Temple Map Modal is open so panning/zooming never closes the map!
+
       const target = e.target;
       if (
         target.tagName === 'INPUT' ||
         target.tagName === 'TEXTAREA' ||
         target.tagName === 'SELECT' ||
         target.closest?.('.map-pin-element') ||
-        target.closest?.('.zoom-toolbar')
+        target.closest?.('.zoom-toolbar') ||
+        target.closest?.('.temple-map-modal') ||
+        target.closest?.('.temple-map-container')
       ) return;
 
       const touch = e.changedTouches[0];
