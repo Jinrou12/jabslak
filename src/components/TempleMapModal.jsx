@@ -1345,6 +1345,16 @@ export default function TempleMapModal({
 
   // Save / Edit Location (Syncs to Firebase Cloud Database)
   const handleSaveLocationForm = () => {
+    if (pinModalMode === 'group') {
+      if (selectedGroupForBatchPin) {
+        setIsEditModalOpen(false);
+        setPinningGroupMode(selectedGroupForBatchPin);
+      } else {
+        setFormError('សូមជ្រើសរើស Group');
+      }
+      return;
+    }
+
     const id = modalForm.id.trim();
     let name = modalForm.name.trim();
 
@@ -1684,6 +1694,9 @@ export default function TempleMapModal({
       saveTab3LocationsToFirebase(updated);
     }
     setIsCategoryModalOpen(false);
+    setSelectedGroupForBatchPin(name);
+    setPinningGroupMode(name);
+    setIsEditModalOpen(false);
     setNewCategoryName('');
     setSelectedLocationIdsForGroup([]);
     setTagNumbersBatchInput('');
@@ -2285,6 +2298,10 @@ export default function TempleMapModal({
                             onTouchStart={(e) => canDragThisPin && handlePinDragStart(e, loc)}
                             onClick={(e) => {
                               if (pinMovedFlagRef.current) return;
+                              if (pinningGroupMode) {
+                                handleMapClick(e);
+                                return;
+                              }
                               e.stopPropagation();
                               setSelectedLocation(loc);
                             }}
