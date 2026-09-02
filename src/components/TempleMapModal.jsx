@@ -987,37 +987,112 @@ export default function TempleMapModal({
     const pctX = parseFloat(((clickX / rect.width) * 100).toFixed(2));
     const pctY = parseFloat(((clickY / rect.height) * 100).toFixed(2));
 
-    // Handle Pinning Entire Group Mode
+    // Handle Pinning Entire Group Mode (Pins ALL tags/items in group as separate individual pins)
     if (pinningGroupMode) {
-      const groupLocations = currentLocations.filter((loc) => loc.category === pinningGroupMode);
+      // 1. Gather existing locations for this group
+      let groupLocations = currentLocations.filter((loc) => loc.category === pinningGroupMode);
 
-      if (groupLocations.length === 0) {
-        alert(`គ្មាន Pin នៅក្នុង Group «${pinningGroupMode}» ទេ!`);
+      // 2. Find any tags in allTags belonging to this group that don't have a location pin yet
+      const missingGroupTags = allTags.filter((t) => {
+        const tBase = String(t.baseLocation || t.location || '').trim();
+        if (tBase !== pinningGroupMode) return false;
+
+        const tNoStr = String(t.tagNumber || '').trim();
+        const tDispStr = String(t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber) || '').trim();
+        const tNoWestern = khmerToWesternDigits(tDispStr || tNoStr).trim();
+
+        const exists = currentLocations.some((loc) => {
+          const locTagNum = loc.tagNumber ? String(loc.tagNumber).trim() : '';
+          const locDisp = loc.tagNumberDisplay ? String(loc.tagNumberDisplay).trim() : '';
+          const locId = String(loc.id || '').trim();
+
+          return (
+            locTagNum === tNoStr ||
+            locDisp === tDispStr ||
+            locId === tDispStr ||
+            khmerToWesternDigits(locDisp) === tNoWestern ||
+            khmerToWesternDigits(locId) === tNoWestern
+          );
+        });
+
+        return !exists;
+      });
+
+      // Create new unpinned location pins for any missing tags
+      const newLocsFromTags = missingGroupTags.map((t) => {
+        const tagDispStr = t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber);
+        return {
+          id: tagDispStr,
+          name: t.name || `ស្លាកលេខ ${tagDispStr}`,
+          x: 50,
+          y: 50,
+          type: 'building',
+          pos: 'R',
+          badgeColor: 'orange',
+          category: pinningGroupMode,
+          tagNumber: t.tagNumber,
+          tagNumberDisplay: tagDispStr,
+          tagOwnerName: t.name || '',
+          isTagPin: true,
+          isUnpinned: true
+        };
+      });
+
+      const allGroupLocs = [...groupLocations, ...newLocsFromTags];
+      const count = allGroupLocs.length;
+
+      if (count === 0) {
+        alert(`គ្មាន Pin ឬ ស្លាកលេខនៅក្នុង Group «${pinningGroupMode}» ទេ!`);
         setPinningGroupMode(null);
         return;
       }
 
       saveStateForUndo();
 
-      // Cluster pins belonging to this group around clicked (pctX, pctY)
-      const count = groupLocations.length;
+      // Cluster pins belonging to this group around clicked point (pctX, pctY) with layout spacing
       const cols = Math.ceil(Math.sqrt(count));
-      const updated = currentLocations.map((loc) => {
-        if (loc.category === pinningGroupMode) {
-          const index = groupLocations.findIndex((g) => g.id === loc.id);
-          const row = Math.floor(index / cols);
-          const col = index % cols;
-          const offsetX = (col - (cols - 1) / 2) * 3.5;
-          const offsetY = (row - (Math.ceil(count / cols) - 1) / 2) * 3.5;
+      const spacing = 3.5;
 
+      const groupPosMap = {};
+      allGroupLocs.forEach((gLoc, idx) => {
+        const row = Math.floor(idx / cols);
+        const col = idx % cols;
+        const offsetX = (col - (cols - 1) / 2) * spacing;
+        const offsetY = (row - (Math.ceil(count / cols) - 1) / 2) * spacing;
+
+        groupPosMap[gLoc.id] = {
+          x: Math.max(2, Math.min(98, parseFloat((pctX + offsetX).toFixed(2)))),
+          y: Math.max(2, Math.min(98, parseFloat((pctY + offsetY).toFixed(2))))
+        };
+      });
+
+      let updated = currentLocations.map((loc) => {
+        if (groupPosMap[loc.id] || loc.category === pinningGroupMode) {
+          const pos = groupPosMap[loc.id] || {
+            x: Math.max(2, Math.min(98, parseFloat(pctX.toFixed(2)))),
+            y: Math.max(2, Math.min(98, parseFloat(pctY.toFixed(2))))
+          };
           return {
             ...loc,
-            x: Math.max(2, Math.min(98, parseFloat((pctX + offsetX).toFixed(2)))),
-            y: Math.max(2, Math.min(98, parseFloat((pctY + offsetY).toFixed(2)))),
+            x: pos.x,
+            y: pos.y,
             isUnpinned: false
           };
         }
         return loc;
+      });
+
+      // Append newly generated locs from allTags if any
+      newLocsFromTags.forEach((newLoc) => {
+        const pos = groupPosMap[newLoc.id];
+        if (pos) {
+          updated.push({
+            ...newLoc,
+            x: pos.x,
+            y: pos.y,
+            isUnpinned: false
+          });
+        }
       });
 
       setTab3Locations(updated);
@@ -3139,24 +3214,56 @@ export default function TempleMapModal({
                   </div>
 
                   {/* Display ONLY the tags contained inside the selected Group! */}
-                  {selectedGroupForBatchPin && (
-                    <div className="space-y-2 pt-2 border-t border-slate-800">
-                      <div className="text-[11px] font-bold text-amber-400 flex items-center justify-between">
-                        <span>✨ ស្លាកលេខដែលមានក្នុង Group «{selectedGroupForBatchPin}» ៖</span>
-                        <span className="text-[10px] text-slate-400 font-normal">
-                          ({westernToKhmerDigits(currentLocations.filter((l) => l.category === selectedGroupForBatchPin).length)} ស្លាក)
-                        </span>
-                      </div>
+                  {selectedGroupForBatchPin && (() => {
+                    const existingInGroup = currentLocations.filter((l) => l.category === selectedGroupForBatchPin);
+                    const missingInGroup = allTags.filter((t) => {
+                      const tBase = String(t.baseLocation || t.location || '').trim();
+                      if (tBase !== selectedGroupForBatchPin) return false;
+                      const tNoStr = String(t.tagNumber || '').trim();
+                      const tDispStr = String(t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber) || '').trim();
+                      const tNoWestern = khmerToWesternDigits(tDispStr || tNoStr).trim();
+                      return !existingInGroup.some((l) => {
+                        const locTagNum = l.tagNumber ? String(l.tagNumber).trim() : '';
+                        const locDisp = l.tagNumberDisplay ? String(l.tagNumberDisplay).trim() : '';
+                        const locId = String(l.id || '').trim();
+                        return (
+                          locTagNum === tNoStr ||
+                          locDisp === tDispStr ||
+                          locId === tDispStr ||
+                          khmerToWesternDigits(locDisp) === tNoWestern ||
+                          khmerToWesternDigits(locId) === tNoWestern
+                        );
+                      });
+                    }).map((t) => {
+                      const tagDispStr = t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber);
+                      return {
+                        id: tagDispStr,
+                        name: t.name || `ស្លាកលេខ ${tagDispStr}`,
+                        tagNumber: t.tagNumber,
+                        tagNumberDisplay: tagDispStr,
+                        tagOwnerName: t.name || '',
+                        isUnpinned: true
+                      };
+                    });
 
-                      <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2 bg-slate-900 rounded-xl border border-slate-800">
-                        {currentLocations.filter((l) => l.category === selectedGroupForBatchPin).length === 0 ? (
-                          <div className="text-xs text-slate-400 p-3 text-center w-full">
-                            ⚠️ គ្មានស្លាកលេខនៅក្នុង Group នេះទេ! (អ្នកអាចបន្ថែមស្លាកតាមរយៈប៊ូតុង + Group ថ្មី)
-                          </div>
-                        ) : (
-                          currentLocations
-                            .filter((l) => l.category === selectedGroupForBatchPin)
-                            .map((loc) => {
+                    const groupTagsList = [...existingInGroup, ...missingInGroup];
+
+                    return (
+                      <div className="space-y-2 pt-2 border-t border-slate-800">
+                        <div className="text-[11px] font-bold text-amber-400 flex items-center justify-between">
+                          <span>✨ ស្លាកលេខដែលមានក្នុង Group «{selectedGroupForBatchPin}» ៖</span>
+                          <span className="text-[10px] text-slate-400 font-normal">
+                            ({westernToKhmerDigits(groupTagsList.length)} ស្លាក)
+                          </span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2 bg-slate-900 rounded-xl border border-slate-800">
+                          {groupTagsList.length === 0 ? (
+                            <div className="text-xs text-slate-400 p-3 text-center w-full">
+                              ⚠️ គ្មានស្លាកលេខនៅក្នុង Group នេះទេ! (អ្នកអាចបន្ថែមស្លាកតាមរយៈប៊ូតុង + Group ថ្មី)
+                            </div>
+                          ) : (
+                            groupTagsList.map((loc) => {
                               const tagOwnerName = loc.tagOwnerName;
                               const matchedTag = allTags.find(
                                 (t) =>
@@ -3182,23 +3289,24 @@ export default function TempleMapModal({
                                 </span>
                               );
                             })
-                        )}
-                      </div>
+                          )}
+                        </div>
 
-                      {/* Large prominent Action Button to Pin this Group on Map */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsEditModalOpen(false);
-                          setPinningGroupMode(selectedGroupForBatchPin);
-                        }}
-                        className="w-full mt-2 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-95 font-kantumruy"
-                      >
-                        <MapPin className="w-4 h-4 text-slate-950 shrink-0" />
-                        <span>📍 ចុចទីនេះដើម្បីដៅ Group «{selectedGroupForBatchPin}» លើ Map ទាំងអស់ព្រមគ្នា</span>
-                      </button>
-                    </div>
-                  )}
+                        {/* Large prominent Action Button to Pin this Group on Map */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsEditModalOpen(false);
+                            setPinningGroupMode(selectedGroupForBatchPin);
+                          }}
+                          className="w-full mt-2 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs sm:text-sm rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 active:scale-95 font-kantumruy"
+                        >
+                          <MapPin className="w-4 h-4 text-slate-950 shrink-0" />
+                          <span>📍 ចុចទីនេះដើម្បីដៅ Group «{selectedGroupForBatchPin}» លើ Map ទាំងអស់ព្រមគ្នា</span>
+                        </button>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
