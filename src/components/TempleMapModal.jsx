@@ -1012,7 +1012,7 @@ export default function TempleMapModal({
     if (!loc || typeof loc.x !== 'number' || typeof loc.y !== 'number') return;
 
     const isMobile = window.innerWidth < 640;
-    const targetZoom = isMobile ? 1.8 : 2.2;
+    const targetZoom = isMobile ? 2.8 : 3.2; // Deep close-up zoom for mobile screens when viewing specific location
 
     // 1. Immediately set zoom scale
     setZoomScale(targetZoom);
