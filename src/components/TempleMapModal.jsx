@@ -3045,12 +3045,23 @@ export default function TempleMapModal({
                 </div>
 
                 <div className="mt-2 pt-2 border-t border-slate-800 flex items-center justify-between gap-1.5 flex-wrap">
-                  <div className="text-[10px] sm:text-[11px] text-slate-300">
-                    ស្លាកលេខ ៖{' '}
-                    <span className="text-amber-400 font-bold font-sans-en">
-                      {westernToKhmerDigits(tagCountsByLocation[selectedLocation.id] || 0)} នាក់
-                    </span>
-                  </div>
+                  {(() => {
+                    const selCat = autoMigrateCategory(
+                      selectedLocation.category || (selectedLocation.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ'),
+                      selectedLocation.name,
+                      selectedLocation.id
+                    );
+                    const managerName = groupManagers[selCat] || selectedLocation.managerName || 'មិនទាន់បញ្ជាក់';
+
+                    return (
+                      <div className="text-[10px] sm:text-[11px] text-slate-300 flex items-center gap-1 font-kantumruy">
+                        <span>អ្នកទទួលបន្ទុក ៖</span>
+                        <span className="text-amber-400 font-bold truncate max-w-[130px] sm:max-w-[170px]">
+                          {managerName}
+                        </span>
+                      </div>
+                    );
+                  })()}
 
                   <div className="flex items-center gap-1 ml-auto">
                     {/* Edit button directly in popover */}
