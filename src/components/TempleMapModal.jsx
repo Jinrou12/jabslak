@@ -1926,8 +1926,7 @@ export default function TempleMapModal({
 
     const isConfirmed = window.confirm(
       `តើអ្នកពិតជាចង់លុប Group «${editingGroupName}» នេះមែនទេ?\n\n` +
-      `• Group នេះនឹងត្រូវលុបបាត់ពីប្រព័ន្ធ\n` +
-      `• ទីតាំងទាំងអស់ក្នុង Group នេះនឹងត្រូវរក្សាទុកដដែល (មិនត្រូវលុបចោលឡើយ)`
+      `• Group នេះ និងរាល់ Pin ទីតាំង/ស្លាកលេខទាំងអស់ក្នុង Group នេះ នឹងត្រូវលុបបាត់ពីប្រព័ន្ធ!`
     );
 
     if (!isConfirmed) return;
@@ -1939,35 +1938,32 @@ export default function TempleMapModal({
     const nextDeleted = Array.from(new Set([...deletedCategories, editingGroupName]));
     saveDeletedCategories(nextDeleted);
 
-    const { setter, saver } = getTabDataFunctions();
-
-    // Reset category for all locations in this group to unassigned ('')
-    const updated = baseLocations.map((loc) => {
-      const currentCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
-      if (currentCat === editingGroupName || loc.category === editingGroupName) {
-        return { ...loc, category: '' };
-      }
-      return loc;
-    });
-
-    setter(updated);
-    saver(updated);
-
-    if (activeTab === 'interactive') {
-      setTab3Locations((prev3) => {
-        const final3 = prev3.map((loc) => {
-          const currentCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
-          if (currentCat === editingGroupName || loc.category === editingGroupName) {
-            return { ...loc, category: '' };
-          }
-          return loc;
-        });
-        saveTab3LocationsToFirebase(final3);
-        return final3;
+    // Delete (filter out) all locations/pins belonging to this group
+    const filterOutGroup = (list) =>
+      list.filter((loc) => {
+        const currentCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+        return currentCat !== editingGroupName && loc.category !== editingGroupName;
       });
+
+    const updatedTab3 = filterOutGroup(tab3Locations);
+    const updatedLocs = filterOutGroup(locations);
+
+    setTab3Locations(updatedTab3);
+    saveTab3LocationsToFirebase(updatedTab3);
+    saveTab3Locations(updatedTab3);
+
+    setLocations(updatedLocs);
+    saveTempleLocationsToFirebase(updatedLocs.filter((loc) => !loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay));
+    saveTempleLocations(updatedLocs);
+
+    if (selectedLocation) {
+      const selectedCat = selectedLocation.category || (selectedLocation.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+      if (selectedCat === editingGroupName || selectedLocation.category === editingGroupName) {
+        setSelectedLocation(null);
+      }
     }
 
-    setUndoToast(`🗑️ បានលុប Group «${editingGroupName}» រួចរាល់ (ទីតាំងទាំងអស់ត្រូវបានរក្សាទុក)`);
+    setUndoToast(`🗑️ បានលុប Group «${editingGroupName}» និងរាល់ Pin ទាំងអស់ក្នុង Group រួចរាល់`);
     setTimeout(() => setUndoToast(''), 3000);
     setIsGroupEditModalOpen(false);
   };
@@ -4086,7 +4082,7 @@ export default function TempleMapModal({
                 <button
                   onClick={handleDeleteGroup}
                   className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 active:scale-95"
-                  title="លុប Group នេះ (ទីតាំងទាំងអស់នឹងត្រូវរក្សាទុកដដែល)"
+                  title="លុប Group នេះ និងរាល់ Pin ទាំងអស់ក្នុង Group នេះ"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>លុប Group នេះ</span>
