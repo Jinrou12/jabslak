@@ -3246,7 +3246,7 @@ export default function TempleMapModal({
                             : `bg-slate-900 ${groupMeta.text} hover:opacity-100 border-slate-800`
                         }`}
                       >
-                        {catName} ({items.length})
+                        {catName}
                       </button>
                     );
                   })}
