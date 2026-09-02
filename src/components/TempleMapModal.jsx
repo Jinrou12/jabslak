@@ -1128,7 +1128,7 @@ export default function TempleMapModal({
       return;
     }
 
-    saveStateForUndo();
+    pushHistorySnapshot(tab3Locations);
 
     const cols = Math.ceil(Math.sqrt(count));
     const spacing = 3.5;
