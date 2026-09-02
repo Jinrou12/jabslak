@@ -756,6 +756,7 @@ export default function TempleMapModal({
   // Custom Category Modal State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [newGroupManagerInput, setNewGroupManagerInput] = useState('');
   const [selectedLocationIdsForGroup, setSelectedLocationIdsForGroup] = useState([]);
   const [tagNumbersBatchInput, setTagNumbersBatchInput] = useState('');
   const [batchTagWarnings, setBatchTagWarnings] = useState([]);
@@ -764,7 +765,25 @@ export default function TempleMapModal({
   const [isGroupEditModalOpen, setIsGroupEditModalOpen] = useState(false);
   const [editingGroupName, setEditingGroupName] = useState('');
   const [renameGroupInput, setRenameGroupInput] = useState('');
+  const [groupManagerInput, setGroupManagerInput] = useState('');
   const [pinningGroupMode, setPinningGroupMode] = useState(null);
+
+  // Group Person in Charge (អ្នកទទួលបន្ទុក ក្នុង Group) State
+  const [groupManagers, setGroupManagers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('TEMPLE_GROUP_MANAGERS_V1');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const saveGroupManagers = (updated) => {
+    setGroupManagers(updated);
+    try {
+      localStorage.setItem('TEMPLE_GROUP_MANAGERS_V1', JSON.stringify(updated));
+    } catch (e) {}
+  };
 
   // Add/Edit Location Pin Modal mode ('single' | 'group')
   const [pinModalMode, setPinModalMode] = useState('single');
@@ -961,37 +980,48 @@ export default function TempleMapModal({
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to Realtime Group Settings (Hidden & Locked categories synced across PC & Phone)
+  // Subscribe to Realtime Group Settings (Hidden, Locked & Managers synced across PC & Phone)
   useEffect(() => {
     const unsubscribe = subscribeToGroupSettings((settings) => {
       if (settings && typeof settings === 'object') {
         const hidden = {};
         const locked = {};
+        const managers = {};
         Object.entries(settings).forEach(([cat, s]) => {
           if (s && s.hidden) hidden[cat] = true;
           if (s && s.locked) locked[cat] = true;
+          if (s && s.manager) managers[cat] = s.manager;
         });
         setHiddenCategories(hidden);
         setLockedCategories(locked);
+        if (Object.keys(managers).length > 0) {
+          setGroupManagers(managers);
+          try {
+            localStorage.setItem('TEMPLE_GROUP_MANAGERS_V1', JSON.stringify(managers));
+          } catch (e) {}
+        }
       }
     });
 
     return () => unsubscribe();
   }, []);
 
-  const syncGroupSettingsToCloud = (nextHidden, nextLocked) => {
+  const syncGroupSettingsToCloud = (nextHidden, nextLocked, nextManagers = groupManagers) => {
     const allCatNames = new Set([
       ...Object.keys(hiddenCategories),
       ...Object.keys(lockedCategories),
+      ...Object.keys(groupManagers),
       ...Object.keys(nextHidden),
-      ...Object.keys(nextLocked)
+      ...Object.keys(nextLocked),
+      ...Object.keys(nextManagers)
     ]);
 
     const payload = {};
     allCatNames.forEach((cat) => {
       payload[cat] = {
         hidden: !!nextHidden[cat],
-        locked: !!nextLocked[cat]
+        locked: !!nextLocked[cat],
+        manager: nextManagers[cat] || ''
       };
     });
 
@@ -2318,11 +2348,19 @@ export default function TempleMapModal({
       setTab3Locations(updated);
       saveTab3LocationsToFirebase(updated);
     }
+
+    if (newGroupManagerInput.trim()) {
+      const updatedMgrs = { ...groupManagers, [name]: newGroupManagerInput.trim() };
+      saveGroupManagers(updatedMgrs);
+      syncGroupSettingsToCloud(hiddenCategories, lockedCategories, updatedMgrs);
+    }
+
     setIsCategoryModalOpen(false);
     setSelectedGroupForBatchPin(name);
     setPinningGroupMode(name);
     setIsEditModalOpen(false);
     setNewCategoryName('');
+    setNewGroupManagerInput('');
     setSelectedLocationIdsForGroup([]);
     setTagNumbersBatchInput('');
     setBatchTagWarnings([]);
@@ -2332,6 +2370,7 @@ export default function TempleMapModal({
   const handleOpenGroupEditModal = (catName) => {
     setEditingGroupName(catName);
     setRenameGroupInput(catName);
+    setGroupManagerInput(groupManagers[catName] || '');
     setTagNumbersBatchInput('');
     setBatchTagWarnings([]);
     setIsGroupEditModalOpen(true);
@@ -2423,6 +2462,15 @@ export default function TempleMapModal({
       setSelectedSizeGroup(trimmedNew);
     }
 
+    if (groupManagers[editingGroupName]) {
+      const mgr = groupManagers[editingGroupName];
+      const updatedMgrs = { ...groupManagers };
+      delete updatedMgrs[editingGroupName];
+      updatedMgrs[trimmedNew] = mgr;
+      saveGroupManagers(updatedMgrs);
+      syncGroupSettingsToCloud(hiddenCategories, lockedCategories, updatedMgrs);
+    }
+
     setEditingGroupName(trimmedNew);
     setUndoToast(`✏️ បានប្តូរឈ្មោះ Group «${editingGroupName}» ទៅជា «${trimmedNew}» រួចរាល់!`);
     setTimeout(() => setUndoToast(''), 3000);
@@ -2468,6 +2516,13 @@ export default function TempleMapModal({
       if (selectedCat === editingGroupName || selectedLocation.category === editingGroupName) {
         setSelectedLocation(null);
       }
+    }
+
+    if (groupManagers[editingGroupName]) {
+      const updatedMgrs = { ...groupManagers };
+      delete updatedMgrs[editingGroupName];
+      saveGroupManagers(updatedMgrs);
+      syncGroupSettingsToCloud(hiddenCategories, lockedCategories, updatedMgrs);
     }
 
     setUndoToast(`🗑️ បានលុប Group «${editingGroupName}» និងរាល់ Pin ទាំងអស់ក្នុង Group រួចរាល់`);
@@ -3180,7 +3235,7 @@ export default function TempleMapModal({
                       }
                       className="px-3.5 py-2 bg-gradient-to-r from-slate-900 to-slate-950 cursor-pointer flex items-center justify-between gap-2 hover:bg-slate-800/80 transition-colors"
                     >
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0 flex-wrap sm:flex-nowrap">
                         {groupMeta.swatch ? (
                           <span
                             className={`w-3 h-3 rounded-full ${groupMeta.bg} shrink-0 ring-1 ring-white/40 shadow-sm`}
@@ -3191,6 +3246,11 @@ export default function TempleMapModal({
                         <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full shrink-0 border ${groupMeta.badgeBg}`}>
                           {filteredItems.length}
                         </span>
+                        {groupManagers[catName] && (
+                          <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1 font-bold shrink-0">
+                            👤 អ្នកទទួលបន្ទុក ៖ <span className="text-white font-kantumruy">{groupManagers[catName]}</span>
+                          </span>
+                        )}
                       </div>
 
                       {/* Eye (Show/Hide), Lock (Lock/Unlock Dragging), & Edit Controls for this Group */}
@@ -3959,6 +4019,19 @@ export default function TempleMapModal({
                   </div>
                 </div>
 
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">
+                    👤 ឈ្មោះអ្នកទទួលបន្ទុក ក្នុង Group (ជម្រើស) ៖
+                  </label>
+                  <input
+                    type="text"
+                    value={newGroupManagerInput}
+                    onChange={(e) => setNewGroupManagerInput(e.target.value)}
+                    placeholder="វាយឈ្មោះអ្នកទទួលបន្ទុក (ឧ. លោកគ្រូ ភិក្ខុ... / ឧបាសក...)..."
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-bold"
+                  />
+                </div>
+
                 {/* Batch Tag Number Input */}
                 <div className="space-y-1 bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
                   <label className="block text-xs font-bold text-amber-300 flex items-center justify-between">
@@ -4211,6 +4284,47 @@ export default function TempleMapModal({
                     className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-md transition-all shrink-0 active:scale-95"
                   >
                     កែឈ្មោះ
+                  </button>
+                </div>
+              </div>
+
+              {/* Person in Charge of Group (អ្នកទទួលបន្ទុក ក្នុង Group) */}
+              <div className="space-y-1.5 bg-slate-950 p-2.5 rounded-2xl border border-slate-800">
+                <label className="block text-xs font-bold text-amber-300">
+                  👤 អ្នកទទួលបន្ទុកក្នុង Group (Person in Charge) ៖
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={groupManagerInput}
+                    onChange={(e) => setGroupManagerInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const trimmed = groupManagerInput.trim();
+                        const updated = { ...groupManagers, [editingGroupName]: trimmed };
+                        saveGroupManagers(updated);
+                        syncGroupSettingsToCloud(hiddenCategories, lockedCategories, updated);
+                        setUndoToast(`👤 បានរក្សាទុកអ្នកទទួលបន្ទុក «${trimmed || 'គ្មាន'}» សម្រាប់ Group «${editingGroupName}» រួចរាល់!`);
+                        setTimeout(() => setUndoToast(''), 3000);
+                      }
+                    }}
+                    placeholder="វាយឈ្មោះអ្នកទទួលបន្ទុក (ឧ. លោកគ្រូ ភិក្ខុ... / ឧបាសក...)..."
+                    className="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-bold font-kantumruy"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const trimmed = groupManagerInput.trim();
+                      const updated = { ...groupManagers, [editingGroupName]: trimmed };
+                      saveGroupManagers(updated);
+                      syncGroupSettingsToCloud(hiddenCategories, lockedCategories, updated);
+                      setUndoToast(`👤 បានរក្សាទុកអ្នកទទួលបន្ទុក «${trimmed || 'គ្មាន'}» សម្រាប់ Group «${editingGroupName}» រួចរាល់!`);
+                      setTimeout(() => setUndoToast(''), 3000);
+                    }}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-md transition-all shrink-0 active:scale-95"
+                  >
+                    រក្សាទុក
                   </button>
                 </div>
               </div>
