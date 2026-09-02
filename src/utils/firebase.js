@@ -1,7 +1,6 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps } from 'firebase/app';
 import { getDatabase, ref, onValue, set, remove, get } from 'firebase/database';
 import { INITIAL_TEMPLE_LOCATIONS, saveTempleLocations as saveTempleLocationsLocal, saveTab3Locations as saveTab3LocationsLocal } from '../data/templeLocations';
-import { INITIAL_TAG_DATA } from '../data/sampleData';
 
 // Dynamically read custom Firebase Database credentials from localStorage or URL parameter
 let urlDbParam = '';
@@ -21,14 +20,17 @@ const customApiKey = typeof localStorage !== 'undefined' ? localStorage.getItem(
 const customProjectId = typeof localStorage !== 'undefined' ? localStorage.getItem('FB_PROJECT_ID') : null;
 
 // Firebase configuration
+// NOTE: Fallback values are intentional placeholders — the app works in offline
+// mode without real Firebase credentials (data saved to localStorage instead).
 const firebaseConfig = {
-  apiKey: customApiKey || import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDemoApiKeyForKhmerTagSystem2026",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "jabslak.firebaseapp.com",
-  databaseURL: customDbUrl || import.meta.env.VITE_FIREBASE_DATABASE_URL || "https://jabslak-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: customProjectId || import.meta.env.VITE_FIREBASE_PROJECT_ID || "jabslak",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "jabslak.appspot.com",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "123456789012",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:123456789012:web:demo123456789"
+  apiKey: customApiKey || import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyAA-placeholder-key-for-offline-mode',
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'jabslak.firebaseapp.com',
+  databaseURL: customDbUrl || import.meta.env.VITE_FIREBASE_DATABASE_URL || 'https://jabslak-default-rtdb.asia-southeast1.firebasedatabase.app',
+  projectId: customProjectId || import.meta.env.VITE_FIREBASE_PROJECT_ID || 'jabslak',
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'jabslak.firebasestorage.app',
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '000000000000',
+  // appId MUST follow format "1:NUMBERS:web:HEXSTRING" — invalid format throws in SDK v12
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:000000000000:web:0000000000000000000000'
 };
 
 let app = null;
@@ -36,12 +38,15 @@ let db = null;
 let isConnected = false;
 
 try {
-  app = initializeApp(firebaseConfig);
+  // Prevent duplicate app initialization (React StrictMode mounts effects twice)
+  const existingApps = getApps();
+  app = existingApps.length > 0 ? existingApps[0] : initializeApp(firebaseConfig);
   db = getDatabase(app);
   isConnected = true;
 } catch (err) {
   console.warn('Firebase init warning (running in offline mode):', err);
 }
+
 
 /**
  * Migrate any old locations (like អាគារ A) to authentic 21 temple locations
