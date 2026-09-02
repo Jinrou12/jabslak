@@ -2609,9 +2609,7 @@ export default function TempleMapModal({
                       const isCategoryLocked = lockedCategories[locCat];
                       const isHighlighted =
                         selectedLocation?.id === loc.id ||
-                        hoveredLocation?.id === loc.id ||
-                        (highlightLocationName &&
-                          String(loc.name || '').toLowerCase().includes(String(highlightLocationName).toLowerCase()));
+                        hoveredLocation?.id === loc.id;
 
                       const isGate = loc.type === 'gate';
                       const isCurrentlyDragging = draggingPinId === loc.id;
