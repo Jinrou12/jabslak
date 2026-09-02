@@ -1869,7 +1869,7 @@ export default function TempleMapModal({
   const processBatchTagInput = (inputVal, targetGroupName) => {
     const cleanedStr = khmerToWesternDigits(inputVal);
     const numbers = cleanedStr.split(/[\s,،;]+/).map((s) => s.trim()).filter(Boolean);
-    if (numbers.length === 0) return { matchedIds: [], warnings: [] };
+    if (numbers.length === 0) return { matchedIds: [], warnings: [], updatedLocations: tab3Locations, hasChanges: false };
 
     const baseLocations = tab3Locations.length > 0 ? tab3Locations : locations;
     let updatedLocations = [...baseLocations];
@@ -1886,9 +1886,11 @@ export default function TempleMapModal({
       const numClean = khmerToWesternDigits(numStr);
       const khmerNum = westernToKhmerDigits(numClean);
 
-      // 1. Check if a TAG PIN location already exists
+      // 1. Check if a TAG PIN location already exists (do not match base temple locations)
       const existingLoc = updatedLocations.find((loc) => {
         const isTagPin = loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay;
+        if (!isTagPin) return false;
+
         const locTagNum = loc.tagNumber ? String(loc.tagNumber).trim() : '';
         const locDisp = loc.tagNumberDisplay ? String(loc.tagNumberDisplay).trim() : '';
         const locId = String(loc.id || '').trim();
@@ -1980,14 +1982,6 @@ export default function TempleMapModal({
       }
     });
 
-    if (hasChanges) {
-      setTab3Locations(updatedLocations);
-      saveTab3LocationsToFirebase(updatedLocations);
-      saveTab3Locations(updatedLocations);
-      setLocations(updatedLocations);
-      saveTempleLocations(updatedLocations);
-    }
-
     return { matchedIds, warnings, updatedLocations, hasChanges };
   };
 
@@ -2017,12 +2011,15 @@ export default function TempleMapModal({
       ? updatedLocations
       : currentBase;
 
-    const stripComputed2 = (loc) => loc;
     const updated = baseLocations.map((loc) => {
       if (allGroupIds.includes(loc.id)) {
-        return { ...stripComputed2(loc), category: name };
+        // Protect existing groups! Only set category if item is unassigned or already in this group
+        const currentCat = loc.category || '';
+        if (!currentCat || currentCat === name) {
+          return { ...loc, category: name };
+        }
       }
-      return stripComputed2(loc);
+      return loc;
     });
 
     setter(updated);
