@@ -142,12 +142,12 @@ export function getPinSizeClasses(size) {
 
 export function getPinBadgeText(loc, activeTab = 'tagger') {
   if (!loc) return '';
-  if (activeTab === 'tagger' || loc.isTagPin) {
+  if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
     if (loc.tagNumberDisplay) return loc.tagNumberDisplay;
     if (loc.tagNumber) return westernToKhmerDigits(loc.tagNumber);
     if (/^\d+$/.test(String(loc.id))) return westernToKhmerDigits(loc.id);
   }
-  return String(loc.id || '');
+  return loc.type === 'gate' ? '⛩️' : '🏢';
 }
 
 export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3Locations = []) {
@@ -162,13 +162,13 @@ export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3L
   );
   const tagOwner = loc.tagOwnerName || (matchedTag ? matchedTag.name : '');
 
-  if (activeTab === 'tagger') {
+  if (activeTab === 'tagger' || loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
     if (tagNumDisp && tagOwner) return `ស្លាក ${tagNumDisp} ៖ ${tagOwner}`;
     if (tagNumDisp) return `ស្លាក ${tagNumDisp}`;
     if (tagOwner) return tagOwner;
   }
 
-  const initialMatch = INITIAL_TEMPLE_LOCATIONS.find((init) => String(init.id).trim() === locIdStr);
+  const initialMatch = !loc.isTagPin ? INITIAL_TEMPLE_LOCATIONS.find((init) => String(init.id).trim() === locIdStr) : null;
   return initialMatch ? initialMatch.name : loc.name;
 }
 
@@ -207,8 +207,8 @@ export default function TempleMapModal({
     return tab3Locations.map((loc) => {
       const locIdStr = String(loc.id || '').trim();
       
-      // Look up authentic original location name from INITIAL_TEMPLE_LOCATIONS if available
-      const initialMatch = INITIAL_TEMPLE_LOCATIONS.find((init) => String(init.id).trim() === locIdStr);
+      // Look up authentic original location name from INITIAL_TEMPLE_LOCATIONS ONLY for base building/gate pins
+      const initialMatch = !loc.isTagPin ? INITIAL_TEMPLE_LOCATIONS.find((init) => String(init.id).trim() === locIdStr) : null;
       const locationName = initialMatch ? initialMatch.name : loc.name;
 
       const matchedTag = allTags.find((t) => {
@@ -222,7 +222,7 @@ export default function TempleMapModal({
         }
 
         // 2. Match by Location Name ONLY if tag's baseLocation explicitly matches locationName or locIdStr
-        if (tBase && tBase !== 'មើលទីកន្លែង' && tBase !== 'មិនទាន់ដៅលើ Map' && tBase !== 'ទីតាំងមិនទាន់កំណត់' && (tBase === locationName || tBase === locIdStr)) {
+        if (!loc.isTagPin && tBase && tBase !== 'មើលទីកន្លែង' && tBase !== 'មិនទាន់ដៅលើ Map' && tBase !== 'ទីតាំងមិនទាន់កំណត់' && (tBase === locationName || tBase === locIdStr)) {
           return true;
         }
 
@@ -785,14 +785,11 @@ export default function TempleMapModal({
   };
 
   const handleMouseUp = () => {
-    if (isPanning) {
-      setIsPanning(false);
-      if (hasPannedRef.current) {
-        setTimeout(() => {
-          pinMovedFlagRef.current = false;
-        }, 100);
-      }
-    }
+    setIsPanning(false);
+    setTimeout(() => {
+      pinMovedFlagRef.current = false;
+      hasPannedRef.current = false;
+    }, 50);
   };
 
   // Touch Panning (1 finger) & GPU-Composited 120fps Focal Pinch Zoom (2 fingers)
@@ -921,11 +918,10 @@ export default function TempleMapModal({
 
     if (pinchRafRef.current) cancelAnimationFrame(pinchRafRef.current);
 
-    if (hasPannedRef.current) {
-      setTimeout(() => {
-        pinMovedFlagRef.current = false;
-      }, 100);
-    }
+    setTimeout(() => {
+      pinMovedFlagRef.current = false;
+      hasPannedRef.current = false;
+    }, 50);
   };
 
   // Helper: calculate next default location ID in Khmer digits (e.g. ១៨, ១៩, ២០...)
