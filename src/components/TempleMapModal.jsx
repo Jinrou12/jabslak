@@ -140,6 +140,54 @@ export function getPinSizeClasses(size) {
   }
 }
 
+export function getLocationAbbreviation(name = '', type = 'building') {
+  if (!name) return type === 'gate' ? '⛩️' : '🏢';
+  const cleanName = String(name).trim();
+
+  // Explicit Khmer abbreviation mapping for temple locations
+  const explicitMap = {
+    'ធម្មសាលាសភា': 'ធ',
+    'សាលាធម្មសភា': 'ធ',
+    'មហាកុដិ': 'ម.ក',
+    'កុដិសាឡុម': 'ក.ស',
+    'កុដិតូច': 'កុ.ត',
+    'កុដិថ្មី': 'ក.ថ្មី',
+    'កុដិគ្រូធំ': 'ក.គ',
+    'ព្រះវិហារ': 'ព.វ',
+    'ដើមពោធិព្រឹក្ស': 'ពោធិ์',
+    'បណ្ណាល័យ': 'ប.ណ',
+    'ពុទ្ធកបឋមសិក្សាកម្រងហ៊ុនណេង': 'ពុទ្ធក',
+    'កុដិយាយតា': 'ក.យ',
+    'ប៉ុស្តិ៍វិទ្យុ': 'វិទ្យុ',
+    'អាងទឹក': 'អាង',
+    'អាងទឹកវិទ្យុ': 'អាង.វ',
+    'ព្រះផ្ទំ': 'ព្រះផ្ទំ',
+    'ចេតិយនគរភ្នំ ចាយ ស៊ាងអ៊ី': 'ចេតិយ',
+    'ខ្លោងទ្វារទី១': 'ទ១',
+    'ខ្លោងទ្វារទី២': 'ទ២',
+    'ខ្លោងទ្វារទី៣': 'ទ៣',
+    'ខ្លោងទ្វារទី៤': 'ទ៤',
+    'ខ្លោងទ្វារទី៥': 'ទ៥'
+  };
+
+  if (explicitMap[cleanName]) return explicitMap[cleanName];
+
+  if (cleanName.includes('ខ្លោងទ្វារ')) {
+    const numMatch = cleanName.match(/[១-៩1-9]+/);
+    if (numMatch) return `ទ${numMatch[0]}`;
+  }
+
+  const words = cleanName.split(/\s+/);
+  if (words.length >= 2) {
+    const w1 = words[0].charAt(0);
+    const w2 = words[1].charAt(0);
+    return `${w1}.${w2}`;
+  }
+
+  if (cleanName.length <= 4) return cleanName;
+  return cleanName.slice(0, 3);
+}
+
 export function getPinBadgeText(loc, activeTab = 'tagger') {
   if (!loc) return '';
   if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
@@ -147,7 +195,7 @@ export function getPinBadgeText(loc, activeTab = 'tagger') {
     if (loc.tagNumber) return westernToKhmerDigits(loc.tagNumber);
     if (/^\d+$/.test(String(loc.id))) return westernToKhmerDigits(loc.id);
   }
-  return loc.type === 'gate' ? '⛩️' : '🏢';
+  return getLocationAbbreviation(loc.name, loc.type);
 }
 
 export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3Locations = []) {
