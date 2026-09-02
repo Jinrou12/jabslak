@@ -1056,11 +1056,130 @@ export default function TempleMapModal({
     });
   };
 
+  // Core group-pin placement logic (accepts pctX, pctY in map-percentage coords)
+  const handleGroupPinPlacement = (pctX, pctY) => {
+    // 1. Gather existing locations for this group
+    const groupLocations = currentLocations.filter((loc) => loc.category === pinningGroupMode);
+
+    // 2. Find any tags in allTags belonging to this group that don't have a location pin yet
+    const missingGroupTags = allTags.filter((t) => {
+      const tBase = String(t.baseLocation || t.location || '').trim();
+      if (tBase !== pinningGroupMode) return false;
+
+      const tNoStr = String(t.tagNumber || '').trim();
+      const tDispStr = String(t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber) || '').trim();
+      const tNoWestern = khmerToWesternDigits(tDispStr || tNoStr).trim();
+
+      const exists = currentLocations.some((loc) => {
+        const locTagNum = loc.tagNumber ? String(loc.tagNumber).trim() : '';
+        const locDisp = loc.tagNumberDisplay ? String(loc.tagNumberDisplay).trim() : '';
+        const locId = String(loc.id || '').trim();
+
+        return (
+          locTagNum === tNoStr ||
+          locDisp === tDispStr ||
+          locId === tDispStr ||
+          khmerToWesternDigits(locDisp) === tNoWestern ||
+          khmerToWesternDigits(locId) === tNoWestern
+        );
+      });
+
+      return !exists;
+    });
+
+    // Create new unpinned location pins for any missing tags
+    const newLocsFromTags = missingGroupTags.map((t) => {
+      const tagDispStr = t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber);
+      return {
+        id: tagDispStr,
+        name: t.name || `ស្លាកលេខ ${tagDispStr}`,
+        x: 50,
+        y: 50,
+        type: 'building',
+        pos: 'R',
+        badgeColor: 'orange',
+        category: pinningGroupMode,
+        tagNumber: t.tagNumber,
+        tagNumberDisplay: tagDispStr,
+        tagOwnerName: t.name || '',
+        isTagPin: true,
+        isUnpinned: true
+      };
+    });
+
+    const allGroupLocs = [...groupLocations, ...newLocsFromTags];
+    const count = allGroupLocs.length;
+
+    if (count === 0) {
+      alert(`គ្មាន Pin ឬ ស្លាកលេខនៅក្នុង Group «${pinningGroupMode}» ទេ!`);
+      setPinningGroupMode(null);
+      return;
+    }
+
+    saveStateForUndo();
+
+    const cols = Math.ceil(Math.sqrt(count));
+    const spacing = 3.5;
+
+    const groupPosMap = {};
+    allGroupLocs.forEach((gLoc, idx) => {
+      const row = Math.floor(idx / cols);
+      const col = idx % cols;
+      const offsetX = (col - (cols - 1) / 2) * spacing;
+      const offsetY = (row - (Math.ceil(count / cols) - 1) / 2) * spacing;
+
+      groupPosMap[gLoc.id] = {
+        x: Math.max(2, Math.min(98, parseFloat((pctX + offsetX).toFixed(2)))),
+        y: Math.max(2, Math.min(98, parseFloat((pctY + offsetY).toFixed(2))))
+      };
+    });
+
+    let updated = currentLocations.map((loc) => {
+      if (groupPosMap[loc.id] || loc.category === pinningGroupMode) {
+        const pos = groupPosMap[loc.id] || {
+          x: Math.max(2, Math.min(98, parseFloat(pctX.toFixed(2)))),
+          y: Math.max(2, Math.min(98, parseFloat(pctY.toFixed(2))))
+        };
+        return { ...loc, x: pos.x, y: pos.y, isUnpinned: false };
+      }
+      return loc;
+    });
+
+    newLocsFromTags.forEach((newLoc) => {
+      const pos = groupPosMap[newLoc.id];
+      if (pos) updated.push({ ...newLoc, x: pos.x, y: pos.y, isUnpinned: false });
+    });
+
+    setTab3Locations(updated);
+    saveTab3LocationsToFirebase(updated);
+    saveTab3Locations(updated);
+    setLocations(updated);
+    saveTempleLocations(updated);
+
+    setUndoToast(`✅ បានដៅទីតាំង Group «${pinningGroupMode}» លើ Map រួចរាល់ (${westernToKhmerDigits(count)} Pin)!`);
+    setTimeout(() => setUndoToast(''), 3500);
+    setPinningGroupMode(null);
+  };
+
+  // Dedicated handler for group-pin mode click on viewport (bypasses all panning guards)
+  const handleViewportClickForGroupPin = (e) => {
+    if (!pinningGroupMode) return;
+    e.stopPropagation();
+    const mapBox = mapContainerRef.current;
+    if (!mapBox) return;
+    const rect = mapBox.getBoundingClientRect();
+    const clampedX = Math.max(rect.left, Math.min(rect.right, e.clientX));
+    const clampedY = Math.max(rect.top, Math.min(rect.bottom, e.clientY));
+    const pctX = parseFloat((((clampedX - rect.left) / rect.width) * 100).toFixed(2));
+    const pctY = parseFloat((((clampedY - rect.top) / rect.height) * 100).toFixed(2));
+    handleGroupPinPlacement(pctX, pctY);
+  };
+
   // Map Click (Add new pin on Tab 2 or Tab 3 or Pin Group)
   const handleMapClick = (e) => {
-    if (!canCustomizeTab && !pinningGroupMode) return; // Allow pinning when pinningGroupMode is active
+    if (!canCustomizeTab && !pinningGroupMode) return;
     if (draggingPinId) return;
-    if (!pinningGroupMode && pinMovedFlagRef.current) return; // Only skip click-after-pan when NOT in group-pin mode
+    if (!pinningGroupMode && pinMovedFlagRef.current) return;
     const rect = mapContainerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
@@ -1069,123 +1188,10 @@ export default function TempleMapModal({
 
     // Handle Pinning Entire Group Mode (Pins ALL tags/items in group as separate individual pins)
     if (pinningGroupMode) {
-      // 1. Gather existing locations for this group
-      let groupLocations = currentLocations.filter((loc) => loc.category === pinningGroupMode);
-
-      // 2. Find any tags in allTags belonging to this group that don't have a location pin yet
-      const missingGroupTags = allTags.filter((t) => {
-        const tBase = String(t.baseLocation || t.location || '').trim();
-        if (tBase !== pinningGroupMode) return false;
-
-        const tNoStr = String(t.tagNumber || '').trim();
-        const tDispStr = String(t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber) || '').trim();
-        const tNoWestern = khmerToWesternDigits(tDispStr || tNoStr).trim();
-
-        const exists = currentLocations.some((loc) => {
-          const locTagNum = loc.tagNumber ? String(loc.tagNumber).trim() : '';
-          const locDisp = loc.tagNumberDisplay ? String(loc.tagNumberDisplay).trim() : '';
-          const locId = String(loc.id || '').trim();
-
-          return (
-            locTagNum === tNoStr ||
-            locDisp === tDispStr ||
-            locId === tDispStr ||
-            khmerToWesternDigits(locDisp) === tNoWestern ||
-            khmerToWesternDigits(locId) === tNoWestern
-          );
-        });
-
-        return !exists;
-      });
-
-      // Create new unpinned location pins for any missing tags
-      const newLocsFromTags = missingGroupTags.map((t) => {
-        const tagDispStr = t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber);
-        return {
-          id: tagDispStr,
-          name: t.name || `ស្លាកលេខ ${tagDispStr}`,
-          x: 50,
-          y: 50,
-          type: 'building',
-          pos: 'R',
-          badgeColor: 'orange',
-          category: pinningGroupMode,
-          tagNumber: t.tagNumber,
-          tagNumberDisplay: tagDispStr,
-          tagOwnerName: t.name || '',
-          isTagPin: true,
-          isUnpinned: true
-        };
-      });
-
-      const allGroupLocs = [...groupLocations, ...newLocsFromTags];
-      const count = allGroupLocs.length;
-
-      if (count === 0) {
-        alert(`គ្មាន Pin ឬ ស្លាកលេខនៅក្នុង Group «${pinningGroupMode}» ទេ!`);
-        setPinningGroupMode(null);
-        return;
-      }
-
-      saveStateForUndo();
-
-      // Cluster pins belonging to this group around clicked point (pctX, pctY) with layout spacing
-      const cols = Math.ceil(Math.sqrt(count));
-      const spacing = 3.5;
-
-      const groupPosMap = {};
-      allGroupLocs.forEach((gLoc, idx) => {
-        const row = Math.floor(idx / cols);
-        const col = idx % cols;
-        const offsetX = (col - (cols - 1) / 2) * spacing;
-        const offsetY = (row - (Math.ceil(count / cols) - 1) / 2) * spacing;
-
-        groupPosMap[gLoc.id] = {
-          x: Math.max(2, Math.min(98, parseFloat((pctX + offsetX).toFixed(2)))),
-          y: Math.max(2, Math.min(98, parseFloat((pctY + offsetY).toFixed(2))))
-        };
-      });
-
-      let updated = currentLocations.map((loc) => {
-        if (groupPosMap[loc.id] || loc.category === pinningGroupMode) {
-          const pos = groupPosMap[loc.id] || {
-            x: Math.max(2, Math.min(98, parseFloat(pctX.toFixed(2)))),
-            y: Math.max(2, Math.min(98, parseFloat(pctY.toFixed(2))))
-          };
-          return {
-            ...loc,
-            x: pos.x,
-            y: pos.y,
-            isUnpinned: false
-          };
-        }
-        return loc;
-      });
-
-      // Append newly generated locs from allTags if any
-      newLocsFromTags.forEach((newLoc) => {
-        const pos = groupPosMap[newLoc.id];
-        if (pos) {
-          updated.push({
-            ...newLoc,
-            x: pos.x,
-            y: pos.y,
-            isUnpinned: false
-          });
-        }
-      });
-
-      setTab3Locations(updated);
-      saveTab3LocationsToFirebase(updated);
-      saveTab3Locations(updated);
-      setLocations(updated);
-      saveTempleLocations(updated);
-
-      setUndoToast(`✅ បានដៅទីតាំង Group «${pinningGroupMode}» លើ Map រួចរាល់ (${westernToKhmerDigits(count)} Pin)!`);
-      setTimeout(() => setUndoToast(''), 3500);
-      setPinningGroupMode(null);
+      handleGroupPinPlacement(pctX, pctY);
       return;
     }
+
 
     setEditingLoc({
       isNew: true,
@@ -2188,8 +2194,9 @@ export default function TempleMapModal({
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
+              onClick={pinningGroupMode ? handleViewportClickForGroupPin : undefined}
               className={`relative w-full overflow-auto select-none bg-white ${
-                isPanning ? 'cursor-grabbing' : 'cursor-grab'
+                pinningGroupMode ? 'cursor-crosshair' : isPanning ? 'cursor-grabbing' : 'cursor-grab'
               }`}
               style={{
                 maxHeight: 'min(48vh, 550px)',
