@@ -91,18 +91,131 @@ const WESTERN_TAG_COLORS = {
 };
 
 export const COLOR_SWATCHES = [
-  { key: 'orange', label: '🟧 ពណ៌ទឹកក្រូច (Orange)', bg: 'bg-orange-500', gradient: 'bg-gradient-to-br from-amber-300 via-orange-400 to-amber-500 text-slate-950 border-white ring-1 ring-orange-400/60' },
-  { key: 'emerald', label: '💚 ពណ៌បៃតង (Emerald)', bg: 'bg-emerald-400', gradient: 'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60' },
-  { key: 'purple', label: '💜 ពណ៌ស្វាយ (Purple)', bg: 'bg-purple-400', gradient: 'bg-gradient-to-br from-purple-300 via-purple-400 to-indigo-500 text-slate-950 border-white ring-1 ring-purple-400/60' },
-  { key: 'rose', label: '🩷 ពណ៌ស៊ីជម្ពូ (Rose)', bg: 'bg-rose-400', gradient: 'bg-gradient-to-br from-rose-300 via-rose-400 to-pink-500 text-slate-950 border-white ring-1 ring-rose-400/60' },
-  { key: 'fuchsia', label: '💖 ពណ៌ទង់ដែង (Fuchsia)', bg: 'bg-fuchsia-400', gradient: 'bg-gradient-to-br from-fuchsia-300 via-fuchsia-400 to-pink-600 text-slate-950 border-white ring-1 ring-fuchsia-400/60' },
-  { key: 'lime', label: '🍏 ពណ៌បៃតងខ្ចី (Lime)', bg: 'bg-lime-400', gradient: 'bg-gradient-to-br from-lime-300 via-lime-400 to-emerald-500 text-slate-950 border-white ring-1 ring-lime-400/60' },
-  { key: 'indigo', label: '💙 ពណ៌ខៀវចាស់ (Indigo)', bg: 'bg-indigo-400', gradient: 'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white border-white ring-1 ring-indigo-400/60' },
-  { key: 'red', label: '🪸 ពណ៌ក្រហម (Crimson)', bg: 'bg-red-500', gradient: 'bg-gradient-to-br from-red-400 via-rose-500 to-red-600 text-white border-white ring-1 ring-rose-400/60' },
-  { key: 'teal', label: '🩵 ពណ៌ខៀវស្រស់ (Teal)', bg: 'bg-teal-400', gradient: 'bg-gradient-to-br from-teal-300 via-teal-400 to-cyan-600 text-slate-950 border-white ring-1 ring-teal-400/60' },
-  { key: 'violet', label: '🪻 ពណ៌ស្វាយចាស់ (Violet)', bg: 'bg-violet-400', gradient: 'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950 border-white ring-1 ring-violet-400/60' },
-  { key: 'pink', label: '🌸 ពណ៌ផ្កាឈូក (Pink)', bg: 'bg-pink-400', gradient: 'bg-gradient-to-br from-pink-300 via-fuchsia-400 to-purple-600 text-slate-950 border-white ring-1 ring-pink-400/60' }
+  {
+    key: 'orange',
+    label: '🟧 ពណ៌ទឹកក្រូច (Orange)',
+    bg: 'bg-orange-500',
+    text: 'text-orange-400',
+    badgeBg: 'bg-orange-500/20 text-orange-300 border-orange-500/40',
+    activeChip: 'bg-orange-500 text-slate-950 shadow-md shadow-orange-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-amber-300 via-orange-400 to-amber-500 text-slate-950 border-white ring-1 ring-orange-400/60'
+  },
+  {
+    key: 'emerald',
+    label: '💚 ពណ៌បៃតង (Emerald)',
+    bg: 'bg-emerald-400',
+    text: 'text-emerald-400',
+    badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    activeChip: 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-emerald-300 via-emerald-400 to-teal-500 text-slate-950 border-white ring-1 ring-emerald-400/60'
+  },
+  {
+    key: 'purple',
+    label: '💜 ពណ៌ស្វាយ (Purple)',
+    bg: 'bg-purple-400',
+    text: 'text-purple-300',
+    badgeBg: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+    activeChip: 'bg-purple-500 text-white shadow-md shadow-purple-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-purple-300 via-purple-400 to-indigo-500 text-slate-950 border-white ring-1 ring-purple-400/60'
+  },
+  {
+    key: 'rose',
+    label: '🩷 ពណ៌ស៊ីជម្ពូ (Rose)',
+    bg: 'bg-rose-400',
+    text: 'text-rose-300',
+    badgeBg: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+    activeChip: 'bg-rose-500 text-white shadow-md shadow-rose-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-rose-300 via-rose-400 to-pink-500 text-slate-950 border-white ring-1 ring-rose-400/60'
+  },
+  {
+    key: 'fuchsia',
+    label: '💖 ពណ៌ទង់ដែង (Fuchsia)',
+    bg: 'bg-fuchsia-400',
+    text: 'text-fuchsia-300',
+    badgeBg: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/40',
+    activeChip: 'bg-fuchsia-500 text-white shadow-md shadow-fuchsia-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-fuchsia-300 via-fuchsia-400 to-pink-600 text-slate-950 border-white ring-1 ring-fuchsia-400/60'
+  },
+  {
+    key: 'lime',
+    label: '🍏 ពណ៌បៃតងខ្ចី (Lime)',
+    bg: 'bg-lime-400',
+    text: 'text-lime-300',
+    badgeBg: 'bg-lime-500/20 text-lime-300 border-lime-500/40',
+    activeChip: 'bg-lime-400 text-slate-950 shadow-md shadow-lime-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-lime-300 via-lime-400 to-emerald-500 text-slate-950 border-white ring-1 ring-lime-400/60'
+  },
+  {
+    key: 'indigo',
+    label: '💙 ពណ៌ខៀវចាស់ (Indigo)',
+    bg: 'bg-indigo-400',
+    text: 'text-indigo-300',
+    badgeBg: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40',
+    activeChip: 'bg-indigo-500 text-white shadow-md shadow-indigo-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white border-white ring-1 ring-indigo-400/60'
+  },
+  {
+    key: 'red',
+    label: '🪸 ពណ៌ក្រហម (Crimson)',
+    bg: 'bg-red-500',
+    text: 'text-red-400',
+    badgeBg: 'bg-red-500/20 text-red-300 border-red-500/40',
+    activeChip: 'bg-red-500 text-white shadow-md shadow-red-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-red-400 via-rose-500 to-red-600 text-white border-white ring-1 ring-rose-400/60'
+  },
+  {
+    key: 'teal',
+    label: '🩵 ពណ៌ខៀវស្រស់ (Teal)',
+    bg: 'bg-teal-400',
+    text: 'text-teal-300',
+    badgeBg: 'bg-teal-500/20 text-teal-300 border-teal-500/40',
+    activeChip: 'bg-teal-400 text-slate-950 shadow-md shadow-teal-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-teal-300 via-teal-400 to-cyan-600 text-slate-950 border-white ring-1 ring-teal-400/60'
+  },
+  {
+    key: 'violet',
+    label: '🪻 ពណ៌ស្វាយចាស់ (Violet)',
+    bg: 'bg-violet-400',
+    text: 'text-violet-300',
+    badgeBg: 'bg-violet-500/20 text-violet-300 border-violet-500/40',
+    activeChip: 'bg-violet-500 text-white shadow-md shadow-violet-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-violet-300 via-violet-400 to-purple-600 text-slate-950 border-white ring-1 ring-violet-400/60'
+  },
+  {
+    key: 'pink',
+    label: '🌸 ពណ៌ផ្កាឈូក (Pink)',
+    bg: 'bg-pink-400',
+    text: 'text-pink-300',
+    badgeBg: 'bg-pink-500/20 text-pink-300 border-pink-500/40',
+    activeChip: 'bg-pink-500 text-white shadow-md shadow-pink-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-pink-300 via-fuchsia-400 to-purple-600 text-slate-950 border-white ring-1 ring-pink-400/60'
+  }
 ];
+
+export function getGroupColorMeta(colorKey) {
+  const swatch = COLOR_SWATCHES.find((s) => s.key === colorKey);
+  if (swatch) {
+    return {
+      text: swatch.text || 'text-amber-400',
+      badgeBg: swatch.badgeBg || 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      activeChip: swatch.activeChip || 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20',
+      bg: swatch.bg,
+      swatch
+    };
+  }
+  return {
+    text: 'text-amber-400',
+    badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    activeChip: 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20',
+    bg: 'bg-amber-400',
+    swatch: null
+  };
+}
+
+export function getGroupMetaFromItems(items = []) {
+  const match = items.find((l) => l.badgeColor && COLOR_OPTION_GRADIENTS[l.badgeColor]);
+  return getGroupColorMeta(match ? match.badgeColor : null);
+}
 
 const COLOR_OPTION_GRADIENTS = COLOR_SWATCHES.reduce((acc, swatch) => {
   acc[swatch.key] = swatch.gradient;
@@ -2158,7 +2271,11 @@ export default function TempleMapModal({
                   <select
                     value={selectedSizeGroup}
                     onChange={(e) => setSelectedSizeGroup(e.target.value)}
-                    className="bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-0.5 text-xs text-amber-300 font-bold focus:outline-none focus:border-amber-400 font-kantumruy max-w-[140px] sm:max-w-[180px] truncate cursor-pointer"
+                    className={`bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-0.5 text-xs font-bold focus:outline-none focus:border-amber-400 font-kantumruy max-w-[140px] sm:max-w-[180px] truncate cursor-pointer ${
+                      selectedSizeGroup !== 'all' && categoryGroups[selectedSizeGroup]
+                        ? getGroupMetaFromItems(categoryGroups[selectedSizeGroup]).text
+                        : 'text-amber-300'
+                    }`}
                   >
                     <option value="all">🌐 All</option>
                     {Object.keys(categoryGroups).map((cat) => (
@@ -2792,19 +2909,24 @@ export default function TempleMapModal({
                     🌐 ទាំងអស់ ({currentLocations.length})
                   </button>
 
-                  {Object.keys(categoryGroups).map((catName) => (
-                    <button
-                      key={catName}
-                      onClick={() => setSelectedCategory(catName)}
-                      className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all ${
-                        selectedCategory === catName
-                          ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                          : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
-                      }`}
-                    >
-                      {catName} ({categoryGroups[catName].length})
-                    </button>
-                  ))}
+                  {Object.keys(categoryGroups).map((catName) => {
+                    const items = categoryGroups[catName] || [];
+                    const groupMeta = getGroupMetaFromItems(items);
+                    const isSelected = selectedCategory === catName;
+                    return (
+                      <button
+                        key={catName}
+                        onClick={() => setSelectedCategory(catName)}
+                        className={`px-2.5 py-1 rounded-xl text-xs font-bold shrink-0 transition-all border ${
+                          isSelected
+                            ? `${groupMeta.activeChip} border-transparent`
+                            : `bg-slate-900 ${groupMeta.text} hover:opacity-100 border-slate-800`
+                        }`}
+                      >
+                        {catName} ({items.length})
+                      </button>
+                    );
+                  })}
 
                   {canCustomizeTab && (
                     <button
@@ -2833,6 +2955,7 @@ export default function TempleMapModal({
                 if (filteredItems.length === 0) return null;
 
                 const isOpen = openAccordions[catName] !== false;
+                const groupMeta = getGroupMetaFromItems(items);
 
                 return (
                   <div
@@ -2847,18 +2970,14 @@ export default function TempleMapModal({
                       className="px-3.5 py-2 bg-gradient-to-r from-slate-900 to-slate-950 cursor-pointer flex items-center justify-between gap-2 hover:bg-slate-800/80 transition-colors"
                     >
                       <div className="flex items-center gap-2 min-w-0">
-                        {(() => {
-                          const groupColorLoc = items.find((l) => l.badgeColor && COLOR_OPTION_GRADIENTS[l.badgeColor]);
-                          const swatch = groupColorLoc ? COLOR_SWATCHES.find((s) => s.key === groupColorLoc.badgeColor) : null;
-                          return swatch ? (
-                            <span
-                              className={`w-3 h-3 rounded-full ${swatch.bg} shrink-0 ring-1 ring-white/40 shadow-sm`}
-                              title={`ពណ៌ Group ៖ ${swatch.label}`}
-                            ></span>
-                          ) : null;
-                        })()}
-                        <span className="font-bold text-xs text-amber-400 truncate">{catName}</span>
-                        <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.2 rounded-full shrink-0">
+                        {groupMeta.swatch ? (
+                          <span
+                            className={`w-3 h-3 rounded-full ${groupMeta.bg} shrink-0 ring-1 ring-white/40 shadow-sm`}
+                            title={`ពណ៌ Group ៖ ${groupMeta.swatch.label}`}
+                          ></span>
+                        ) : null}
+                        <span className={`font-bold text-xs ${groupMeta.text} truncate`}>{catName}</span>
+                        <span className={`text-[10px] font-bold px-2 py-0.2 rounded-full shrink-0 border ${groupMeta.badgeBg}`}>
                           {filteredItems.length}
                         </span>
                       </div>
@@ -3763,22 +3882,30 @@ export default function TempleMapModal({
               className="w-full max-w-md bg-slate-900 border border-amber-500/40 rounded-3xl p-4 sm:p-5 shadow-2xl text-slate-100 space-y-4"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-300 flex items-center justify-center font-bold shrink-0">
-                    <Edit2 className="w-4 h-4" />
+              {(() => {
+                const groupItems = currentLocations.filter(
+                  (l) => (l.category || (l.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName
+                );
+                const groupMeta = getGroupMetaFromItems(groupItems);
+                return (
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={`w-8 h-8 rounded-xl ${groupMeta.badgeBg} flex items-center justify-center font-bold shrink-0`}>
+                        <Edit2 className="w-4 h-4" />
+                      </div>
+                      <h3 className={`font-moul text-xs sm:text-sm ${groupMeta.text} truncate`}>
+                        កែប្រែ Group ៖ «{editingGroupName}»
+                      </h3>
+                    </div>
+                    <button
+                      onClick={() => setIsGroupEditModalOpen(false)}
+                      className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
                   </div>
-                  <h3 className="font-moul text-xs sm:text-sm text-amber-400 truncate">
-                    កែប្រែ Group ៖ «{editingGroupName}»
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setIsGroupEditModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+                );
+              })()}
 
               {/* Pin Entire Group On Map Button */}
               <button
