@@ -114,19 +114,19 @@ export function getPinBadgeColorClass(loc, idx = 0, activeTab = 'interactive') {
 
   const idStr = String(loc.id || '').trim();
 
+  // Custom user-selected badge color on loc (set explicitly or via Group color)
+  if (loc.badgeColor && COLOR_OPTION_GRADIENTS[loc.badgeColor]) {
+    return COLOR_OPTION_GRADIENTS[loc.badgeColor];
+  }
+
   // Gates A-E: Original Gold Yellow (ពណ៌លឿង/មាស សម្រាប់ខ្លោងទ្វារ)
   if (loc.type === 'gate' || STANDARD_GATES.includes(idStr)) {
     return 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 border-white ring-1 ring-amber-400/60';
   }
 
-  // Tag pins get an explicit orange/amber gradient so they stand out from cyan base building pins
+  // Tag pins get an explicit orange/amber gradient so they stand out from cyan base building pins (if no custom badgeColor)
   if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
     return 'bg-gradient-to-br from-amber-300 via-orange-400 to-amber-500 text-slate-950 border-white ring-2 ring-amber-400/90 font-bold shadow-lg';
-  }
-
-  // Custom user-selected badge color on Tab 3 (if specifically purple, rose, fuchsia, etc.)
-  if (activeTab === 'tagger' && loc.badgeColor && loc.badgeColor !== 'emerald' && COLOR_OPTION_GRADIENTS[loc.badgeColor]) {
-    return COLOR_OPTION_GRADIENTS[loc.badgeColor];
   }
 
   // Default ALL base location pins to 100% BLUE (cyan) across ALL tabs
@@ -1690,6 +1690,11 @@ export default function TempleMapModal({
     const matchedIds = [];
     const warnings = [];
 
+    const targetGroupLoc = baseLocations.find(
+      (l) => l.category === targetGroupName && l.badgeColor && COLOR_OPTION_GRADIENTS[l.badgeColor]
+    );
+    const groupBadgeColor = targetGroupLoc ? targetGroupLoc.badgeColor : null;
+
     numbers.forEach((numStr) => {
       const numClean = khmerToWesternDigits(numStr);
       const khmerNum = westernToKhmerDigits(numClean);
@@ -1733,7 +1738,9 @@ export default function TempleMapModal({
           matchedIds.push(existingLoc.id);
           if (targetGroupName && existingCat !== targetGroupName) {
             updatedLocations = updatedLocations.map((l) =>
-              l.id === existingLoc.id ? { ...l, category: targetGroupName } : l
+              l.id === existingLoc.id
+                ? { ...l, category: targetGroupName, ...(groupBadgeColor ? { badgeColor: groupBadgeColor } : {}) }
+                : l
             );
             hasChanges = true;
           }
@@ -1765,7 +1772,7 @@ export default function TempleMapModal({
           y: 50,
           type: 'building',
           pos: 'R',
-          badgeColor: 'cyan',
+          badgeColor: groupBadgeColor || 'cyan',
           category: targetGroupName || '',
           tagNumber: parseInt(numClean, 10) || numClean,
           tagNumberDisplay: newLocId,
@@ -1868,19 +1875,26 @@ export default function TempleMapModal({
 
   const handleApplyGroupColor = (newColor) => {
     if (!editingGroupName) return;
-    const { setter, saver } = getTabDataFunctions();
-    const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+    const currentBaseLocs = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+    pushHistorySnapshot(currentBaseLocs);
 
-    const updated = baseLocations.map((loc) => {
-      const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
-      if (catMatches) {
-        return { ...loc, badgeColor: newColor };
-      }
-      return loc;
-    });
+    const updateGroupColor = (list) =>
+      list.map((loc) => {
+        const catMatches =
+          (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
+        if (catMatches) {
+          return { ...loc, badgeColor: newColor };
+        }
+        return loc;
+      });
 
-    setter(updated);
-    saver(updated);
+    const updatedTab3 = updateGroupColor(tab3Locations);
+    const updatedLocs = updateGroupColor(locations);
+
+    setTab3Locations(updatedTab3);
+    saveTab3LocationsToFirebase(updatedTab3);
+    setLocations(updatedLocs);
+    saveTempleLocationsToFirebase(updatedLocs.filter((loc) => !loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay));
   };
 
   const handleRenameGroupSubmit = () => {
@@ -2837,6 +2851,16 @@ export default function TempleMapModal({
                       className="px-3.5 py-2 bg-gradient-to-r from-slate-900 to-slate-950 cursor-pointer flex items-center justify-between gap-2 hover:bg-slate-800/80 transition-colors"
                     >
                       <div className="flex items-center gap-2 min-w-0">
+                        {(() => {
+                          const groupColorLoc = items.find((l) => l.badgeColor && COLOR_OPTION_GRADIENTS[l.badgeColor]);
+                          const swatch = groupColorLoc ? COLOR_SWATCHES.find((s) => s.key === groupColorLoc.badgeColor) : null;
+                          return swatch ? (
+                            <span
+                              className={`w-3 h-3 rounded-full ${swatch.bg} shrink-0 ring-1 ring-white/40 shadow-sm`}
+                              title={`ពណ៌ Group ៖ ${swatch.label}`}
+                            ></span>
+                          ) : null;
+                        })()}
                         <span className="font-bold text-xs text-amber-400 truncate">{catName}</span>
                         <span className="bg-amber-500/20 text-amber-300 text-[10px] font-bold px-2 py-0.2 rounded-full shrink-0">
                           {filteredItems.length}
@@ -3953,11 +3977,22 @@ export default function TempleMapModal({
                                 const targetCategory = e.target.checked ? editingGroupName : '';
                                 const { setter, saver } = getTabDataFunctions();
                                 const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+                                const groupColorLoc = baseLocations.find(
+                                  (l) => l.category === editingGroupName && l.badgeColor && COLOR_OPTION_GRADIENTS[l.badgeColor]
+                                );
+                                const groupColor = groupColorLoc ? groupColorLoc.badgeColor : null;
+
                                 const updated = baseLocations.map((l) =>
-                                  l.id === loc.id ? { ...l, category: targetCategory } : l
+                                  l.id === loc.id
+                                    ? { ...l, category: targetCategory, ...(e.target.checked && groupColor ? { badgeColor: groupColor } : {}) }
+                                    : l
                                 );
                                 setter(updated);
                                 saver(updated);
+                                if (activeTab === 'interactive') {
+                                  setTab3Locations(updated);
+                                  saveTab3LocationsToFirebase(updated);
+                                }
                               }}
                               className="rounded border-slate-700 text-amber-500 focus:ring-0 shrink-0"
                             />
@@ -4008,20 +4043,41 @@ export default function TempleMapModal({
 
               {/* Set Badge Color for ALL items in Group */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-300">
-                  🎨 ជ្រើសរើសពណ៌ សម្រាប់គ្រប់ទីតាំងក្នុង Group នេះ ៖
+                <label className="block text-xs font-bold text-slate-300 flex items-center justify-between">
+                  <span>🎨 ជ្រើសរើសពណ៌ សម្រាប់គ្រប់ទីតាំងក្នុង Group នេះ ៖</span>
+                  {(() => {
+                    const currentGroupLoc = currentLocations.find(
+                      (l) => (l.category || (l.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName && l.badgeColor && COLOR_OPTION_GRADIENTS[l.badgeColor]
+                    );
+                    const currentSwatch = currentGroupLoc ? COLOR_SWATCHES.find((s) => s.key === currentGroupLoc.badgeColor) : null;
+                    return currentSwatch ? (
+                      <span className="text-[11px] text-amber-300 font-bold bg-slate-900 border border-slate-700 px-2 py-0.5 rounded-lg flex items-center gap-1.5">
+                        <span className={`w-2.5 h-2.5 rounded-full ${currentSwatch.bg} ring-1 ring-white/30`}></span>
+                        <span>{currentSwatch.label.split(' ')[1] || currentSwatch.key}</span>
+                      </span>
+                    ) : null;
+                  })()}
                 </label>
                 <div className="grid grid-cols-5 gap-2 p-2 bg-slate-950 border border-slate-800 rounded-2xl">
-                  {COLOR_SWATCHES.map((swatch) => (
-                    <button
-                      key={swatch.key}
-                      type="button"
-                      onClick={() => handleApplyGroupColor(swatch.key)}
-                      className={`h-8 rounded-xl flex items-center justify-center transition-all ${swatch.bg} opacity-80 hover:opacity-100 hover:scale-105 shadow-md`}
-                      title={`កំណត់ពណ៌ ${swatch.label} សម្រាប់គ្រប់ទីតាំងក្នុង Group នេះ`}
-                    >
-                    </button>
-                  ))}
+                  {COLOR_SWATCHES.map((swatch) => {
+                    const currentGroupLoc = currentLocations.find(
+                      (l) => (l.category || (l.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName && l.badgeColor
+                    );
+                    const isSelected = currentGroupLoc?.badgeColor === swatch.key;
+                    return (
+                      <button
+                        key={swatch.key}
+                        type="button"
+                        onClick={() => handleApplyGroupColor(swatch.key)}
+                        className={`h-8 rounded-xl flex items-center justify-center transition-all ${swatch.bg} ${
+                          isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-950 scale-110 opacity-100 shadow-lg' : 'opacity-80 hover:opacity-100 hover:scale-105 shadow-md'
+                        }`}
+                        title={`កំណត់ពណ៌ ${swatch.label} សម្រាប់គ្រប់ទីតាំងក្នុង Group នេះ`}
+                      >
+                        {isSelected && <Check className="w-4 h-4 text-white drop-shadow-md stroke-[3]" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
