@@ -140,9 +140,34 @@ export function getPinSizeClasses(size) {
   }
 }
 
+export function getPinBadgeText(loc, activeTab = 'tagger') {
+  if (!loc) return '';
+  if (activeTab === 'tagger' || loc.isTagPin) {
+    if (loc.tagNumberDisplay) return loc.tagNumberDisplay;
+    if (loc.tagNumber) return westernToKhmerDigits(loc.tagNumber);
+    if (/^\d+$/.test(String(loc.id))) return westernToKhmerDigits(loc.id);
+  }
+  return String(loc.id || '');
+}
+
 export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3Locations = []) {
   if (!loc) return '';
   const locIdStr = String(loc.id || '').trim();
+
+  const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(loc.id) : null));
+  const matchedTag = allTags.find(
+    (t) =>
+      String(t.tagNumber) === String(loc.tagNumber || loc.id) ||
+      String(t.tagNumberDisplay) === String(loc.tagNumberDisplay || loc.id)
+  );
+  const tagOwner = loc.tagOwnerName || (matchedTag ? matchedTag.name : '');
+
+  if (activeTab === 'tagger') {
+    if (tagNumDisp && tagOwner) return `ស្លាក ${tagNumDisp} ៖ ${tagOwner}`;
+    if (tagNumDisp) return `ស្លាក ${tagNumDisp}`;
+    if (tagOwner) return tagOwner;
+  }
+
   const initialMatch = INITIAL_TEMPLE_LOCATIONS.find((init) => String(init.id).trim() === locIdStr);
   return initialMatch ? initialMatch.name : loc.name;
 }
@@ -2196,8 +2221,8 @@ export default function TempleMapModal({
 
                             {/* Pure Vector SVG Pin Badge - 100% Mathematically Centered on PC, iPhone & Android */}
                             {(() => {
-                              const idStr = String(loc.id || '');
-                              const svgFontSize = idStr.length > 2 ? 9.5 : idStr.length > 1 ? 11.5 : 15.5;
+                              const badgeText = getPinBadgeText(loc, activeTab);
+                              const svgFontSize = badgeText.length > 3 ? 8 : badgeText.length > 2 ? 9.5 : badgeText.length > 1 ? 11.5 : 15.5;
 
                               return (
                                 <div
@@ -2228,7 +2253,7 @@ export default function TempleMapModal({
                                         fontFamily: '"Kantumruy Pro", "Battambang", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
                                       }}
                                     >
-                                      {loc.id}
+                                      {badgeText}
                                     </text>
                                   </svg>
                                 </div>
@@ -2294,7 +2319,7 @@ export default function TempleMapModal({
                         activeTab
                       )}`}
                     >
-                      {selectedLocation.id}
+                      {getPinBadgeText(selectedLocation, activeTab)}
                     </div>
                     <div className="min-w-0">
                       <div className="text-xs text-amber-400 font-bold font-moul truncate">
@@ -2699,7 +2724,7 @@ export default function TempleMapModal({
                                     locIdx
                                   )}`}
                                 >
-                                  {loc.id}
+                                  {getPinBadgeText(loc, activeTab)}
                                 </div>
                                 <div className="min-w-0">
                                   <div className="text-xs font-bold text-slate-200 truncate">
