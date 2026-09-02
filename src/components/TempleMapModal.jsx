@@ -1101,10 +1101,9 @@ export default function TempleMapModal({
         pinMovedFlagRef.current = true;
       }
 
-      if (liveScaleRef.current > 1.0) {
-        viewportRef.current.scrollLeft = touchStartRef.current.scrollLeft - dx;
-        viewportRef.current.scrollTop = touchStartRef.current.scrollTop - dy;
-      }
+      // Smooth 1-finger panning at all scale levels
+      viewportRef.current.scrollLeft = touchStartRef.current.scrollLeft - dx;
+      viewportRef.current.scrollTop = touchStartRef.current.scrollTop - dy;
     } else if (e.touches.length === 2 && pinchStateRef.current.active) {
       if (e.cancelable) e.preventDefault();
 
@@ -1123,16 +1122,16 @@ export default function TempleMapModal({
       const vp = viewportRef.current;
 
       if (mapEl && vp) {
-        // Expand map width in real-time so scrollWidth expands dynamically without clamping
-        mapEl.style.width = `${nextScale * 100}%`;
+        if (pinchRafRef.current) cancelAnimationFrame(pinchRafRef.current);
+        pinchRafRef.current = requestAnimationFrame(() => {
+          mapEl.style.width = `${nextScale * 100}%`;
+          const ratio = nextScale / (initialScale || 1);
+          const targetScrollLeft = Math.max(0, (initialScrollLeft + midX) * ratio - midX);
+          const targetScrollTop = Math.max(0, (initialScrollTop + midY) * ratio - midY);
 
-        // Calculate exact scroll position to anchor focal point under 2 fingers
-        const ratio = nextScale / (initialScale || 1);
-        const targetScrollLeft = Math.max(0, (initialScrollLeft + midX) * ratio - midX);
-        const targetScrollTop = Math.max(0, (initialScrollTop + midY) * ratio - midY);
-
-        vp.scrollLeft = targetScrollLeft;
-        vp.scrollTop = targetScrollTop;
+          vp.scrollLeft = targetScrollLeft;
+          vp.scrollTop = targetScrollTop;
+        });
       }
     }
   };
@@ -2480,8 +2479,8 @@ export default function TempleMapModal({
               }`}
               style={{
                 maxHeight: 'min(48vh, 550px)',
-                height: zoomScale > 1.0 ? 'min(48vh, 550px)' : 'auto',
-                touchAction: zoomScale > 1.0 ? 'none' : 'pan-y'
+                height: 'min(48vh, 550px)',
+                touchAction: 'none'
               }}
             >
               {/* Top Indicator Banner when Pinning Group Mode is Active */}
@@ -2511,7 +2510,9 @@ export default function TempleMapModal({
                 className="relative w-full mx-auto origin-top-left"
                 style={{
                   width: `${zoomScale * 100}%`,
-                  minWidth: '100%'
+                  minWidth: '100%',
+                  willChange: 'width',
+                  transform: 'translateZ(0)'
                 }}
               >
                 {/* Crisp Clean Base Temple Map Image */}
