@@ -1534,15 +1534,21 @@ export default function TempleMapModal({
       saveTempleLocations(updatedLocations);
     }
 
-    return { matchedIds, warnings };
+    return { matchedIds, warnings, updatedLocations, hasChanges };
   };
 
   // Save Custom Category (routes to correct tab data)
   const handleSaveCustomCategory = () => {
     const name = newCategoryName.trim();
     if (!name) return;
-    if (selectedLocationIdsForGroup.length === 0) {
-      alert('សូមជ្រើសរើសយ៉ាងហោចណាស់ ១ ទីតាំង!');
+
+    // Process batch tag numbers input to make sure all entered tag numbers exist in updatedLocations with category set
+    const { matchedIds, updatedLocations } = processBatchTagInput(tagNumbersBatchInput, name);
+
+    const allGroupIds = Array.from(new Set([...selectedLocationIdsForGroup, ...(matchedIds || [])]));
+
+    if (allGroupIds.length === 0) {
+      alert('សូមជ្រើសរើសយ៉ាងហោចណាស់ ១ ទីតាំង ឬបញ្ចូលលេខស្លាក!');
       return;
     }
 
@@ -1552,11 +1558,14 @@ export default function TempleMapModal({
     }
 
     const { setter, saver } = getTabDataFunctions();
-    // Use raw base locations to avoid saving computed tagOwnerName/tagNumber
-    const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+    const currentBase = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+    const baseLocations = (updatedLocations && updatedLocations.length >= currentBase.length)
+      ? updatedLocations
+      : currentBase;
+
     const stripComputed2 = ({ tagOwnerName, tagNumber, ...clean }) => clean; // eslint-disable-line no-unused-vars
     const updated = baseLocations.map((loc) => {
-      if (selectedLocationIdsForGroup.includes(loc.id)) {
+      if (allGroupIds.includes(loc.id)) {
         return { ...stripComputed2(loc), category: name };
       }
       return stripComputed2(loc);
@@ -3528,6 +3537,28 @@ export default function TempleMapModal({
                           );
                         })}
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const { updatedLocations } = processBatchTagInput(tagNumbersBatchInput, editingGroupName);
+                        if (updatedLocations) {
+                          const { setter, saver } = getTabDataFunctions();
+                          setter(updatedLocations);
+                          saver(updatedLocations);
+                          if (activeTab === 'interactive') {
+                            setTab3Locations(updatedLocations);
+                            saveTab3LocationsToFirebase(updatedLocations);
+                          }
+                        }
+                        setTagNumbersBatchInput('');
+                        setBatchTagWarnings([]);
+                      }}
+                      className="w-full mt-2 py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5 active:scale-95 font-kantumruy"
+                    >
+                      <Plus className="w-4 h-4 text-slate-950" />
+                      <span>➕ បញ្ចូលលេខស្លាកទាំងនេះទៅក្នុង Group «{editingGroupName}»</span>
+                    </button>
                   </div>
                 )}
               </div>
