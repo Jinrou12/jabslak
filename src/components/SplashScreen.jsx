@@ -43,19 +43,24 @@ const LEAVES = Array.from({ length: 30 }).map((_, idx) => ({
 export default function SplashScreen({ onFinish }) {
   const [isFadingOut, setIsFadingOut] = useState(false);
   const timerRef = useRef(null);
+  const fadeTimerRef = useRef(null);
 
   useEffect(() => {
     timerRef.current = setTimeout(() => {
       setIsFadingOut(true);
-      setTimeout(onFinish, 500);
+      fadeTimerRef.current = setTimeout(onFinish, 500);
     }, 3500);
-    return () => clearTimeout(timerRef.current);
+    return () => {
+      clearTimeout(timerRef.current);
+      clearTimeout(fadeTimerRef.current);
+    };
   }, [onFinish]);
 
   const handleSkip = () => {
     clearTimeout(timerRef.current);
+    clearTimeout(fadeTimerRef.current);
     setIsFadingOut(true);
-    setTimeout(onFinish, 300);
+    fadeTimerRef.current = setTimeout(onFinish, 300);
   };
 
   return (

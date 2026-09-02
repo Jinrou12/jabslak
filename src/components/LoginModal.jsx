@@ -8,7 +8,7 @@ export default function LoginModal({
   onClose,
   onLoginUser
 }) {
-  const [emailInput, setEmailInput] = useState(currentUser?.email || '');
+  const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
 

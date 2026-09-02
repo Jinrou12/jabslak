@@ -17,6 +17,7 @@ export default function TagFormModal({ initialData, onClose, onSave, nextAvailab
 
   const [errors, setErrors] = useState({});
 
+  // Effect 1: Initialize full form when editing an existing tag (runs once on mount)
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -28,13 +29,16 @@ export default function TagFormModal({ initialData, onClose, onSave, nextAvailab
         phone: initialData.phone || '',
         notes: initialData.notes || ''
       });
-    } else if (nextAvailableNumber) {
-      setFormData((prev) => ({
-        ...prev,
-        tagNumber: nextAvailableNumber
-      }));
     }
-  }, [initialData, nextAvailableNumber]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData]);
+
+  // Effect 2: Only update tagNumber for NEW tags (not when editing) to avoid overwriting user edits
+  useEffect(() => {
+    if (!initialData && nextAvailableNumber) {
+      setFormData((prev) => ({ ...prev, tagNumber: nextAvailableNumber }));
+    }
+  }, [nextAvailableNumber, initialData]);
 
   const handlePresetSelect = (preset) => {
     const detail = formData.locationDetail;

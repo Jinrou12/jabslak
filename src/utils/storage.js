@@ -1,7 +1,5 @@
-import { INITIAL_TAG_DATA } from '../data/sampleData';
 
 const STORAGE_KEY = 'KHMER_TAG_SYSTEM_DATA_V2';
-const OLD_STORAGE_KEY = 'KHMER_TAG_SYSTEM_DATA_V1';
 
 /**
  * Load tags from localStorage or initialize with 1,000 sample tags using authentic temple locations
@@ -34,21 +32,6 @@ export function saveTags(tags) {
   }
 }
 
-/**
- * Reset data back to initial 1,000 sample tags
- */
-export function resetToSampleData() {
-  saveTags(INITIAL_TAG_DATA);
-  return INITIAL_TAG_DATA;
-}
-
-/**
- * Clear all data
- */
-export function clearAllTags() {
-  saveTags([]);
-  return [];
-}
 
 const USERS_STORAGE_KEY = 'KHMER_TAG_SYSTEM_USERS_V1';
 const CURRENT_USER_KEY = 'KHMER_TAG_SYSTEM_CURRENT_USER_V1';

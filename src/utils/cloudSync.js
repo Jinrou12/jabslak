@@ -91,11 +91,11 @@ export function subscribeToCloudTags(onDataReceived) {
       checkCloud();
     }
   };
-  window.addEventListener('visibilitychange', handleVisibilityChange);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
 
   return () => {
     isSubscribed = false;
     clearInterval(intervalId);
-    window.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
   };
 }

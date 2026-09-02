@@ -40,7 +40,7 @@ export default function App() {
   const [reportActiveTab, setReportActiveTab] = useState('arrived'); // 'arrived' | 'notArrived' | 'all'
   const [availableYears, setAvailableYears] = useState(['2026', '2027']);
   const [selectedYear, setSelectedYear] = useState('2026');
-  const [isCloudSyncing, setIsCloudSyncing] = useState(true);
+  const [isCloudSyncing, setIsCloudSyncing] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
   // Stable callback — must NOT be an inline arrow or the SplashScreen timer resets on every re-render
@@ -157,6 +157,10 @@ export default function App() {
   // Ref to track last back press timestamp for Double-Back-To-Exit feature
   const lastBackPressTimeRef = useRef(0);
   const isHistoryPushedRef = useRef(false);
+  // Ref to auto-reset cloud sync indicator
+  const cloudSyncTimerRef = useRef(null);
+  // Ref to always hold the latest handleNavigateBack (avoids stale closure in swipe handler)
+  const handleNavigateBackRef = useRef(null);
 
   // Push initial history guard entry on mount so browser back button is intercepted
   useEffect(() => {
@@ -210,6 +214,8 @@ export default function App() {
       return true;
     }
   };
+  // Keep ref always up-to-date so swipe handler never uses a stale closure
+  handleNavigateBackRef.current = handleNavigateBack;
 
   // Sync browser back button (popstate event) with double-back exit lock
   useEffect(() => {
@@ -317,7 +323,7 @@ export default function App() {
       if (deltaX > 35 && Math.abs(deltaY) < 120 && deltaTime < 900) {
         // A. Close modal or go back from map/report view
         if (modal || vm !== 'grid') {
-          handleNavigateBack();
+          handleNavigateBackRef.current();
           return;
         }
 
@@ -361,6 +367,13 @@ export default function App() {
 
   // Load initial tags & subscribe to Cloud & Firebase Realtime updates
   useEffect(() => {
+    // Helper: mark cloud as syncing and auto-reset after 5s
+    const markSynced = () => {
+      setIsCloudSyncing(true);
+      clearTimeout(cloudSyncTimerRef.current);
+      cloudSyncTimerRef.current = setTimeout(() => setIsCloudSyncing(false), 5000);
+    };
+
     // 1. Load local fallback
     const localTags = getSavedTags();
     setTags(localTags);
@@ -370,7 +383,7 @@ export default function App() {
       if (Array.isArray(cloudTags)) {
         setTags(cloudTags);
         saveTags(cloudTags);
-        setIsCloudSyncing(true);
+        markSynced();
       }
     });
 
@@ -380,7 +393,7 @@ export default function App() {
         if (Array.isArray(fbTags)) {
           setTags(fbTags);
           saveTags(fbTags);
-          setIsCloudSyncing(true);
+          markSynced();
         }
       },
       (err) => {
@@ -391,6 +404,7 @@ export default function App() {
     return () => {
       unsubscribeCloud();
       unsubscribeFirebase();
+      clearTimeout(cloudSyncTimerRef.current);
     };
   }, []);
 
@@ -597,7 +611,7 @@ export default function App() {
     }
   };
 
-  const handleImportData = (importedTags, isAppend = false) => {
+  const handleImportData = async (importedTags, isAppend = false) => {
     const stampedImported = importedTags.map((t) => ({ ...t, year: selectedYear }));
     let updatedTags;
 
@@ -625,7 +639,7 @@ export default function App() {
     
     // Push to Zero-Config Cloud Sync (PC to Mobile instant sync) & Firebase
     pushTagsToCloud(updatedTags);
-    seedFirebaseData(updatedTags, true);
+    await seedFirebaseData(updatedTags, true);
 
     try {
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });

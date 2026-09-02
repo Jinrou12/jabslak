@@ -321,45 +321,49 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
               <span className="text-[10px] font-semibold">បោះពុម្ព</span>
             </button>
 
-            {/* Edit (Restricted for Assistant) */}
-            <button
-              onClick={() => {
-                if (isAssistant) {
-                  alert('សិទ្ធិ Assistant មិនអាចកែប្រែព័ត៌មានបានទេ! (សម្រាប់តែ Admin/Owner)');
-                  return;
-                }
-                onEdit(tag);
-              }}
-              className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 group ${
-                isAssistant
-                  ? 'text-slate-600 cursor-not-allowed opacity-50'
-                  : 'text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10'
-              }`}
-              title={isAssistant ? 'សម្រាប់តែ Admin/Owner' : 'កែប្រែព័ត៌មាន'}
-            >
-              {isAssistant ? <Lock className="w-[18px] h-[18px]" /> : <Edit3 className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" />}
-              <span className="text-[10px] font-semibold">កែប្រែ</span>
-            </button>
+            {/* Edit (Hidden for Guest, Locked for Assistant) */}
+            {!isGuest && (
+              <button
+                onClick={() => {
+                  if (isAssistant) {
+                    alert('សិទ្ធិ Assistant មិនអាចកែប្រែព័ត៌មានបានទេ! (សម្រាប់តែ Admin/Owner)');
+                    return;
+                  }
+                  onEdit(tag);
+                }}
+                className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 group ${
+                  isAssistant
+                    ? 'text-slate-600 cursor-not-allowed opacity-50'
+                    : 'text-slate-400 hover:text-emerald-300 hover:bg-emerald-500/10'
+                }`}
+                title={isAssistant ? 'សម្រាប់តែ Admin/Owner' : 'កែប្រែព័ត៌មាន'}
+              >
+                {isAssistant ? <Lock className="w-[18px] h-[18px]" /> : <Edit3 className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" />}
+                <span className="text-[10px] font-semibold">កែប្រែ</span>
+              </button>
+            )}
 
-            {/* Delete (Restricted for Assistant) */}
-            <button
-              onClick={() => {
-                if (isAssistant) {
-                  alert('សិទ្ធិ Assistant មិនអាចលុបទិន្នន័យបានទេ! (សម្រាប់តែ Admin/Owner)');
-                  return;
-                }
-                onDelete(tag);
-              }}
-              className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 group ${
-                isAssistant
-                  ? 'text-slate-600 cursor-not-allowed opacity-50'
-                  : 'text-slate-400 hover:text-rose-300 hover:bg-rose-500/10'
-              }`}
-              title={isAssistant ? 'សម្រាប់តែ Admin/Owner' : 'លុបទិន្នន័យ'}
-            >
-              {isAssistant ? <Lock className="w-[18px] h-[18px]" /> : <Trash2 className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" />}
-              <span className="text-[10px] font-semibold">លុប</span>
-            </button>
+            {/* Delete (Hidden for Guest, Locked for Assistant) */}
+            {!isGuest && (
+              <button
+                onClick={() => {
+                  if (isAssistant) {
+                    alert('សិទ្ធិ Assistant មិនអាចលុបទិន្នន័យបានទេ! (សម្រាប់តែ Admin/Owner)');
+                    return;
+                  }
+                  onDelete(tag);
+                }}
+                className={`flex flex-col items-center justify-center gap-1 py-3 px-2 rounded-xl transition-all duration-200 group ${
+                  isAssistant
+                    ? 'text-slate-600 cursor-not-allowed opacity-50'
+                    : 'text-slate-400 hover:text-rose-300 hover:bg-rose-500/10'
+                }`}
+                title={isAssistant ? 'សម្រាប់តែ Admin/Owner' : 'លុបទិន្នន័យ'}
+              >
+                {isAssistant ? <Lock className="w-[18px] h-[18px]" /> : <Trash2 className="w-[18px] h-[18px] group-hover:scale-110 transition-transform" />}
+                <span className="text-[10px] font-semibold">លុប</span>
+              </button>
+            )}
           </div>
         </div>
 

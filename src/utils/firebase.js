@@ -125,11 +125,19 @@ export function subscribeToFirebaseTempleLocations(onDataReceived, onError) {
     return () => {};
   }
 
+  // Guard flag: prevent infinite re-seeding loop.
+  // When we detect stale coordinates and write back to Firebase, onValue fires
+  // again — without this guard that triggers another write, ad infinitum.
+  let isSeeding = false;
+
   const locsRef = ref(db, 'temple_locations');
   
   const unsubscribe = onValue(
     locsRef,
     (snapshot) => {
+      // Skip callbacks triggered by our own seeding write
+      if (isSeeding) return;
+
       if (snapshot.exists()) {
         const val = snapshot.val();
         let locList = [];
@@ -144,7 +152,10 @@ export function subscribeToFirebaseTempleLocations(onDataReceived, onError) {
           const item16 = locList.find((l) => l.id === '១៦' || l.id === '16');
           if ((item10 && item10.x < 50) || (item16 && item16.x < 45)) {
             console.log('Aligning cloud coordinates for 10 and 16 to authentic temple locations...');
-            saveTempleLocationsToFirebase(INITIAL_TEMPLE_LOCATIONS);
+            isSeeding = true;
+            saveTempleLocationsToFirebase(INITIAL_TEMPLE_LOCATIONS).finally(() => {
+              isSeeding = false;
+            });
             onDataReceived(INITIAL_TEMPLE_LOCATIONS);
             return;
           }
@@ -154,8 +165,11 @@ export function subscribeToFirebaseTempleLocations(onDataReceived, onError) {
           return;
         }
       }
-      // If empty in cloud -> seed INITIAL_TEMPLE_LOCATIONS
-      saveTempleLocationsToFirebase(INITIAL_TEMPLE_LOCATIONS);
+      // If empty in cloud -> seed INITIAL_TEMPLE_LOCATIONS (only once)
+      isSeeding = true;
+      saveTempleLocationsToFirebase(INITIAL_TEMPLE_LOCATIONS).finally(() => {
+        isSeeding = false;
+      });
       onDataReceived(INITIAL_TEMPLE_LOCATIONS);
     },
     (err) => {

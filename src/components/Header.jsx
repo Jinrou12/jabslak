@@ -46,8 +46,9 @@ export default function Header({
     if (selectedYear === '2026') {
       return 'ថ្ងៃសៅរ៍ ៨រោច ខែស្រាពណ៍ ឆ្នាំមមី អដ្ឋស័ក ពុទ្ធសករាជ ២៥៧០ ត្រូវនឹងថ្ងៃទី៥ ខែកញ្ញា ឆ្នាំ២០២៦';
     }
-    return 'កាលបរិច្ឆេទមិនទាន់មាន';
+    return `ប្រព័ន្ធគ្រប់គ្រងស្លាកលេខ — ឆ្នាំ ${westernToKhmerDigits(selectedYear)} | Tag & Location Manager ${selectedYear}`;
   };
+
 
   return (
     <header className="relative z-10 glass-panel border-b border-slate-800/80 px-3 sm:px-4 py-2.5 sm:py-3 shadow-2xl">
