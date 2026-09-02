@@ -1230,17 +1230,50 @@ export default function TempleMapModal({
     return counts;
   }, [allTags, currentLocations]);
 
-  // Categories list
+  const getCategorySortOrder = (catName) => {
+    const norm = String(catName || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
+    
+    // Check if starts with "ផែន" followed by Khmer or Western digits
+    const match = norm.match(/^ផែន\s*([១២៣៤៥៦៧៨1-8]+)/);
+    if (match) {
+      const numStr = match[1];
+      const westernNum = parseInt(khmerToWesternDigits(numStr), 10);
+      if (!isNaN(westernNum)) {
+        return westernNum; // 1 for ផែន១, 2 for ផែន២, etc.
+      }
+    }
+
+    if (norm === 'ដើម') return 90;
+    if (norm.includes('ខ្លោងទ្វារ') || norm.includes('⛩️')) return 98;
+    if (norm.includes('អគារ') || norm.includes('កុដិ') || norm.includes('🏢')) return 99;
+
+    return 100; // Custom user groups at the end
+  };
+
+  // Categories list (Sorted numerically: ផែន១, ផែន២, ផែន៣, ផែន៤, ផែន៥, ផែន៦, ផែន៧, ផែន៨, ដើម, etc.)
   const categoryGroups = useMemo(() => {
-    const groups = {};
+    const rawGroups = {};
     currentLocations.forEach((loc) => {
       const cat = autoMigrateCategory(loc.category, loc.name, loc.id);
       if (!cat) return;
       if (deletedCategories.includes(cat) && !CORE_PRESET_ZONES.includes(cat)) return;
-      if (!groups[cat]) groups[cat] = [];
-      groups[cat].push(loc);
+      if (!rawGroups[cat]) rawGroups[cat] = [];
+      rawGroups[cat].push(loc);
     });
-    return groups;
+
+    const sortedKeys = Object.keys(rawGroups).sort((a, b) => {
+      const orderA = getCategorySortOrder(a);
+      const orderB = getCategorySortOrder(b);
+      if (orderA !== orderB) return orderA - orderB;
+      return a.localeCompare(b, 'km');
+    });
+
+    const sortedGroups = {};
+    sortedKeys.forEach((key) => {
+      sortedGroups[key] = rawGroups[key];
+    });
+
+    return sortedGroups;
   }, [currentLocations, deletedCategories, CORE_PRESET_ZONES]);
 
   const availableCategories = useMemo(() => {
