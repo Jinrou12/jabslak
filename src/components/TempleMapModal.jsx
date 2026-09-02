@@ -119,12 +119,17 @@ export function getPinBadgeColorClass(loc, idx = 0, activeTab = 'interactive') {
     return 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 border-white ring-1 ring-amber-400/60';
   }
 
+  // Tag pins get an explicit orange/amber gradient so they stand out from cyan base building pins
+  if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
+    return 'bg-gradient-to-br from-amber-300 via-orange-400 to-amber-500 text-slate-950 border-white ring-2 ring-amber-400/90 font-bold shadow-lg';
+  }
+
   // Custom user-selected badge color on Tab 3 (if specifically purple, rose, fuchsia, etc.)
   if (activeTab === 'tagger' && loc.badgeColor && loc.badgeColor !== 'emerald' && COLOR_OPTION_GRADIENTS[loc.badgeColor]) {
     return COLOR_OPTION_GRADIENTS[loc.badgeColor];
   }
 
-  // Default ALL location pins (including #18 សាលាសន្និសីទ) to 100% BLUE (cyan) across ALL tabs
+  // Default ALL base location pins to 100% BLUE (cyan) across ALL tabs
   return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
 }
 
@@ -162,12 +167,7 @@ export function getLocationAbbreviation(name = '', type = 'building') {
     'អាងទឹក': 'អាង',
     'អាងទឹកវិទ្យុ': 'អាង.វ',
     'ព្រះផ្ទំ': 'ព្រះផ្ទំ',
-    'ចេតិយនគរភ្នំ ចាយ ស៊ាងអ៊ី': 'ចេតិយ',
-    'ខ្លោងទ្វារទី១': 'ទ១',
-    'ខ្លោងទ្វារទី២': 'ទ២',
-    'ខ្លោងទ្វារទី៣': 'ទ៣',
-    'ខ្លោងទ្វារទី៤': 'ទ៤',
-    'ខ្លោងទ្វារទី៥': 'ទ៥'
+    'ចេតិយនគរភ្នំ ចាយ ស៊ាងអ៊ី': 'ចេតិយ'
   };
 
   if (explicitMap[cleanName]) return explicitMap[cleanName];
@@ -191,9 +191,13 @@ export function getLocationAbbreviation(name = '', type = 'building') {
 export function getPinBadgeText(loc, activeTab = 'tagger') {
   if (!loc) return '';
   if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
-    if (loc.tagNumberDisplay) return loc.tagNumberDisplay;
+    if (loc.tagNumberDisplay) return String(loc.tagNumberDisplay);
     if (loc.tagNumber) return westernToKhmerDigits(loc.tagNumber);
-    if (/^\d+$/.test(String(loc.id)) && loc.isTagPin) return westernToKhmerDigits(loc.id);
+    if (loc.id) {
+      const cleanId = String(loc.id).replace('tag-', '');
+      const western = khmerToWesternDigits(cleanId);
+      if (/^\d+$/.test(western)) return westernToKhmerDigits(western);
+    }
   }
   return getLocationAbbreviation(loc.name, loc.type);
 }
@@ -203,12 +207,12 @@ export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3L
   const locIdStr = String(loc.id || '').trim();
 
   if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
-    const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(loc.id) : null));
+    const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(loc.id.replace('tag-', '')) : null));
     const matchedTag = allTags.find(
       (t) =>
         (loc.tagNumber && String(t.tagNumber) === String(loc.tagNumber)) ||
         (loc.tagNumberDisplay && String(t.tagNumberDisplay) === String(loc.tagNumberDisplay)) ||
-        (loc.isTagPin && (String(t.tagNumber) === String(loc.id) || String(t.tagNumberDisplay) === String(loc.id)))
+        (loc.isTagPin && (String(t.tagNumber) === String(loc.id).replace('tag-', '') || String(t.tagNumberDisplay) === String(loc.id)))
     );
     const tagOwner = loc.tagOwnerName || (matchedTag ? matchedTag.name : '');
 
@@ -278,11 +282,19 @@ export default function TempleMapModal({
         return false;
       });
 
+      const tagNum = loc.isTagPin ? (matchedTag && matchedTag.tagNumber ? matchedTag.tagNumber : loc.tagNumber) : loc.tagNumber;
+      const tagDisp = loc.isTagPin
+        ? (matchedTag && matchedTag.tagNumberDisplay
+            ? matchedTag.tagNumberDisplay
+            : (loc.tagNumberDisplay || (tagNum ? westernToKhmerDigits(tagNum) : westernToKhmerDigits(String(loc.id).replace('tag-', '')))))
+        : loc.tagNumberDisplay;
+
       return {
         ...loc,
         name: locationName, // ALWAYS KEEP LOCATION NAME! (ឈ្មោះទីតាំង)
         tagOwnerName: loc.isTagPin ? (matchedTag && matchedTag.name ? matchedTag.name : loc.tagOwnerName) : loc.tagOwnerName,
-        tagNumber: loc.isTagPin ? (matchedTag && matchedTag.tagNumber ? matchedTag.tagNumber : loc.tagNumber) : loc.tagNumber
+        tagNumber: tagNum,
+        tagNumberDisplay: tagDisp
       };
     });
   }, [tab3Locations, allTags]);
