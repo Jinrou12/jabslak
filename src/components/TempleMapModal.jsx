@@ -1059,7 +1059,8 @@ export default function TempleMapModal({
   // Map Click (Add new pin on Tab 2 or Tab 3 or Pin Group)
   const handleMapClick = (e) => {
     if (!canCustomizeTab && !pinningGroupMode) return; // Allow pinning when pinningGroupMode is active
-    if (draggingPinId || pinMovedFlagRef.current) return;
+    if (draggingPinId) return;
+    if (!pinningGroupMode && pinMovedFlagRef.current) return; // Only skip click-after-pan when NOT in group-pin mode
     const rect = mapContainerRef.current.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
     const clickY = e.clientY - rect.top;
