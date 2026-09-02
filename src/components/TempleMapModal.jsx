@@ -319,17 +319,13 @@ export function getPinBadgeText(loc, activeTab = 'tagger') {
 
 export function formatTagPinLocationName(tag) {
   if (!tag) return '';
+  const rawOwner = String(tag.name || tag.tagOwnerName || '').trim();
+  const cleanOwner = rawOwner.replace(/^ស្លាកលេខ\s*\S+\s*៖\s*/, '').trim();
+
+  if (cleanOwner && !cleanOwner.startsWith('ស្លាក')) {
+    return cleanOwner;
+  }
   const tagDisp = tag.tagNumberDisplay || (tag.tagNumber ? westernToKhmerDigits(tag.tagNumber) : '');
-  const ownerName = String(tag.name || tag.tagOwnerName || '').trim();
-
-  if (ownerName.includes('ស្លាកលេខ') && ownerName.includes('៖')) {
-    return ownerName;
-  }
-
-  if (tagDisp && ownerName && ownerName !== `ស្លាកលេខ ${tagDisp}`) {
-    return `ស្លាកលេខ ${tagDisp} ៖ ${ownerName}`;
-  }
-  if (ownerName) return ownerName;
   if (tagDisp) return `ស្លាកលេខ ${tagDisp}`;
   return tag.location || '';
 }
@@ -339,10 +335,6 @@ export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3L
   const locIdStr = String(loc.id || '').trim();
 
   if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
-    if (loc.name && loc.name.includes('ស្លាក') && loc.name.includes('៖')) {
-      return loc.name;
-    }
-
     const tagNumDisp = loc.tagNumberDisplay || (loc.tagNumber ? westernToKhmerDigits(loc.tagNumber) : (loc.isTagPin ? westernToKhmerDigits(String(loc.id).replace('tag-', '')) : null));
     const matchedTag = allTags.find(
       (t) =>
@@ -351,10 +343,10 @@ export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3L
         (loc.isTagPin && (String(t.tagNumber) === String(loc.id).replace('tag-', '') || String(t.tagNumberDisplay) === String(loc.id)))
     );
     const tagOwner = loc.tagOwnerName || (matchedTag ? matchedTag.name : '') || loc.name || '';
+    const cleanOwner = String(tagOwner).replace(/^ស្លាកលេខ\s*\S+\s*៖\s*/, '').trim();
 
-    if (tagNumDisp && tagOwner && !tagOwner.startsWith('ស្លាក')) return `ស្លាកលេខ ${tagNumDisp} ៖ ${tagOwner}`;
+    if (cleanOwner && !cleanOwner.startsWith('ស្លាក')) return cleanOwner;
     if (tagNumDisp) return `ស្លាកលេខ ${tagNumDisp}`;
-    if (tagOwner) return tagOwner;
   }
 
   const initialMatch = !loc.isTagPin ? INITIAL_TEMPLE_LOCATIONS.find((init) => String(init.id).trim() === locIdStr) : null;
@@ -699,10 +691,9 @@ export default function TempleMapModal({
       const tagOwner = loc.isTagPin ? (matchedTag && matchedTag.name ? matchedTag.name : loc.tagOwnerName) : loc.tagOwnerName;
       let finalName = locationName;
       if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
-        if (tagDisp && tagOwner && !tagOwner.startsWith('ស្លាក')) {
-          finalName = `ស្លាកលេខ ${tagDisp} ៖ ${tagOwner}`;
-        } else if (tagOwner && !tagOwner.startsWith('ស្លាក')) {
-          finalName = tagOwner;
+        const cleanOwner = String(tagOwner || '').replace(/^ស្លាកលេខ\s*\S+\s*៖\s*/, '').trim();
+        if (cleanOwner && !cleanOwner.startsWith('ស្លាក')) {
+          finalName = cleanOwner;
         } else if (tagDisp) {
           finalName = `ស្លាកលេខ ${tagDisp}`;
         }
