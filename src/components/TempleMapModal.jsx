@@ -425,10 +425,22 @@ export default function TempleMapModal({
             : (loc.tagNumberDisplay || (tagNum ? westernToKhmerDigits(tagNum) : westernToKhmerDigits(String(loc.id).replace('tag-', '')))))
         : loc.tagNumberDisplay;
 
+      const tagOwner = loc.isTagPin ? (matchedTag && matchedTag.name ? matchedTag.name : loc.tagOwnerName) : loc.tagOwnerName;
+      let finalName = locationName;
+      if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
+        if (tagDisp && tagOwner && !tagOwner.startsWith('ស្លាក')) {
+          finalName = `ស្លាកលេខ ${tagDisp} ៖ ${tagOwner}`;
+        } else if (tagOwner && !tagOwner.startsWith('ស្លាក')) {
+          finalName = tagOwner;
+        } else if (tagDisp) {
+          finalName = `ស្លាកលេខ ${tagDisp}`;
+        }
+      }
+
       return {
         ...loc,
-        name: locationName, // ALWAYS KEEP LOCATION NAME! (ឈ្មោះទីតាំង)
-        tagOwnerName: loc.isTagPin ? (matchedTag && matchedTag.name ? matchedTag.name : loc.tagOwnerName) : loc.tagOwnerName,
+        name: finalName, // ALWAYS KEEP FULL FORMATTED NAME WITH OWNER NAME!
+        tagOwnerName: tagOwner,
         tagNumber: tagNum,
         tagNumberDisplay: tagDisp
       };
@@ -1692,11 +1704,8 @@ export default function TempleMapModal({
 
     const { setter, saver } = getTabDataFunctions();
 
-    // Helper: strip computed-only properties before saving to state/Firebase
-    const stripComputed = (loc) => {
-      const { tagOwnerName, ...clean } = loc; // eslint-disable-line no-unused-vars
-      return clean;
-    };
+    // Helper: keep all properties intact
+    const stripComputed = (loc) => loc;
 
     let updated;
     if (targetEditingLoc && !targetEditingLoc.isNew) {
@@ -1946,13 +1955,13 @@ export default function TempleMapModal({
         matchedIds.push(newLocId);
 
         const ownerName = matchedTag ? matchedTag.name : '';
-        const baseLocName = (matchedTag && matchedTag.baseLocation && matchedTag.baseLocation !== 'មិនទាន់ដៅលើ Map' && matchedTag.baseLocation !== 'មើលទីកន្លែង')
-          ? matchedTag.baseLocation
-          : (targetGroupName || `ស្លាកលេខ ${newLocId}`);
+        const tagPinName = (newLocId && ownerName)
+          ? `ស្លាកលេខ ${newLocId} ៖ ${ownerName}`
+          : (newLocId ? `ស្លាកលេខ ${newLocId}` : (matchedTag && matchedTag.baseLocation ? matchedTag.baseLocation : targetGroupName));
 
         const newUnpinnedLoc = {
           id: newLocId,
-          name: baseLocName,
+          name: tagPinName,
           x: 50,
           y: 50,
           type: 'building',
@@ -2008,7 +2017,7 @@ export default function TempleMapModal({
       ? updatedLocations
       : currentBase;
 
-    const stripComputed2 = ({ tagOwnerName, tagNumber, ...clean }) => clean; // eslint-disable-line no-unused-vars
+    const stripComputed2 = (loc) => loc;
     const updated = baseLocations.map((loc) => {
       if (allGroupIds.includes(loc.id)) {
         return { ...stripComputed2(loc), category: name };
