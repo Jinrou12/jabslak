@@ -419,7 +419,27 @@ export default function TempleMapModal({
     return cat;
   };
 
+  // P2-A: Pre-compute tag lookup Maps for O(1) matching instead of O(N) find loops
+  const tagLookups = useMemo(() => {
+    const byNumber = new Map();    // tagNumber -> tag
+    const byDisplay = new Map();   // tagNumberDisplay -> tag
+    const byBaseLocation = new Map(); // baseLocation -> tag (for non-tag-pin location matching)
+    allTags.forEach((t) => {
+      const tNo = String(t.tagNumber || '').trim();
+      const tDisp = String(t.tagNumberDisplay || '').trim();
+      const tBase = String(t.baseLocation || t.location || '').trim();
+      if (tNo && !byNumber.has(tNo)) byNumber.set(tNo, t);
+      if (tDisp && !byDisplay.has(tDisp)) byDisplay.set(tDisp, t);
+      if (tBase && tBase !== 'មើលទីកន្លែង' && tBase !== 'មិនទាន់ដៅលើ Map' && tBase !== 'ទីតាំងមិនទាន់កំណត់' && !byBaseLocation.has(tBase)) {
+        byBaseLocation.set(tBase, t);
+      }
+    });
+    return { byNumber, byDisplay, byBaseLocation };
+  }, [allTags]);
+
   const effectiveTab3Locations = useMemo(() => {
+    const { byNumber, byDisplay, byBaseLocation } = tagLookups;
+
     return tab3Locations.map((loc) => {
       const locIdStr = String(loc.id || '').trim();
       
@@ -427,23 +447,17 @@ export default function TempleMapModal({
       const initialMatch = !loc.isTagPin ? INITIAL_TEMPLE_LOCATIONS.find((init) => String(init.id).trim() === locIdStr) : null;
       const locationName = initialMatch ? initialMatch.name : loc.name;
 
-      const matchedTag = allTags.find((t) => {
-        const tNoStr = String(t.tagNumber || '').trim();
-        const tDispStr = String(t.tagNumberDisplay || '').trim();
-        const tBase = String(t.baseLocation || t.location || '').trim();
-
-        // 1. Explicit tag pin match (if pin was created/assigned specifically for a tag number)
-        if (loc.isTagPin && (String(loc.tagNumber || '') === tNoStr || String(loc.tagNumberDisplay || '') === tDispStr || locIdStr === tDispStr)) {
-          return true;
-        }
-
-        // 2. Match by Location Name ONLY if tag's baseLocation explicitly matches locationName or locIdStr
-        if (!loc.isTagPin && tBase && tBase !== 'មើលទីកន្លែង' && tBase !== 'មិនទាន់ដៅលើ Map' && tBase !== 'ទីតាំងមិនទាន់កំណត់' && (tBase === locationName || tBase === locIdStr)) {
-          return true;
-        }
-
-        return false;
-      });
+      // P2-A: O(1) tag matching via pre-computed Maps
+      let matchedTag = null;
+      if (loc.isTagPin) {
+        const locTagNo = String(loc.tagNumber || '').trim();
+        const locTagDisp = String(loc.tagNumberDisplay || '').trim();
+        matchedTag = (locTagNo && byNumber.get(locTagNo)) ||
+                     (locTagDisp && byDisplay.get(locTagDisp)) ||
+                     byDisplay.get(locIdStr) || null;
+      } else {
+        matchedTag = byBaseLocation.get(locationName) || byBaseLocation.get(locIdStr) || null;
+      }
 
       const tagNum = loc.isTagPin ? (matchedTag && matchedTag.tagNumber ? matchedTag.tagNumber : loc.tagNumber) : loc.tagNumber;
       const tagDisp = loc.isTagPin
@@ -473,7 +487,7 @@ export default function TempleMapModal({
         tagNumberDisplay: tagDisp
       };
     });
-  }, [tab3Locations, allTags]);
+  }, [tab3Locations, tagLookups]);
 
   // Filter out visitor tag pins from Tab 1 & Tab 2 locations so Tab 1 & Tab 2 NEVER display visitor tag pins
   const baseMapLocations = useMemo(() => {
@@ -655,7 +669,8 @@ export default function TempleMapModal({
   const viewportRef = useRef(null);
   const mapContainerRef = useRef(null);
   const modalBodyRef = useRef(null);
-  const [isPanning, setIsPanning] = useState(false);
+  // P0-A: isPanning is a ref, NOT state — avoids 2 full re-renders of 164 pins per gesture
+  const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
   const hasPannedRef = useRef(false);
   const touchStartRef = useRef({ x: 0, y: 0, scrollLeft: 0, scrollTop: 0 });
@@ -670,8 +685,17 @@ export default function TempleMapModal({
     midX: 0,
     midY: 0
   });
+  const zoomCommitTimerRef = useRef(null); // P0-C: Debounce zoom state commit
   const [draggingPinId, setDraggingPinId] = useState(null);
   const pinMovedFlagRef = useRef(false);
+
+  // P0-C: Cleanup RAF and timers on unmount
+  useEffect(() => {
+    return () => {
+      if (pinchRafRef.current) cancelAnimationFrame(pinchRafRef.current);
+      if (zoomCommitTimerRef.current) clearTimeout(zoomCommitTimerRef.current);
+    };
+  }, []);
 
   // Mobile Responsiveness Auto-Tuning: Default zoom & compact view for mobile screens
   useEffect(() => {
@@ -1031,7 +1055,7 @@ export default function TempleMapModal({
       return; // Only draggable pins block map panning
     }
 
-    setIsPanning(true);
+    isPanningRef.current = true;
     hasPannedRef.current = false;
     panStartRef.current = {
       x: e.clientX,
@@ -1042,7 +1066,7 @@ export default function TempleMapModal({
   };
 
   const handleMouseMove = (e) => {
-    if (!isPanning || draggingPinId || !viewportRef.current) return;
+    if (!isPanningRef.current || draggingPinId || !viewportRef.current) return;
 
     const dx = e.clientX - panStartRef.current.x;
     const dy = e.clientY - panStartRef.current.y;
@@ -1057,7 +1081,7 @@ export default function TempleMapModal({
   };
 
   const handleMouseUp = () => {
-    setIsPanning(false);
+    isPanningRef.current = false;
     setTimeout(() => {
       pinMovedFlagRef.current = false;
       hasPannedRef.current = false;
@@ -1082,7 +1106,7 @@ export default function TempleMapModal({
       if (pinchStateRef.current.active) {
         pinchStateRef.current.active = false;
       }
-      setIsPanning(true);
+      isPanningRef.current = true;
       hasPannedRef.current = false;
       const touch = e.touches[0];
       touchStartRef.current = {
@@ -1092,7 +1116,7 @@ export default function TempleMapModal({
         scrollTop: viewportRef.current ? viewportRef.current.scrollTop : 0
       };
     } else if (e.touches.length === 2) {
-      setIsPanning(false);
+      isPanningRef.current = false;
       const t1 = e.touches[0];
       const t2 = e.touches[1];
       const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
@@ -1142,7 +1166,9 @@ export default function TempleMapModal({
 
       const { initialDist, initialScale, initialScrollLeft, initialScrollTop, midX, midY } = pinchStateRef.current;
       const scaleFactor = dist / initialDist;
-      const nextScale = Math.max(0.4, Math.min(5.0, initialScale * scaleFactor));
+      const rawScale = initialScale * scaleFactor;
+      if (!Number.isFinite(rawScale)) return; // P5: Guard against NaN/Infinity
+      const nextScale = Math.max(0.4, Math.min(5.0, rawScale));
 
       liveScaleRef.current = nextScale;
 
@@ -1165,26 +1191,29 @@ export default function TempleMapModal({
   };
 
   const handleTouchEnd = () => {
-    setIsPanning(false);
+    isPanningRef.current = false;
 
     if (pinchStateRef.current.active) {
       pinchStateRef.current.active = false;
 
       const finalScale = liveScaleRef.current;
+      if (!Number.isFinite(finalScale)) return; // Guard
       const vp = viewportRef.current;
       const finalScrollLeft = vp ? vp.scrollLeft : 0;
       const finalScrollTop = vp ? vp.scrollTop : 0;
 
-      // Commit final scale to React state
-      setZoomScale(parseFloat(finalScale.toFixed(2)));
-
-      // Lock scroll position seamlessly
-      requestAnimationFrame(() => {
-        if (viewportRef.current) {
-          viewportRef.current.scrollLeft = finalScrollLeft;
-          viewportRef.current.scrollTop = finalScrollTop;
-        }
-      });
+      // P0-C: Debounce zoom state commit — prevents re-render storm during rapid pinch
+      if (zoomCommitTimerRef.current) clearTimeout(zoomCommitTimerRef.current);
+      zoomCommitTimerRef.current = setTimeout(() => {
+        setZoomScale(parseFloat(finalScale.toFixed(2)));
+        // Lock scroll position seamlessly after React re-render
+        requestAnimationFrame(() => {
+          if (viewportRef.current) {
+            viewportRef.current.scrollLeft = finalScrollLeft;
+            viewportRef.current.scrollTop = finalScrollTop;
+          }
+        });
+      }, 120);
     }
 
     if (pinchRafRef.current) cancelAnimationFrame(pinchRafRef.current);
@@ -2503,7 +2532,7 @@ export default function TempleMapModal({
               onTouchEnd={handleTouchEnd}
               onClick={pinningGroupMode ? handleViewportClickForGroupPin : undefined}
               className={`relative w-full overflow-auto select-none bg-white ${
-                pinningGroupMode ? 'cursor-crosshair' : isPanning ? 'cursor-grabbing' : 'cursor-grab'
+                pinningGroupMode ? 'cursor-crosshair' : 'cursor-grab'
               }`}
               style={{
                 maxHeight: 'min(48vh, 550px)',
@@ -2539,8 +2568,9 @@ export default function TempleMapModal({
                 style={{
                   width: `${zoomScale * 100}%`,
                   minWidth: '100%',
-                  willChange: 'width',
-                  transform: 'translateZ(0)'
+                  willChange: 'transform',
+                  transform: 'translateZ(0)',
+                  contain: 'layout style'
                 }}
               >
                 {/* Crisp Clean Base Temple Map Image */}
@@ -2709,7 +2739,7 @@ export default function TempleMapModal({
                             }}
                             onMouseEnter={() => setHoveredLocation(loc)}
                             onMouseLeave={() => setHoveredLocation(null)}
-                            className={`map-pin-element relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 transition-transform duration-100 ${
+                            className={`map-pin-element relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 ${
                               canDragThisPin ? 'cursor-grab active:cursor-grabbing hover:scale-125' : 'cursor-pointer hover:scale-115'
                             } ${isHighlighted || isCurrentlyDragging ? 'scale-130 z-50' : 'z-20'}`}
                             style={{ touchAction: canDragThisPin ? 'none' : 'auto' }}
