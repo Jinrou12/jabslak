@@ -2092,24 +2092,42 @@ export default function TempleMapModal({
     const trimmedNew = renameGroupInput.trim();
     if (!trimmedNew || trimmedNew === editingGroupName) return;
 
+    pushHistorySnapshot(activeTab === 'tagger' ? tab3Locations : locations);
+
     if (deletedCategories.includes(trimmedNew)) {
       saveDeletedCategories(deletedCategories.filter((c) => c !== trimmedNew));
     }
 
-    const { setter, saver } = getTabDataFunctions();
-    const baseLocations = activeTab === 'tagger' ? tab3Locations : locations;
+    const renameInList = (list) =>
+      list.map((loc) => {
+        const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
+        if (catMatches) {
+          return { ...loc, category: trimmedNew };
+        }
+        return loc;
+      });
 
-    const updated = baseLocations.map((loc) => {
-      const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
-      if (catMatches) {
-        return { ...loc, category: trimmedNew };
-      }
-      return loc;
-    });
+    const updatedTab3 = renameInList(tab3Locations);
+    const updatedLocs = renameInList(locations);
 
-    setter(updated);
-    saver(updated);
+    setTab3Locations(updatedTab3);
+    saveTab3Locations(updatedTab3);
+    saveTab3LocationsToFirebase(updatedTab3);
+
+    setLocations(updatedLocs);
+    saveTempleLocations(updatedLocs);
+    saveTempleLocationsToFirebase(updatedLocs.filter((loc) => !loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay));
+
+    if (selectedCategory === editingGroupName) {
+      setSelectedCategory(trimmedNew);
+    }
+    if (selectedSizeGroup === editingGroupName) {
+      setSelectedSizeGroup(trimmedNew);
+    }
+
     setEditingGroupName(trimmedNew);
+    setUndoToast(`✏️ បានប្តូរឈ្មោះ Group «${editingGroupName}» ទៅជា «${trimmedNew}» រួចរាល់!`);
+    setTimeout(() => setUndoToast(''), 3000);
   };
 
   const handleDeleteGroup = () => {
