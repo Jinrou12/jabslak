@@ -2515,11 +2515,12 @@ export default function TempleMapModal({
   const mainContainer = (
     <div
       className={`temple-map-modal temple-map-container w-full max-w-7xl mx-auto bg-slate-900 border border-amber-500/30 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-100 font-kantumruy ${
-        modalMode ? 'max-h-[96vh] sm:max-h-[92vh] h-full' : 'min-h-[75vh] my-2'
+        modalMode ? 'max-h-[94vh] sm:max-h-[92vh] h-full' : 'min-h-[75vh] my-2'
       }`}
       onClick={(e) => e.stopPropagation()}
       style={{
-        boxShadow: '0 0 80px rgba(245,158,11,0.12), 0 25px 50px -12px rgba(0,0,0,0.8)'
+        boxShadow: '0 0 80px rgba(245,158,11,0.12), 0 25px 50px -12px rgba(0,0,0,0.8)',
+        marginTop: modalMode ? 'calc(env(safe-area-inset-top, 0px) + 6px)' : undefined
       }}
     >
         {/* ═══════════════ MODAL HEADER ═══════════════ */}

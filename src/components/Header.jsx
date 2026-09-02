@@ -51,7 +51,12 @@ export default function Header({
 
 
   return (
-    <header className="relative z-10 glass-panel border-b border-slate-800/80 px-3 sm:px-4 py-2.5 sm:py-3 shadow-2xl">
+    <header
+      className="relative z-10 glass-panel border-b border-slate-800/80 px-3 sm:px-4 pb-2.5 sm:pb-3 shadow-2xl transition-all"
+      style={{
+        paddingTop: 'calc(max(14px, env(safe-area-inset-top, 0px)) + 8px)'
+      }}
+    >
       <div className="max-w-7xl mx-auto flex flex-col gap-2.5">
         
         {/* Top Bar: Title & Stats */}
