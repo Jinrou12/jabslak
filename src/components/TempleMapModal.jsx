@@ -1153,8 +1153,6 @@ export default function TempleMapModal({
     setTab3Locations(updated);
     saveTab3LocationsToFirebase(updated);
     saveTab3Locations(updated);
-    setLocations(updated);
-    saveTempleLocations(updated);
 
     setUndoToast(`✅ បានដៅទីតាំង Group «${pinningGroupMode}» លើ Map រួចរាល់ (${westernToKhmerDigits(count)} Pin)!`);
     setTimeout(() => setUndoToast(''), 3500);
