@@ -64,8 +64,12 @@ export default function Header({
           
           {/* Logo & Title */}
           <div className="flex items-center gap-2 min-w-0">
-            <div className="relative w-14 h-14 sm:w-20 sm:h-20 md:w-24 md:h-24 shrink-0 flex items-center justify-center -my-2 sm:-my-4 transition-all hover:scale-105 duration-300">
-              <img src="/app_logo.png" alt="ចាប់ស្លាកលេខ" className="w-full h-full object-contain filter drop-shadow-[0_6px_16px_rgba(245,158,11,0.45)]" />
+            <div className="relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center rounded-full border-2 border-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.5)] ring-2 ring-amber-500/30 overflow-hidden bg-slate-950 p-0.5 transition-all hover:scale-105 duration-300">
+              <img
+                src="/app_logo.png"
+                alt="ចាប់ស្លាកលេខ"
+                className="w-full h-full object-cover rounded-full filter drop-shadow-[0_2px_8px_rgba(245,158,11,0.4)]"
+              />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">

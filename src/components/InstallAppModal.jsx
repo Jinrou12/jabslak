@@ -22,8 +22,8 @@ export default function InstallAppModal({ onClose, onInstall, deferredPrompt }) 
 
         {/* Header Icon */}
         <div className="flex flex-col items-center text-center gap-3 mb-6">
-          <div className="w-24 h-24 shrink-0 flex items-center justify-center filter drop-shadow-xl">
-            <img src="/app_logo.png" alt="Logo" className="w-full h-full object-contain" />
+          <div className="w-20 h-20 shrink-0 flex items-center justify-center rounded-full border-2 border-amber-400/80 shadow-[0_0_25px_rgba(245,158,11,0.5)] ring-2 ring-amber-500/30 overflow-hidden bg-slate-950 p-0.5">
+            <img src="/app_logo.png" alt="Logo" className="w-full h-full object-cover rounded-full" />
           </div>
           <div>
             <h2 className="text-lg font-black text-amber-400 font-moul">
