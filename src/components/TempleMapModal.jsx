@@ -392,6 +392,33 @@ export default function TempleMapModal({
   const canCustomizeTab = (activeTab === 'interactive' || activeTab === 'tagger') && canCustomizeMap;
 
   // Sync Tab 3 metadata with allTags while preserving Location Names (ឈ្មោះទីតាំង)
+  const categoryMigrationMap = {
+    'ធម្មសភា': 'ផែន១ ៖ ធម្មសភា',
+    'សាលាធម្មសភា': 'ផែន១ ៖ ធម្មសភា',
+    'ធម្មសាលាសភា': 'ផែន១ ៖ ធម្មសភា',
+    'សាលាឆាន់': 'ផែន២ ៖ សាលាឆាន់ចាស់',
+    'សាលាឆាន់ចាស់': 'ផែន២ ៖ សាលាឆាន់ចាស់',
+    'មុខសាលាឆាន់ចាស់': 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់',
+    'ព្រះបរិនិព្វាន': 'ផែន៤ ៖ ព្រះបរិនិព្វាន',
+    'បណ្ណាល័យ': 'ផែន៥ ៖ បណ្ណាល័យ',
+    'ព្រះផ្ទម': 'ផែន៦ ៖ ព្រះផ្ទម',
+    'តាមកុដិ': 'ផែន៧ ៖ តាមកុដិ',
+    'កុដិ': 'ផែន៧ ៖ តាមកុដិ',
+    'កុដិព្រះសង្ឃ': 'ផែន៧ ៖ តាមកុដិ',
+    'សាលារៀន': 'ផែន៨ ៖ សាលារៀន'
+  };
+
+  const autoMigrateCategory = (cat) => {
+    if (!cat) return cat;
+    const norm = String(cat).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
+    for (const [oldKey, newName] of Object.entries(categoryMigrationMap)) {
+      if (String(oldKey).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC') === norm) {
+        return newName;
+      }
+    }
+    return cat;
+  };
+
   const effectiveTab3Locations = useMemo(() => {
     return tab3Locations.map((loc) => {
       const locIdStr = String(loc.id || '').trim();
@@ -439,6 +466,7 @@ export default function TempleMapModal({
 
       return {
         ...loc,
+        category: autoMigrateCategory(loc.category),
         name: finalName, // ALWAYS KEEP FULL FORMATTED NAME WITH OWNER NAME!
         tagOwnerName: tagOwner,
         tagNumber: tagNum,
@@ -3811,9 +3839,44 @@ export default function TempleMapModal({
                     type="text"
                     value={newCategoryName}
                     onChange={(e) => setNewCategoryName(e.target.value)}
-                    placeholder="ឧ. ធម្មសភា, សាលាឆាន់, កុដិព្រះសង្ឃ..."
-                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400"
+                    placeholder="វាយបញ្ចូល ឬចុចជ្រើសរើសឈ្មោះ ផែន (Zone) ខាងក្រោម..."
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3.5 py-2 text-sm text-slate-100 focus:outline-none focus:border-amber-400 font-bold"
                   />
+
+                  {/* Preset 8 Zones Buttons */}
+                  <div className="mt-2 space-y-1">
+                    <div className="text-[10px] text-amber-400 font-bold">✨ ឬជ្រើសរើសឈ្មោះ ផែន ទាំង ៨ មានស្រាប់ ៖</div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      {[
+                        'ផែន១ ៖ ធម្មសភា',
+                        'ផែន២ ៖ សាលាឆាន់ចាស់',
+                        'ផែន៣ ៖ មុខសាលាឆាន់ចាស់',
+                        'ផែន៤ ៖ ព្រះបរិនិព្វាន',
+                        'ផែន៥ ៖ បណ្ណាល័យ',
+                        'ផែន៦ ៖ ព្រះផ្ទម',
+                        'ផែន៧ ៖ តាមកុដិ',
+                        'ផែន៨ ៖ សាលារៀន'
+                      ].map((zoneName) => (
+                        <button
+                          key={zoneName}
+                          type="button"
+                          onClick={() => {
+                            setNewCategoryName(zoneName);
+                            const { matchedIds, warnings } = processBatchTagInput(tagNumbersBatchInput, zoneName);
+                            setSelectedLocationIdsForGroup(matchedIds);
+                            setBatchTagWarnings(warnings);
+                          }}
+                          className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all text-left truncate ${
+                            newCategoryName === zoneName
+                              ? 'bg-amber-500 text-slate-950 border-amber-400 font-extrabold shadow-md'
+                              : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-amber-500/50 hover:text-amber-300'
+                          }`}
+                        >
+                          {zoneName}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
                 {/* Batch Tag Number Input */}
