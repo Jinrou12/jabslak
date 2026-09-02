@@ -2088,8 +2088,14 @@ export default function TempleMapModal({
     saveTempleLocationsToFirebase(updatedLocs.filter((loc) => !loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay));
   };
 
+  const normalizeKhmerCat = (str) =>
+    String(str || '')
+      .replace(/[\u200B-\u200D\uFEFF]/g, '')
+      .trim()
+      .normalize('NFC');
+
   const handleRenameGroupSubmit = () => {
-    const trimmedNew = renameGroupInput.trim();
+    const trimmedNew = renameGroupInput.replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
     if (!trimmedNew || trimmedNew === editingGroupName) return;
 
     pushHistorySnapshot(activeTab === 'tagger' ? tab3Locations : locations);
@@ -2098,9 +2104,11 @@ export default function TempleMapModal({
       saveDeletedCategories(deletedCategories.filter((c) => c !== trimmedNew));
     }
 
+    const normOld = normalizeKhmerCat(editingGroupName);
+
     const renameInList = (list) =>
       list.map((loc) => {
-        const catMatches = (loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === editingGroupName;
+        const catMatches = normalizeKhmerCat(loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')) === normOld;
         if (catMatches) {
           return { ...loc, category: trimmedNew };
         }
@@ -2118,10 +2126,10 @@ export default function TempleMapModal({
     saveTempleLocations(updatedLocs);
     saveTempleLocationsToFirebase(updatedLocs.filter((loc) => !loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay));
 
-    if (selectedCategory === editingGroupName) {
+    if (normalizeKhmerCat(selectedCategory) === normOld) {
       setSelectedCategory(trimmedNew);
     }
-    if (selectedSizeGroup === editingGroupName) {
+    if (normalizeKhmerCat(selectedSizeGroup) === normOld) {
       setSelectedSizeGroup(trimmedNew);
     }
 
@@ -4045,11 +4053,18 @@ export default function TempleMapModal({
                     type="text"
                     value={renameGroupInput}
                     onChange={(e) => setRenameGroupInput(e.target.value)}
-                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleRenameGroupSubmit();
+                      }
+                    }}
+                    placeholder="វាយឈ្មោះ Group ថ្មី..."
+                    className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-bold"
                   />
                   <button
                     onClick={handleRenameGroupSubmit}
-                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-md transition-all shrink-0"
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-md transition-all shrink-0 active:scale-95"
                   >
                     កែឈ្មោះ
                   </button>
@@ -4310,10 +4325,15 @@ export default function TempleMapModal({
                 </button>
 
                 <button
-                  onClick={() => setIsGroupEditModalOpen(false)}
-                  className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-xl transition-all"
+                  onClick={() => {
+                    if (renameGroupInput.trim() && renameGroupInput.trim() !== editingGroupName) {
+                      handleRenameGroupSubmit();
+                    }
+                    setIsGroupEditModalOpen(false);
+                  }}
+                  className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs rounded-xl shadow-md transition-all active:scale-95"
                 >
-                  រួចរាល់
+                  រក្សាទុក & រួចរាល់
                 </button>
               </div>
             </div>
