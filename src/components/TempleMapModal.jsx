@@ -639,13 +639,19 @@ export default function TempleMapModal({
   // Compute tag counts per temple location
   const tagCountsByLocation = useMemo(() => {
     const counts = {};
-    allTags.forEach((t) => {
-      const locStr = t.baseLocation || t.location || '';
-      currentLocations.forEach((loc) => {
-        if (locStr.includes(loc.name) || (t.templeLocationId && t.templeLocationId === loc.id)) {
-          counts[loc.id] = (counts[loc.id] || 0) + 1;
-        }
-      });
+    currentLocations.forEach((loc) => {
+      if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
+        counts[loc.id] = 1;
+      } else {
+        let count = 0;
+        allTags.forEach((t) => {
+          const locStr = String(t.baseLocation || t.location || '').trim();
+          if ((locStr && loc.name && locStr.includes(loc.name)) || (t.templeLocationId && String(t.templeLocationId) === String(loc.id))) {
+            count++;
+          }
+        });
+        counts[loc.id] = count;
+      }
     });
     return counts;
   }, [allTags, currentLocations]);
@@ -2328,6 +2334,20 @@ export default function TempleMapModal({
                       <div className="text-[10px] text-slate-400 truncate">
                         {selectedLocation.category || '🏢 ក្រុមអគារ និង កុដិ'}
                       </div>
+                      {(() => {
+                        const mTag = allTags.find(
+                          (t) =>
+                            String(t.tagNumber) === String(selectedLocation.tagNumber || selectedLocation.id) ||
+                            String(t.tagNumberDisplay) === String(selectedLocation.tagNumberDisplay || selectedLocation.id)
+                        );
+                        const noteText = selectedLocation.notes || (mTag ? mTag.notes : '');
+                        if (!noteText) return null;
+                        return (
+                          <div className="text-[10px] text-amber-300/80 truncate">
+                            📝 {noteText}
+                          </div>
+                        );
+                      })()}
                     </div>
                   </div>
                   <button
