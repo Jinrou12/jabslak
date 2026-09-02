@@ -2478,11 +2478,13 @@ export default function TempleMapModal({
                               );
                             })()}
 
-                            {/* Floating Name Label: PERMANENTLY RENDERED IN TAB 1 */}
-                            {activeTab === 'labeled' && (
+                            {/* Floating Name Label: PERMANENTLY shown in Tab 1 OR for Tag Pins in Tab 3 */}
+                            {(activeTab === 'labeled' || (activeTab === 'tagger' && loc.isTagPin && isLabelsVisible)) && (
                               <div
-                                className={`absolute text-[7.5px] sm:text-[9px] md:text-[10.5px] font-bold py-0.5 px-1.5 rounded-lg border shadow-lg whitespace-nowrap pointer-events-none z-0 ${
-                                  isGate
+                                className={`absolute text-[7.5px] sm:text-[9px] md:text-[10.5px] font-bold py-0.5 px-1.5 rounded-lg border shadow-lg whitespace-nowrap pointer-events-none z-30 ${
+                                  loc.isTagPin
+                                    ? 'bg-slate-950/95 border-amber-400/80 text-amber-200'
+                                    : isGate
                                     ? 'bg-slate-950/92 border-amber-400/90 text-amber-200'
                                     : 'bg-slate-950/92 border-sky-400/90 text-sky-100'
                                 } ${isHighlighted ? 'ring-1.5 ring-amber-400 bg-slate-950 z-50' : ''} ${
@@ -2498,12 +2500,12 @@ export default function TempleMapModal({
                                   boxShadow: '0 2px 8px rgba(0,0,0,0.6)'
                                 }}
                               >
-                                <span>{loc.name}</span>
+                                <span>{activeTab === 'tagger' && loc.isTagPin ? getDisplayPinName(loc, allTags, activeTab) : loc.name}</span>
                               </div>
                             )}
 
-                            {/* Floating Tooltip: In Tab 2 and Tab 3 on Hover/Focus */}
-                            {activeTab !== 'labeled' && (
+                            {/* Floating Tooltip: In Tab 2 and Tab 3 on Hover/Focus (for non-tag pins in Tab 3) */}
+                            {activeTab !== 'labeled' && !(activeTab === 'tagger' && loc.isTagPin) && (
                               <div
                                 className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 bg-slate-950/95 text-white font-bold text-[10px] sm:text-xs px-2 py-0.5 rounded-lg border shadow-2xl pointer-events-none whitespace-nowrap transition-all duration-150 z-50 ${
                                   isGate ? 'border-amber-400 text-amber-200' : 'border-sky-400 text-sky-100'
