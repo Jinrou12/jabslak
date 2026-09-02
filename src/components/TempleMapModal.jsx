@@ -1360,21 +1360,66 @@ export default function TempleMapModal({
     });
 
     if (pendingPinTag) {
-      const tagDisp = pendingPinTag.tagNumberDisplay || String(pendingPinTag.tagNumber);
+      const tagDisp = pendingPinTag.tagNumberDisplay || westernToKhmerDigits(pendingPinTag.tagNumber) || String(pendingPinTag.tagNumber);
       const latinId = String(pendingPinTag.tagNumber || khmerToWesternDigits(tagDisp));
-      setModalForm({
-        id: latinId,
-        tagNumber: pendingPinTag.tagNumber,
-        tagNumberDisplay: tagDisp,
-        isTagPin: true,
-        name: formatTagPinLocationName(pendingPinTag),
-        tagOwnerName: pendingPinTag.name || '',
-        type: 'building',
-        pos: 'R',
-        category: (pendingPinTag.baseLocation && pendingPinTag.baseLocation !== 'មើលទីកន្លែង' && pendingPinTag.baseLocation !== 'មិនទាន់ដៅលើ Map') ? pendingPinTag.baseLocation : '🏢 ក្រុមអគារ និង កុដិ'
-      });
-      setSelectedTagForPin(tagDisp || String(pendingPinTag.tagNumber));
+
+      pushHistorySnapshot(tab3Locations);
+
+      // Find existing tag pin entry if present in tab3Locations
+      const existingIndex = tab3Locations.findIndex(
+        (l) =>
+          String(l.id || '').trim().toLowerCase() === latinId.toLowerCase() ||
+          String(l.tagNumber || '') === String(pendingPinTag.tagNumber) ||
+          String(l.tagNumberDisplay || '') === tagDisp ||
+          khmerToWesternDigits(String(l.tagNumberDisplay || '')).toLowerCase() === latinId.toLowerCase()
+      );
+
+      const groupColorLoc = currentLocations.find((l) => l.category === pendingPinTag.baseLocation && l.badgeColor && COLOR_OPTION_GRADIENTS[l.badgeColor]);
+      const groupBadgeColor = groupColorLoc ? groupColorLoc.badgeColor : 'orange';
+
+      let updatedTab3;
+      let targetPin;
+
+      if (existingIndex >= 0) {
+        const existing = tab3Locations[existingIndex];
+        targetPin = {
+          ...existing,
+          x: pctX,
+          y: pctY,
+          isUnpinned: false,
+          badgeColor: existing.badgeColor && COLOR_OPTION_GRADIENTS[existing.badgeColor] ? existing.badgeColor : groupBadgeColor
+        };
+        updatedTab3 = tab3Locations.map((l, i) => (i === existingIndex ? targetPin : l));
+      } else {
+        targetPin = {
+          id: latinId,
+          name: formatTagPinLocationName(pendingPinTag),
+          x: pctX,
+          y: pctY,
+          type: 'building',
+          pos: 'R',
+          badgeColor: groupBadgeColor,
+          category: (pendingPinTag.baseLocation && pendingPinTag.baseLocation !== 'មើលទីកន្លែង' && pendingPinTag.baseLocation !== 'មិនទាន់ដៅលើ Map') ? pendingPinTag.baseLocation : '🏢 ក្រុមអគារ និង កុដិ',
+          tagNumber: pendingPinTag.tagNumber,
+          tagNumberDisplay: tagDisp,
+          tagOwnerName: pendingPinTag.name || '',
+          isTagPin: true,
+          isUnpinned: false
+        };
+        updatedTab3 = [...tab3Locations, targetPin];
+      }
+
+      setTab3Locations(updatedTab3);
+      saveTab3LocationsToFirebase(updatedTab3);
+      saveTab3Locations(updatedTab3);
+      setSelectedLocation(targetPin);
       setPendingPinTag(null);
+      setIsPinsVisible(true);
+
+      setUndoToast(`🎯 បានដៅទីតាំងស្លាកលេខ #${tagDisp} (${pendingPinTag.name || 'គ្មានឈ្មោះ'}) លើ Map រួចរាល់!`);
+      setTimeout(() => setUndoToast(''), 3000);
+      centerPinOnMap(targetPin);
+      return;
     } else {
       const firstAvailable = activeTab === 'tagger' ? getFirstAvailableTag() : null;
       if (firstAvailable) {
@@ -1464,7 +1509,7 @@ export default function TempleMapModal({
 
         const targetSetter = dragTab === 'tagger' ? setTab3Locations : setLocations;
         targetSetter((prev) =>
-          prev.map((l) => (l.id === loc.id ? { ...l, x: newPctX, y: newPctY } : l))
+          prev.map((l) => (l.id === loc.id ? { ...l, x: newPctX, y: newPctY, isUnpinned: false } : l))
         );
       }
     };
@@ -1620,12 +1665,20 @@ export default function TempleMapModal({
 
     // Check duplicate ID (use raw base locations, not computed effectiveTab3Locations)
     const rawBaseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
+    let targetEditingLoc = editingLoc;
+
     const duplicate = rawBaseLocations.find(
-      (l) => String(l.id || '').toLowerCase() === String(id || '').toLowerCase() && (!editingLoc || editingLoc.id !== l.id)
+      (l) => String(l.id || '').toLowerCase() === String(id || '').toLowerCase() && (!targetEditingLoc || targetEditingLoc.id !== l.id)
     );
+
     if (duplicate) {
-      setFormError(`លេខ/អក្សរ «${id}» នេះមានរួចហើយ! (${duplicate.name})`);
-      return;
+      if (duplicate.isUnpinned || duplicate.isTagPin || duplicate.tagNumber) {
+        // Automatically switch to updating the position & data of existing pin
+        targetEditingLoc = { ...targetEditingLoc, isNew: false, id: duplicate.id };
+      } else {
+        setFormError(`លេខ/អក្សរ «${id}» នេះមានរួចហើយ! (${duplicate.name})`);
+        return;
+      }
     }
 
     // Push history snapshot before saving
@@ -1641,47 +1694,54 @@ export default function TempleMapModal({
     };
 
     let updated;
-    if (editingLoc && !editingLoc.isNew) {
+    if (targetEditingLoc && !targetEditingLoc.isNew) {
       updated = baseLocations.map((l) =>
-        l.id === editingLoc.id
+        l.id === targetEditingLoc.id
           ? stripComputed({
               ...l,
               id: id,
               name: name,
-              badgeColor: modalForm.badgeColor || 'orange',
-              type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
-              pos: modalForm.pos || 'R',
-              category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ',
+              x: targetEditingLoc.x !== undefined ? targetEditingLoc.x : l.x,
+              y: targetEditingLoc.y !== undefined ? targetEditingLoc.y : l.y,
+              badgeColor: modalForm.badgeColor || l.badgeColor || 'orange',
+              type: modalForm.badgeColor === 'gold' ? 'gate' : (l.type || 'building'),
+              pos: modalForm.pos || l.pos || 'R',
+              category: modalForm.category || l.category || '🏢 ក្រុមអគារ និង កុដិ',
               isTagPin: modalForm.isTagPin !== undefined ? modalForm.isTagPin : l.isTagPin,
               tagNumber: modalForm.tagNumber !== undefined ? modalForm.tagNumber : l.tagNumber,
-              tagNumberDisplay: modalForm.tagNumberDisplay !== undefined ? modalForm.tagNumberDisplay : l.tagNumberDisplay
+              tagNumberDisplay: modalForm.tagNumberDisplay !== undefined ? modalForm.tagNumberDisplay : l.tagNumberDisplay,
+              isUnpinned: false
             })
           : stripComputed(l)
       );
-      if (selectedLocation?.id === editingLoc.id) {
+      if (selectedLocation?.id === targetEditingLoc.id) {
         setSelectedLocation({
           ...selectedLocation,
           id: id,
           name: name,
+          x: targetEditingLoc.x !== undefined ? targetEditingLoc.x : selectedLocation.x,
+          y: targetEditingLoc.y !== undefined ? targetEditingLoc.y : selectedLocation.y,
           badgeColor: modalForm.badgeColor || 'orange',
           type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
           pos: modalForm.pos || 'R',
-          category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'
+          category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ',
+          isUnpinned: false
         });
       }
     } else {
       const newPoint = {
         id: id,
         name: name,
-        x: editingLoc?.x || 50,
-        y: editingLoc?.y || 50,
+        x: targetEditingLoc?.x || 50,
+        y: targetEditingLoc?.y || 50,
         badgeColor: modalForm.badgeColor || 'orange',
         type: modalForm.badgeColor === 'gold' ? 'gate' : 'building',
         pos: modalForm.pos || 'R',
         category: modalForm.category || '🏢 ក្រុមអគារ និង កុដិ',
         isTagPin: modalForm.isTagPin || false,
         tagNumber: modalForm.tagNumber || null,
-        tagNumberDisplay: modalForm.tagNumberDisplay || null
+        tagNumberDisplay: modalForm.tagNumberDisplay || null,
+        isUnpinned: false
       };
       updated = [...baseLocations.map(stripComputed), newPoint];
       setSelectedLocation(newPoint);
