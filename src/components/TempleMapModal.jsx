@@ -3148,36 +3148,6 @@ export default function TempleMapModal({
                 </div>
               )}
 
-              <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-                {!editingLoc?.isNew && pinModalMode === 'single' ? (
-                  <button
-                    onClick={() => handleDeleteLocation(editingLoc.id)}
-                    className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold rounded-xl transition-all"
-                  >
-                    លុបទីតាំង
-                  </button>
-                ) : (
-                  <div></div>
-                )}
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsEditModalOpen(false)}
-                    className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-xl transition-all"
-                  >
-                    បោះបង់
-                  </button>
-
-                  {pinModalMode === 'single' && (
-                    <button
-                      onClick={handleSaveLocationEdit}
-                      className="px-4 py-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold rounded-xl shadow-lg shadow-amber-500/20 transition-all active:scale-95"
-                    >
-                      រក្សាទុក
-                    </button>
-                  )}
-                </div>
-              </div>
 
               <div className="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
                 {!editingLoc?.isNew ? (
