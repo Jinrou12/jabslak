@@ -2838,15 +2838,6 @@ export default function TempleMapModal({
                                   <div className="text-xs font-bold text-slate-200 truncate">
                                     {getDisplayPinName(loc, allTags, activeTab)}
                                   </div>
-                                  <div className="text-[10px] text-slate-400">
-                                    {tagCount > 0 ? (
-                                      <span className="text-amber-400 font-bold font-sans-en">
-                                        {westernToKhmerDigits(tagCount)} ស្លាក
-                                      </span>
-                                    ) : (
-                                      'គ្មាន'
-                                    )}
-                                  </div>
                                 </div>
                               </div>
 
