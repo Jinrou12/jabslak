@@ -372,6 +372,7 @@ export default function TempleMapModal({
   // Group Edit Modal State
   const [isGroupEditModalOpen, setIsGroupEditModalOpen] = useState(false);
   const [editingGroupName, setEditingGroupName] = useState('');
+  const [renameGroupInput, setRenameGroupInput] = useState('');
   const [pinningGroupMode, setPinningGroupMode] = useState(null);
 
   // Add/Edit Location Pin Modal mode ('single' | 'group')
