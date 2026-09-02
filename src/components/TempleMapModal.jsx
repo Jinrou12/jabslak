@@ -37,6 +37,8 @@ import {
   TEMPLE_PALI_DIRECTIONS,
   getSavedTempleLocations,
   getSavedTab3Locations,
+  saveTempleLocations,
+  saveTab3Locations,
   resetTempleLocations,
   resetTab3Locations
 } from '../data/templeLocations';
@@ -1525,11 +1527,13 @@ export default function TempleMapModal({
       if (hasMoved) {
         if (dragTab === 'tagger') {
           setTab3Locations((prev) => {
+            saveTab3Locations(prev);
             saveTab3LocationsToFirebase(prev);
             return prev;
           });
         } else {
           setLocations((prev) => {
+            saveTempleLocations(prev);
             saveTempleLocationsToFirebase(prev);
             // Tab 2 edits also propagate to Tab 3
             setTab3Locations((prev3) => {
@@ -1537,6 +1541,7 @@ export default function TempleMapModal({
                 const match = prev.find((p) => p.id === l3.id);
                 return match ? { ...l3, x: match.x, y: match.y } : l3;
               });
+              saveTab3Locations(updated3);
               saveTab3LocationsToFirebase(updated3);
               return updated3;
             });

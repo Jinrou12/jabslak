@@ -1,6 +1,12 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getDatabase, ref, onValue, set, remove, get } from 'firebase/database';
-import { INITIAL_TEMPLE_LOCATIONS, saveTempleLocations as saveTempleLocationsLocal, saveTab3Locations as saveTab3LocationsLocal } from '../data/templeLocations';
+import { 
+  INITIAL_TEMPLE_LOCATIONS, 
+  saveTempleLocations as saveTempleLocationsLocal, 
+  saveTab3Locations as saveTab3LocationsLocal,
+  getSavedTempleLocations,
+  getSavedTab3Locations
+} from '../data/templeLocations';
 
 // Dynamically read custom Firebase Database credentials from localStorage or URL parameter
 let urlDbParam = '';
@@ -60,16 +66,16 @@ export function migrateTagListToTempleLocations(tagList) {
     const isOld =
       locStr.includes('អាគារ A') ||
       locStr.includes('អាគារ B') ||
-      locStr.includes('រោងទី') ||
-      locStr.includes('សាលាឆាន់ - ជួរ') ||
-      locStr.includes('រោងបុណ្យ');
+      locStr.includes('អាគារ C') ||
+      locStr.includes('អាគារ D') ||
+      locStr.includes('អាគារ E') ||
+      locStr.includes('កុដិលេខ');
 
     if (isOld) {
       hasOld = true;
       return {
         ...item,
-        baseLocation: 'មិនទាន់ដៅលើ Map',
-        location: 'មិនទាន់ដៅលើ Map'
+        baseLocation: '១'
       };
     }
     return item;
@@ -152,16 +158,18 @@ export function subscribeToFirebaseTempleLocations(onDataReceived, onError) {
           locList = Object.values(val);
         }
         if (locList.length > 0) {
-          // Auto-align if cloud had outdated shifted coordinates for 10 or 16
-          const item10 = locList.find((l) => l.id === '១០' || l.id === '10');
-          const item16 = locList.find((l) => l.id === '១៦' || l.id === '16');
-          if ((item10 && item10.x < 50) || (item16 && item16.x < 45)) {
-            console.log('Aligning cloud coordinates for 10 and 16 to authentic temple locations...');
-            isSeeding = true;
-            saveTempleLocationsToFirebase(INITIAL_TEMPLE_LOCATIONS).finally(() => {
-              isSeeding = false;
+          const local = getSavedTempleLocations();
+          if (Array.isArray(local) && local.length > locList.length) {
+            const mergedMap = new Map();
+            locList.forEach((item) => mergedMap.set(String(item.id), item));
+            local.forEach((item) => {
+              if (!mergedMap.has(String(item.id))) {
+                mergedMap.set(String(item.id), item);
+              }
             });
-            onDataReceived(INITIAL_TEMPLE_LOCATIONS);
+            const mergedList = Array.from(mergedMap.values());
+            saveTempleLocationsToFirebase(mergedList);
+            onDataReceived(mergedList);
             return;
           }
 
@@ -170,12 +178,16 @@ export function subscribeToFirebaseTempleLocations(onDataReceived, onError) {
           return;
         }
       }
-      // If empty in cloud -> seed INITIAL_TEMPLE_LOCATIONS (only once)
+      
+      // If empty in cloud -> use local storage if available, else seed INITIAL_TEMPLE_LOCATIONS
+      const local = getSavedTempleLocations();
+      const defaultToUse = (Array.isArray(local) && local.length > 0) ? local : INITIAL_TEMPLE_LOCATIONS;
+      
       isSeeding = true;
-      saveTempleLocationsToFirebase(INITIAL_TEMPLE_LOCATIONS).finally(() => {
+      saveTempleLocationsToFirebase(defaultToUse).finally(() => {
         isSeeding = false;
       });
-      onDataReceived(INITIAL_TEMPLE_LOCATIONS);
+      onDataReceived(defaultToUse);
     },
     (err) => {
       console.error('Firebase temple locations subscription error:', err);
@@ -193,8 +205,9 @@ export async function saveTempleLocationsToFirebase(locations) {
   saveTempleLocationsLocal(locations);
   if (!db) return false;
   try {
+    const cleanLocations = JSON.parse(JSON.stringify(locations || []));
     const locsRef = ref(db, 'temple_locations');
-    await set(locsRef, locations);
+    await set(locsRef, cleanLocations);
     return true;
   } catch (err) {
     console.error('Error saving temple locations to Firebase:', err);
@@ -215,11 +228,14 @@ export function subscribeToFirebaseTab3Locations(onDataReceived, onError) {
     return () => {};
   }
 
+  let isSeedingTab3 = false;
   const locsRef = ref(db, 'temple_locations_tab3');
   
   const unsubscribe = onValue(
     locsRef,
     (snapshot) => {
+      if (isSeedingTab3) return;
+
       if (snapshot.exists()) {
         const val = snapshot.val();
         let locList = [];
@@ -229,14 +245,36 @@ export function subscribeToFirebaseTab3Locations(onDataReceived, onError) {
           locList = Object.values(val);
         }
         if (locList.length > 0) {
+          const local = getSavedTab3Locations();
+          if (Array.isArray(local) && local.length > locList.length) {
+            const mergedMap = new Map();
+            locList.forEach((item) => mergedMap.set(String(item.id), item));
+            local.forEach((item) => {
+              if (!mergedMap.has(String(item.id))) {
+                mergedMap.set(String(item.id), item);
+              }
+            });
+            const mergedList = Array.from(mergedMap.values());
+            saveTab3LocationsToFirebase(mergedList);
+            onDataReceived(mergedList);
+            return;
+          }
+
           saveTab3LocationsLocal(locList);
           onDataReceived(locList);
           return;
         }
       }
-      // If empty -> seed with INITIAL
-      saveTab3LocationsToFirebase(INITIAL_TEMPLE_LOCATIONS);
-      onDataReceived(INITIAL_TEMPLE_LOCATIONS);
+      
+      // If empty in cloud -> check LocalStorage first before resetting to INITIAL
+      const local = getSavedTab3Locations();
+      const defaultToUse = (Array.isArray(local) && local.length > 0) ? local : INITIAL_TEMPLE_LOCATIONS;
+
+      isSeedingTab3 = true;
+      saveTab3LocationsToFirebase(defaultToUse).finally(() => {
+        isSeedingTab3 = false;
+      });
+      onDataReceived(defaultToUse);
     },
     (err) => {
       console.error('Firebase Tab 3 locations subscription error:', err);
@@ -254,8 +292,9 @@ export async function saveTab3LocationsToFirebase(locations) {
   saveTab3LocationsLocal(locations);
   if (!db) return false;
   try {
+    const cleanLocations = JSON.parse(JSON.stringify(locations || []));
     const locsRef = ref(db, 'temple_locations_tab3');
-    await set(locsRef, locations);
+    await set(locsRef, cleanLocations);
     return true;
   } catch (err) {
     console.error('Error saving Tab 3 locations to Firebase:', err);
