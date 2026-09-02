@@ -2477,19 +2477,40 @@ export default function TempleMapModal({
 
   // Filtered locations for legend list
   const filteredLegendLocations = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    const rawQ = searchQuery.trim().toLowerCase();
+    const cleanQ = rawQ.replace(/[\u200B-\u200D\uFEFF]/g, '').normalize('NFC');
+    const westernQ = khmerToWesternDigits(cleanQ);
+    const khmerQ = westernToKhmerDigits(cleanQ);
+
     return currentLocations.filter((loc) => {
-      const matchesSearch =
-        !q ||
-        String(loc.name || '').toLowerCase().includes(q) ||
-        String(loc.id || '').toLowerCase().includes(q) ||
-        String(loc.category || '').toLowerCase().includes(q);
       const locCat = (loc.category && !deletedCategories.includes(loc.category)) ? loc.category : '';
       const matchesCat =
         selectedCategory === 'all' || locCat === selectedCategory;
-      return matchesSearch && matchesCat;
+
+      if (!matchesCat) return false;
+      if (!rawQ) return true;
+
+      const locName = String(loc.name || '').replace(/[\u200B-\u200D\uFEFF]/g, '').toLowerCase().normalize('NFC');
+      const locDispName = String(loc.displayName || '').replace(/[\u200B-\u200D\uFEFF]/g, '').toLowerCase().normalize('NFC');
+      const locTagOwner = String(loc.tagOwnerName || '').replace(/[\u200B-\u200D\uFEFF]/g, '').toLowerCase().normalize('NFC');
+      const locId = String(loc.id || '').toLowerCase();
+      const locCatStr = String(loc.category || '').replace(/[\u200B-\u200D\uFEFF]/g, '').toLowerCase().normalize('NFC');
+      const locTagNum = String(loc.tagNumber || '');
+      const locTagDisp = String(loc.tagNumberDisplay || '');
+      const locNotes = String(loc.notes || '').replace(/[\u200B-\u200D\uFEFF]/g, '').toLowerCase().normalize('NFC');
+
+      return (
+        locName.includes(cleanQ) ||
+        locDispName.includes(cleanQ) ||
+        locTagOwner.includes(cleanQ) ||
+        locId.includes(cleanQ) ||
+        locCatStr.includes(cleanQ) ||
+        locNotes.includes(cleanQ) ||
+        (locTagNum && (locTagNum.includes(cleanQ) || locTagNum.includes(westernQ) || locTagNum.includes(khmerQ))) ||
+        (locTagDisp && (locTagDisp.includes(cleanQ) || locTagDisp.includes(westernQ) || locTagDisp.includes(khmerQ)))
+      );
     });
-  }, [currentLocations, searchQuery, selectedCategory]);
+  }, [currentLocations, searchQuery, selectedCategory, deletedCategories]);
 
   const mainContainer = (
     <div
@@ -3139,7 +3160,7 @@ export default function TempleMapModal({
                 if (selectedCategory !== 'all' && selectedCategory !== catName) return null;
 
                 const filteredItems = items.filter((loc) =>
-                  filteredLegendLocations.some((fl) => fl.id === loc.id)
+                  filteredLegendLocations.some((fl) => String(fl.id || '').trim() === String(loc.id || '').trim())
                 );
                 if (filteredItems.length === 0) return null;
 
