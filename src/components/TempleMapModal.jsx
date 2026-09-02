@@ -2998,7 +2998,7 @@ export default function TempleMapModal({
                   }`}
                 >
                   <MapPin className="w-3.5 h-3.5" />
-                  <span>📍 បញ្ជីទីតាំងលើ Map ({currentLocations.length})</span>
+                  <span>📍 បញ្ជីទីតាំង ({currentLocations.length})</span>
                 </button>
 
                 <button
@@ -3010,7 +3010,7 @@ export default function TempleMapModal({
                   }`}
                 >
                   <Tag className="w-3.5 h-3.5" />
-                  <span>🏷️ បញ្ជីស្លាកលេខប្រព័ន្ធ ({allTags.length})</span>
+                  <span>🏷️ បញ្ជីស្លាកលេខ ({allTags.length})</span>
                 </button>
               </div>
             )}
