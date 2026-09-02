@@ -1158,6 +1158,11 @@ export default function TempleMapModal({
 
     setUndoToast(`✅ បានដៅទីតាំង Group «${pinningGroupMode}» លើ Map រួចរាល់ (${westernToKhmerDigits(count)} Pin)!`);
     setTimeout(() => setUndoToast(''), 3500);
+    // Auto-scroll camera to first placed pin so user can see them immediately
+    const firstPlacedPin = updated.find((l) => l.category === pinningGroupMode);
+    if (firstPlacedPin) {
+      setTimeout(() => centerPinOnMap(firstPlacedPin), 200);
+    }
     setPinningGroupMode(null);
   };
 
@@ -1168,10 +1173,20 @@ export default function TempleMapModal({
     const mapBox = mapContainerRef.current;
     if (!mapBox) return;
     const rect = mapBox.getBoundingClientRect();
-    const clampedX = Math.max(rect.left, Math.min(rect.right, e.clientX));
-    const clampedY = Math.max(rect.top, Math.min(rect.bottom, e.clientY));
-    const pctX = parseFloat((((clampedX - rect.left) / rect.width) * 100).toFixed(2));
-    const pctY = parseFloat((((clampedY - rect.top) / rect.height) * 100).toFixed(2));
+    // Check if click is within the actual map image bounds
+    const isInsideMap = (
+      e.clientX >= rect.left && e.clientX <= rect.right &&
+      e.clientY >= rect.top  && e.clientY <= rect.bottom
+    );
+    let pctX, pctY;
+    if (isInsideMap) {
+      pctX = parseFloat(((e.clientX - rect.left) / rect.width * 100).toFixed(2));
+      pctY = parseFloat(((e.clientY - rect.top)  / rect.height * 100).toFixed(2));
+    } else {
+      // Clicked in white area outside map — default to center of map
+      pctX = 50;
+      pctY = 50;
+    }
     handleGroupPinPlacement(pctX, pctY);
   };
 
@@ -2208,12 +2223,18 @@ export default function TempleMapModal({
               {pinningGroupMode && (
                 <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-slate-950 font-bold text-xs sm:text-sm px-4 py-2 rounded-2xl shadow-2xl border-2 border-slate-900 flex items-center gap-2.5 animate-bounce font-kantumruy">
                   <MapPin className="w-5 h-5 text-slate-950 shrink-0" />
-                  <span>📍 កំពុងដៅទីតាំង Group «{pinningGroupMode}» ៖ សូមចុចលើ Map ត្រង់ចំណុចដែលចង់ដាក់!</span>
+                  <span>📍 ចុចលើ Map ដែលចង់ដៅ Group «{pinningGroupMode}»</span>
                   <button
-                    onClick={() => setPinningGroupMode(null)}
-                    className="ml-2 px-2.5 py-1 bg-slate-950 text-amber-300 rounded-xl text-xs hover:bg-slate-900 font-sans-en font-bold"
+                    onClick={(e) => { e.stopPropagation(); handleGroupPinPlacement(50, 50); }}
+                    className="ml-1 px-2.5 py-1 bg-slate-950 text-amber-300 rounded-xl text-xs hover:bg-slate-800 font-kantumruy font-bold whitespace-nowrap"
                   >
-                    បោះបង់ (X)
+                    📌 ដៅ Center
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setPinningGroupMode(null); }}
+                    className="px-2 py-1 bg-red-900 text-red-200 rounded-xl text-xs hover:bg-red-800 font-sans-en font-bold"
+                  >
+                    ✕
                   </button>
                 </div>
               )}
