@@ -1872,18 +1872,25 @@ export default function TempleMapModal({
       const numClean = khmerToWesternDigits(numStr);
       const khmerNum = westernToKhmerDigits(numClean);
 
-      // 1. Check if location pin already exists
-      const existingLoc = updatedLocations.find(
-        (loc) =>
-          String(loc.tagNumber) === numClean ||
-          khmerToWesternDigits(String(loc.tagNumber || '')) === numClean ||
-          String(loc.tagNumberDisplay) === khmerNum ||
-          String(loc.tagNumberDisplay) === numClean ||
-          khmerToWesternDigits(String(loc.tagNumberDisplay || '')) === numClean ||
-          String(loc.id) === numClean ||
-          String(loc.id) === khmerNum ||
-          khmerToWesternDigits(String(loc.id || '')) === numClean
-      );
+      // 1. Check if a TAG PIN location already exists
+      const existingLoc = updatedLocations.find((loc) => {
+        const isTagPin = loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay;
+        const locTagNum = loc.tagNumber ? String(loc.tagNumber).trim() : '';
+        const locDisp = loc.tagNumberDisplay ? String(loc.tagNumberDisplay).trim() : '';
+        const locId = String(loc.id || '').trim();
+
+        if (locTagNum && (locTagNum === numClean || khmerToWesternDigits(locTagNum) === numClean)) {
+          return true;
+        }
+        if (locDisp && (locDisp === khmerNum || locDisp === numClean || khmerToWesternDigits(locDisp) === numClean)) {
+          return true;
+        }
+        if (isTagPin && (locId === numClean || locId === khmerNum || khmerToWesternDigits(locId) === numClean)) {
+          return true;
+        }
+
+        return false;
+      });
 
       if (existingLoc) {
         const existingCat = existingLoc.category || '';
