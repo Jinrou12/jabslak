@@ -2969,7 +2969,7 @@ export default function TempleMapModal({
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="ស្វែងរកទីតាំង..."
+                    placeholder="ស្វែងរកឈ្មោះ និង ស្លាកលេខ..."
                     className="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400 font-kantumruy"
                   />
                 </div>
