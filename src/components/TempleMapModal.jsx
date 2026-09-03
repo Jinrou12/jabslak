@@ -50,7 +50,7 @@ import {
   subscribeToGroupSettings,
   saveGroupSettingsToFirebase
 } from '../utils/firebase';
-import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName } from '../utils/khmerSearch';
+import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName, formatTagRanges } from '../utils/khmerSearch';
 
 const PIN_COLOR_GRADIENTS = [
   'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950',       // 1: Cyan Sky
@@ -670,7 +670,7 @@ export default function TempleMapModal({
   const effectiveTab3Locations = useMemo(() => {
     const { byNumber, byDisplay, byBaseLocation } = tagLookups;
 
-    return tab3Locations.map((loc) => {
+    const mapped = tab3Locations.map((loc) => {
       const locIdStr = String(loc.id || '').trim();
       
       // Look up authentic original location name from INITIAL_TEMPLE_LOCATIONS ONLY for base building/gate pins
@@ -717,6 +717,63 @@ export default function TempleMapModal({
         tagNumberDisplay: tagDisp
       };
     });
+
+    // ════════ DEDUPLICATE PINS WITH SAME NAME (ទីតាំង/pin ដែលមានឈ្មោះដូចគ្នា ដាក់ pin តែ ១) ════════
+    const grouped = new Map();
+    mapped.forEach((item) => {
+      const rawOwner = item.tagOwnerName || item.displayName || item.name || '';
+      const cleanOwner = String(rawOwner)
+        .replace(/^ស្លាកលេខ\s*\S+\s*៖\s*/, '')
+        .replace(/[\u200B-\u200D\uFEFF]/g, '')
+        .trim()
+        .normalize('NFC');
+
+      const isPersonName = cleanOwner && !cleanOwner.startsWith('ស្លាក') && !cleanOwner.startsWith('ស្លាកលេខ');
+      const groupKey = isPersonName ? `name_${cleanOwner.toLowerCase()}` : `id_${item.id}`;
+
+      if (!grouped.has(groupKey)) {
+        grouped.set(groupKey, []);
+      }
+      grouped.get(groupKey).push(item);
+    });
+
+    const result = [];
+    grouped.forEach((items) => {
+      if (items.length === 1) {
+        result.push(items[0]);
+      } else {
+        const primary = items[0];
+        const allTagNumbers = [];
+        const mergedIds = [];
+
+        items.forEach((i) => {
+          mergedIds.push(i.id);
+          if (i.tagNumber) allTagNumbers.push(i.tagNumber);
+          if (i.tagNumbers && Array.isArray(i.tagNumbers)) {
+            allTagNumbers.push(...i.tagNumbers);
+          }
+        });
+
+        const mergedTagDisp = formatTagRanges(allTagNumbers) || primary.tagNumberDisplay;
+
+        const validCoords = items.filter((i) => typeof i.x === 'number' && typeof i.y === 'number' && !i.isUnpinned);
+        const avgX = validCoords.length > 0 ? validCoords.reduce((acc, curr) => acc + curr.x, 0) / validCoords.length : primary.x;
+        const avgY = validCoords.length > 0 ? validCoords.reduce((acc, curr) => acc + curr.y, 0) / validCoords.length : primary.y;
+
+        result.push({
+          ...primary,
+          id: primary.id,
+          mergedIds,
+          mergedCount: items.length,
+          x: parseFloat(avgX.toFixed(2)),
+          y: parseFloat(avgY.toFixed(2)),
+          tagNumberDisplay: mergedTagDisp,
+          tagNumbers: allTagNumbers
+        });
+      }
+    });
+
+    return result;
   }, [tab3Locations, tagLookups]);
 
   // Filter out visitor tag pins from Tab 1 & Tab 2 locations so Tab 1 & Tab 2 NEVER display visitor tag pins
@@ -1625,21 +1682,23 @@ export default function TempleMapModal({
       return !exists;
     });
 
-    // Create new unpinned location pins for any missing tags
-    const newLocsFromTags = missingGroupTags.map((t) => {
-      const tagDispStr = t.tagNumberDisplay || westernToKhmerDigits(t.tagNumber);
+    // Create new unpinned location pins for any missing tags (grouped by person name)
+    const groupedMissingTags = groupTagsByName(missingGroupTags);
+    const newLocsFromTags = groupedMissingTags.map((gt) => {
+      const tagDispStr = gt.tagNumberDisplay || (gt.tagNumber ? westernToKhmerDigits(gt.tagNumber) : '');
+      const latinId = String(gt.tagNumber || khmerToWesternDigits(tagDispStr) || gt.id);
       return {
-        id: tagDispStr,
-        name: formatTagPinLocationName(t),
+        id: latinId,
+        name: formatTagPinLocationName(gt),
         x: 50,
         y: 50,
         type: 'building',
         pos: 'R',
         badgeColor: 'orange',
         category: pinningGroupMode,
-        tagNumber: t.tagNumber,
+        tagNumber: gt.tagNumber,
         tagNumberDisplay: tagDispStr,
-        tagOwnerName: t.name || '',
+        tagOwnerName: gt.name || '',
         isTagPin: true,
         isUnpinned: true
       };
@@ -1756,14 +1815,18 @@ export default function TempleMapModal({
 
       pushHistorySnapshot(tab3Locations);
 
-      // Find existing tag pin entry if present in tab3Locations
-      const existingIndex = tab3Locations.findIndex(
-        (l) =>
+      // Find existing tag pin entry if present in tab3Locations (by ID, tagNumber, tagDisp, or owner name)
+      const pendingOwner = String(pendingPinTag.name || '').replace(/^ស្លាកលេខ\s*\S+\s*៖\s*/, '').trim().toLowerCase();
+      const existingIndex = tab3Locations.findIndex((l) => {
+        const lOwner = String(l.tagOwnerName || l.name || '').replace(/^ស្លាកលេខ\s*\S+\s*៖\s*/, '').trim().toLowerCase();
+        return (
           String(l.id || '').trim().toLowerCase() === latinId.toLowerCase() ||
           String(l.tagNumber || '') === String(pendingPinTag.tagNumber) ||
           String(l.tagNumberDisplay || '') === tagDisp ||
-          khmerToWesternDigits(String(l.tagNumberDisplay || '')).toLowerCase() === latinId.toLowerCase()
-      );
+          khmerToWesternDigits(String(l.tagNumberDisplay || '')).toLowerCase() === latinId.toLowerCase() ||
+          (pendingOwner && pendingOwner !== 'គ្មានឈ្មោះ' && !pendingOwner.startsWith('ស្លាក') && lOwner === pendingOwner)
+        );
+      });
 
       const groupColorLoc = currentLocations.find((l) => l.category === pendingPinTag.baseLocation && l.badgeColor && COLOR_OPTION_GRADIENTS[l.badgeColor]);
       const groupBadgeColor = groupColorLoc ? groupColorLoc.badgeColor : 'orange';
@@ -1900,7 +1963,10 @@ export default function TempleMapModal({
 
         const targetSetter = dragTab === 'tagger' ? setTab3Locations : setLocations;
         targetSetter((prev) =>
-          prev.map((l) => (l.id === loc.id ? { ...l, x: newPctX, y: newPctY, isUnpinned: false } : l))
+          prev.map((l) => {
+            const isMatch = l.id === loc.id || (loc.mergedIds && loc.mergedIds.includes(l.id));
+            return isMatch ? { ...l, x: newPctX, y: newPctY, isUnpinned: false } : l;
+          })
         );
       }
     };
@@ -2171,8 +2237,11 @@ export default function TempleMapModal({
       const baseLocations = activeTab === 'tagger' ? tab3Locations : baseMapLocations;
       pushHistorySnapshot(baseLocations);
 
+      const targetLoc = currentLocations.find((l) => l.id === id);
+      const idsToDelete = targetLoc?.mergedIds || [id];
+
       const { setter, saver } = getTabDataFunctions();
-      const updated = baseLocations.filter((l) => l.id !== id);
+      const updated = baseLocations.filter((l) => !idsToDelete.includes(l.id));
       setter(updated);
       saver(updated);
       // If Tab 2 delete, also propagate to Tab 3
@@ -2181,7 +2250,9 @@ export default function TempleMapModal({
         saveTab3LocationsToFirebase(updated);
       }
       setIsEditModalOpen(false);
-      if (selectedLocation?.id === id) setSelectedLocation(null);
+      if (selectedLocation && (selectedLocation.id === id || idsToDelete.includes(selectedLocation.id))) {
+        setSelectedLocation(null);
+      }
     }
   };
 
