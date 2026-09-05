@@ -1,12 +1,16 @@
 import React from 'react';
-import { MapPin, Phone, ChevronRight, User, Map as MapIcon, CheckCircle2, Circle, Volume2 } from 'lucide-react';
+import { MapPin, Phone, ChevronRight, User, Map as MapIcon, CheckCircle2, Circle, Volume2, Lock } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
+import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
 export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttendance, currentUser }) {
   const khmerTagNo = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
   const isArrived = !!tag.arrived;
   const isPartial = !!tag.isPartialArrived;
   const isGuest = currentUser?.role === 'guest';
+  const isAdminOrOwner = currentUser?.role === 'owner' || currentUser?.role === 'admin';
+  const isLocked = isTagAttendanceLocked(tag);
+  const remainingSecs = isArrived && !isLocked ? getRemainingLockSeconds(tag) : 0;
   const tagCount = tag.count || 1;
 
   // Determine badge font size based on tag number string length
@@ -58,6 +62,18 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
               <span>សូរសម្លេងស្រដៀង</span>
             </div>
           )}
+          {/* 🔒 Auto-Lock Status Badges */}
+          {isArrived && isLocked && (
+            <div className="flex items-center gap-1 text-[10px] text-amber-300 bg-amber-500/15 border border-amber-500/35 px-1.5 py-0.5 rounded-md mt-1 w-fit font-kantumruy font-semibold">
+              <Lock className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+              <span>Lock Auto (លើស ៥mn)</span>
+            </div>
+          )}
+          {isArrived && !isLocked && remainingSecs > 0 && (
+            <div className="flex items-center gap-1 text-[10px] text-emerald-300 bg-emerald-500/15 border border-emerald-500/35 px-1.5 py-0.5 rounded-md mt-1 w-fit font-kantumruy font-semibold animate-pulse">
+              <span>⏱️ នៅសល់ {formatRemainingTimeKhmer(remainingSecs)}</span>
+            </div>
+          )}
         </div>
 
         {/* 📋 Report / Check-in Attendance Button (Assistant & Admin & Owner only) */}
@@ -69,21 +85,36 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
             }}
             className={`p-1.5 rounded-xl transition-all active:scale-95 border shrink-0 animate-in zoom-in-50 duration-200 flex items-center justify-center ${
               isArrived
-                ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
+                ? isLocked && !isAdminOrOwner
+                  ? 'bg-amber-500/90 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
+                  : 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
                 : isPartial
                 ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/30'
                 : 'bg-slate-800/90 text-slate-400 hover:text-emerald-300 border-slate-700 hover:border-emerald-500/50'
             }`}
             title={
               isArrived
-                ? 'បានមកដល់គ្រប់អង្គ (ចុចដើម្បីដក)'
+                ? isLocked
+                  ? !isAdminOrOwner
+                    ? '🔒 បានមកដល់ (ចាក់សោស្វ័យប្រវត្តិលើសពី ៥នាទី - មិនអាចដកគ្រីសបានទេ សូមទាក់ទង Admin)'
+                    : '🔒 បានមកដល់ (Lock Auto - Admin ចុចដើម្បីដកគ្រីស)'
+                  : `បានមកដល់ (អាចដកវិញបានក្នុង ៥នាទី${remainingSecs > 0 ? ` - នៅសល់ ${formatRemainingTimeKhmer(remainingSecs)}` : ''})`
                 : isPartial
                 ? `បានមកដល់ ${westernToKhmerDigits(tag.arrivedCount)}/${westernToKhmerDigits(tagCount)} អង្គ (ចុចដើម្បីគ្រីសទាំងអស់)`
                 : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកបានមកដល់'
             }
           >
             {isArrived ? (
-              <CheckCircle2 className="w-5 h-5 text-slate-950 stroke-[3]" />
+              isLocked ? (
+                <div className="relative flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-slate-950 stroke-[2.5]" />
+                  <span className="absolute -bottom-1.5 -right-1.5 bg-slate-950 text-amber-400 p-0.5 rounded-full ring-1 ring-amber-400 shadow-sm">
+                    <Lock className="w-2.5 h-2.5 stroke-[3]" />
+                  </span>
+                </div>
+              ) : (
+                <CheckCircle2 className="w-5 h-5 text-slate-950 stroke-[3]" />
+              )
             ) : isPartial ? (
               <div className="flex items-center gap-0.5 px-1 font-extrabold text-[10px] text-slate-950">
                 <span>{westernToKhmerDigits(tag.arrivedCount)}</span>/<span>{westernToKhmerDigits(tagCount)}</span>

@@ -1,6 +1,7 @@
 import React from 'react';
-import { MapPin, Phone, Eye, User, Hash, Map as MapIcon, CheckCircle2, Circle, Volume2 } from 'lucide-react';
+import { MapPin, Phone, Eye, User, Hash, Map as MapIcon, CheckCircle2, Circle, Volume2, Lock } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
+import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
 export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleAttendance, currentUser }) {
   const isGuest = currentUser?.role === 'guest';
@@ -28,6 +29,9 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
               const isArrived = !!tag.arrived;
               const isPartial = !!tag.isPartialArrived;
               const tagCount = tag.count || 1;
+              const isLocked = isTagAttendanceLocked(tag);
+              const isAdminOrOwner = currentUser?.role === 'owner' || currentUser?.role === 'admin';
+              const remainingSecs = isArrived && !isLocked ? getRemainingLockSeconds(tag) : 0;
 
               return (
                 <tr
@@ -57,6 +61,17 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                       {tagCount > 1 && (
                         <span className="bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded-lg text-xs font-kantumruy border border-amber-500/30">
                           {westernToKhmerDigits(tagCount)} អង្គ
+                        </span>
+                      )}
+                      {isArrived && isLocked && (
+                        <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/35 px-1.5 py-0.5 rounded text-[10px] font-normal font-kantumruy">
+                          <Lock className="w-2.5 h-2.5 text-amber-400" />
+                          <span>Lock Auto</span>
+                        </span>
+                      )}
+                      {isArrived && !isLocked && remainingSecs > 0 && (
+                        <span className="inline-flex items-center gap-1 bg-emerald-500/15 text-emerald-300 border border-emerald-500/35 px-1.5 py-0.5 rounded text-[10px] font-normal font-kantumruy animate-pulse">
+                          <span>⏱️ នៅសល់ {formatRemainingTimeKhmer(remainingSecs)}</span>
                         </span>
                       )}
                     </div>
@@ -101,15 +116,34 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                             e.stopPropagation();
                             onToggleAttendance(tag);
                           }}
-                          className={`p-1 rounded-xl transition-all active:scale-95 border inline-flex items-center justify-center ${
+                          className={`p-1.5 rounded-xl transition-all active:scale-95 border inline-flex items-center justify-center ${
                             isArrived
-                              ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
+                              ? isLocked && !isAdminOrOwner
+                                ? 'bg-amber-500/90 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
+                                : 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
                               : 'bg-slate-800 text-slate-400 hover:text-emerald-300 border-slate-700'
                           }`}
-                          title={isArrived ? 'បានមកដល់ (ចុចដើម្បីលុប)' : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកមកដល់'}
+                          title={
+                            isArrived
+                              ? isLocked
+                                ? !isAdminOrOwner
+                                  ? '🔒 បានមកដល់ (ចាក់សោស្វ័យប្រវត្តិលើសពី ៥នាទី - មិនអាចដកគ្រីសបានទេ សូមទាក់ទង Admin)'
+                                  : '🔒 បានមកដល់ (Lock Auto - Admin ចុចដើម្បីដកគ្រីស)'
+                                : `បានមកដល់ (អាចដកវិញបានក្នុង ៥នាទី${remainingSecs > 0 ? ` - នៅសល់ ${formatRemainingTimeKhmer(remainingSecs)}` : ''})`
+                              : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកមកដល់'
+                          }
                         >
                           {isArrived ? (
-                            <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
+                            isLocked ? (
+                              <div className="relative flex items-center justify-center">
+                                <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                                <span className="absolute -bottom-1 -right-1 bg-slate-950 text-amber-400 p-0.5 rounded-full ring-1 ring-amber-400 shadow-sm">
+                                  <Lock className="w-2 h-2 stroke-[3]" />
+                                </span>
+                              </div>
+                            ) : (
+                              <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
+                            )
                           ) : (
                             <Circle className="w-4 h-4 text-slate-400" />
                           )}

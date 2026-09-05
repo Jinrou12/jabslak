@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { CheckCircle2, XCircle, Search, MapPin, Phone, Download, Printer, UserCheck, Users, RefreshCw, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, XCircle, Search, MapPin, Phone, Download, Printer, UserCheck, Users, RefreshCw, ArrowLeft, Lock } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
+import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
 export default function AttendanceReportView({ allTags, onToggleAttendance, currentUser, onCloseView, activeTab: activeTabProp, setActiveTab: setActiveTabProp }) {
   const [activeTabInternal, setActiveTabInternal] = useState('arrived');
@@ -341,6 +342,23 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
 
       </div>
 
+      {/* 🔒 Auto-Lock Notice Banner for Arrived Filter (ផ្ទាំងមកដល់) */}
+      {activeTab === 'arrived' && (
+        <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-slate-900 border border-amber-500/30 flex items-center justify-between gap-3 text-xs font-kantumruy animate-in fade-in duration-200 shadow-md shadow-amber-950/20">
+          <div className="flex items-center gap-2.5 text-amber-200">
+            <span className="p-1.5 rounded-xl bg-amber-500/20 text-amber-300 shrink-0 text-sm">
+              🔒
+            </span>
+            <div>
+              <strong className="text-amber-300">ប្រព័ន្ធចាក់សោស្វ័យប្រវត្តិ (Auto-Lock ៥ នាទី)៖</strong>{' '}
+              <span className="text-slate-300">
+                ឈ្មោះដែលបានគ្រីសមកដល់លើសពី ៥ នាទី ត្រូវបាន Lock Auto។ ជំនួយការមិនអាចដកគ្រីសបានទេ (ទាល់តែ <span className="text-emerald-400 font-bold">Admin</span> ឬ <span className="text-amber-400 font-bold">Owner</span> ទើបដោះបាន)!
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Inline Attendance List (Cards on Mobile, Table on Desktop) */}
       <div className="border border-slate-800 rounded-2xl bg-slate-900/90 overflow-hidden shadow-xl">
         {filteredTags.length === 0 ? (
@@ -356,6 +374,8 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                 const isArrived = !!tag.arrived;
                 const tagDisplay = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
                 const tagCount = tag.count || 1;
+                const isLocked = isTagAttendanceLocked(tag);
+                const remainingSecs = isArrived && !isLocked ? getRemainingLockSeconds(tag) : 0;
                 return (
                   <div
                     key={tag.id}
@@ -384,13 +404,40 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                       <button
                         onClick={() => onToggleAttendance(tag)}
                         disabled={!isAdminOrOwner && currentUser?.role === 'guest'}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all active:scale-95 shadow-sm font-kantumruy ${
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all active:scale-95 shadow-sm font-kantumruy flex items-center gap-1.5 ${
                           isArrived
-                            ? 'bg-slate-950 text-rose-300 border border-slate-700 hover:border-rose-700'
+                            ? isLocked && !isAdminOrOwner
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                              : isLocked && isAdminOrOwner
+                              ? 'bg-slate-950 text-amber-300 border border-amber-500/40 hover:border-rose-500 hover:text-rose-300'
+                              : 'bg-slate-950 text-rose-300 border border-slate-700 hover:border-rose-700'
                             : 'bg-emerald-600 text-white shadow-emerald-950/60'
                         }`}
+                        title={
+                          isArrived && isLocked && !isAdminOrOwner
+                            ? '🔒 បានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥នាទី) - មិនអាចដកគ្រីសបានទេ សូមទាក់ទង Admin'
+                            : undefined
+                        }
                       >
-                        {isArrived ? 'ដកការគ្រីស' : '✔️ គ្រីសមកដល់'}
+                        {isArrived ? (
+                          isLocked ? (
+                            isAdminOrOwner ? (
+                              <>
+                                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                                <span>ដកគ្រីស (Admin)</span>
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="w-3.5 h-3.5 text-amber-400" />
+                                <span>Lock Auto</span>
+                              </>
+                            )
+                          ) : (
+                            'ដកការគ្រីស'
+                          )
+                        ) : (
+                          '✔️ គ្រីសមកដល់'
+                        )}
                       </button>
                     </div>
 
@@ -417,15 +464,28 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                     {/* Footer Row: Arrival Status & Notes */}
                     <div className="flex items-center justify-between text-[11px]">
                       {isArrived ? (
-                        <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                          <span>បានមកដល់</span>
-                          {tag.arrivedAt && (
-                            <span className="text-[10px] text-emerald-400/80 font-sans-en">
-                              ({new Date(tag.arrivedAt).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })})
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>បានមកដល់</span>
+                            {tag.arrivedAt && (
+                              <span className="text-[10px] text-emerald-400/80 font-sans-en">
+                                ({new Date(tag.arrivedAt).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })})
+                              </span>
+                            )}
+                          </span>
+                          {isLocked && (
+                            <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/35 px-1.5 py-0.5 rounded text-[10px] font-medium font-kantumruy">
+                              <Lock className="w-2.5 h-2.5 text-amber-400" />
+                              <span>Lock Auto</span>
                             </span>
                           )}
-                        </span>
+                          {!isLocked && remainingSecs > 0 && (
+                            <span className="text-[10px] text-emerald-300 bg-emerald-500/15 border border-emerald-500/35 px-1.5 py-0.5 rounded font-medium font-kantumruy animate-pulse">
+                              ⏱️ នៅសល់ {formatRemainingTimeKhmer(remainingSecs)}
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-rose-400 font-semibold flex items-center gap-1">
                           <XCircle className="w-3.5 h-3.5 text-rose-400" />
@@ -462,6 +522,8 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                     const isArrived = !!tag.arrived;
                     const tagDisplay = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
                     const tagCount = tag.count || 1;
+                    const isLocked = isTagAttendanceLocked(tag);
+                    const remainingSecs = isArrived && !isLocked ? getRemainingLockSeconds(tag) : 0;
                     return (
                       <tr
                         key={tag.id}
@@ -478,7 +540,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
 
                         {/* Name */}
                         <td className="py-3.5 px-4 font-bold text-slate-100 text-sm">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span>{tag.name}</span>
                             {tagCount > 1 && (
                               <span className="bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded-lg text-xs font-kantumruy border border-amber-500/30">
@@ -519,12 +581,23 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                         {/* Arrival Status */}
                         <td className="py-3.5 px-4">
                           {isArrived ? (
-                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 font-bold text-xs shadow-sm">
-                              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/90 border border-emerald-500/80 text-emerald-300 font-bold text-xs shadow-sm flex-wrap">
+                              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
                               <span>បានមកដល់</span>
                               {tag.arrivedAt && (
                                 <span className="text-[10px] text-emerald-400/80 font-sans-en font-normal ml-1">
                                   ({new Date(tag.arrivedAt).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })})
+                                </span>
+                              )}
+                              {isLocked && (
+                                <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded text-[10px] font-normal ml-1">
+                                  <Lock className="w-2.5 h-2.5 text-amber-400" />
+                                  <span>Lock Auto</span>
+                                </span>
+                              )}
+                              {!isLocked && remainingSecs > 0 && (
+                                <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded text-[10px] font-normal ml-1 animate-pulse">
+                                  ⏱️ នៅសល់ {formatRemainingTimeKhmer(remainingSecs)}
                                 </span>
                               )}
                             </div>
@@ -541,14 +614,42 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                           <button
                             onClick={() => onToggleAttendance(tag)}
                             disabled={!isAdminOrOwner && currentUser?.role === 'guest'}
-                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm ${
+                            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm inline-flex items-center gap-1.5 ${
                               isArrived
-                                ? 'bg-slate-950 hover:bg-rose-950/90 text-rose-300 border border-slate-700 hover:border-rose-700'
+                                ? isLocked && !isAdminOrOwner
+                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                                  : isLocked && isAdminOrOwner
+                                  ? 'bg-slate-950 hover:bg-rose-950/90 text-amber-300 hover:text-rose-300 border border-amber-500/40 hover:border-rose-700'
+                                  : 'bg-slate-950 hover:bg-rose-950/90 text-rose-300 border border-slate-700 hover:border-rose-700'
                                 : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'
                             }`}
-                            title={isArrived ? 'ដកការគ្រីសវត្តមាន' : 'គ្រីសរាយការណ៍មកដល់'}
+                            title={
+                              isArrived && isLocked && !isAdminOrOwner
+                                ? '🔒 បានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥នាទី) - មិនអាចដកគ្រីសបានទេ សូមទាក់ទង Admin'
+                                : isArrived
+                                ? 'ចុចដើម្បីដកការគ្រីស'
+                                : 'គ្រីសរាយការណ៍មកដល់'
+                            }
                           >
-                            {isArrived ? 'ដកការគ្រីស' : '✔️ គ្រីសមកដល់'}
+                            {isArrived ? (
+                              isLocked ? (
+                                isAdminOrOwner ? (
+                                  <>
+                                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                                    <span>ដកគ្រីស (Admin)</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                                    <span>Lock Auto</span>
+                                  </>
+                                )
+                              ) : (
+                                'ដកការគ្រីស'
+                              )
+                            ) : (
+                              '✔️ គ្រីសមកដល់'
+                            )}
                           </button>
                         </td>
                       </tr>

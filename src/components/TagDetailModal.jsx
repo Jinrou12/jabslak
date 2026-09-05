@@ -2,14 +2,18 @@ import React from 'react';
 import { X, MapPin, Phone, User, Edit3, Trash2, Share2, Printer, CheckCircle2, Circle, QrCode, Sparkles, Tag, Navigation, Map as MapIcon, Lock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
+import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
 export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewOnMap, onToggleAttendance, currentUser }) {
   if (!tag) return null;
 
   const isAssistant = currentUser?.role === 'assistant';
   const isGuest = currentUser?.role === 'guest';
+  const isAdminOrOwner = currentUser?.role === 'owner' || currentUser?.role === 'admin';
   const isArrived = !!tag.arrived;
   const isPartial = !!tag.isPartialArrived;
+  const isLocked = isTagAttendanceLocked(tag);
+  const remainingSecs = isArrived && !isLocked ? getRemainingLockSeconds(tag) : 0;
   const tagCount = tag.count || (tag.tags?.length || 1);
 
   const khmerTagNo = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
@@ -110,24 +114,38 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
 
           {/* 📋 Attendance Check-in Button Pill (Owner, Admin, Assistant only) */}
           {!isGuest && onToggleAttendance && (
-            <div className="mt-3 flex justify-center animate-in zoom-in-50 duration-200">
+            <div className="mt-3 flex flex-col items-center gap-1.5 animate-in zoom-in-50 duration-200">
               <button
                 onClick={() => {
                   onToggleAttendance(tag);
                 }}
-                className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold transition-all shadow-lg active:scale-95 border ${
+                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-lg active:scale-95 border ${
                   isArrived
-                    ? 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-emerald-500/25'
+                    ? isLocked && !isAdminOrOwner
+                      ? 'bg-amber-500/90 text-slate-950 border-amber-400 shadow-amber-500/20'
+                      : 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-emerald-500/25'
                     : isPartial
                     ? 'bg-amber-500 text-slate-950 border-amber-300 shadow-amber-500/25'
                     : 'bg-slate-800 text-emerald-300 border-emerald-500/40 hover:bg-slate-700'
                 }`}
+                title={
+                  isArrived && isLocked && !isAdminOrOwner
+                    ? '🔒 ស្លាកលេខនេះត្រូវបានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥នាទី) - មានតែ Admin ឬ Owner ទើបអាចដកបាន'
+                    : undefined
+                }
               >
                 {isArrived ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
-                    <span>បានមកដល់គ្រប់អង្គ (ចុចដើម្បីដក)</span>
-                  </>
+                  isLocked ? (
+                    <>
+                      <Lock className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                      <span>{isAdminOrOwner ? '🔒 Lock Auto (Admin ចុចដើម្បីដោះ)' : '🔒 ចាក់សោស្វ័យប្រវត្តិ (Lock Auto 5mn)'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
+                      <span>បានមកដល់គ្រប់អង្គ (ចុចដើម្បីដក)</span>
+                    </>
+                  )
                 ) : isPartial ? (
                   <>
                     <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
@@ -140,6 +158,19 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
                   </>
                 )}
               </button>
+
+              {/* Grace period or Auto-lock description */}
+              {isArrived && isLocked && (
+                <span className="text-[11px] text-amber-400/90 font-medium font-kantumruy flex items-center gap-1">
+                  <Lock className="w-3 h-3 text-amber-400" />
+                  <span>បាន Lock Auto (ហួស ៥ នាទី) — {isAdminOrOwner ? 'Admin អាចដកគ្រីសបាន' : 'ត្រូវប្រាប់ Admin ដើម្បីដោះ'}</span>
+                </span>
+              )}
+              {isArrived && !isLocked && remainingSecs > 0 && (
+                <span className="text-[11px] text-emerald-400/90 font-medium font-kantumruy animate-pulse">
+                  ⏱️ អាចដកការគ្រីសវិញបាន (នៅសល់ {formatRemainingTimeKhmer(remainingSecs)})
+                </span>
+              )}
             </div>
           )}
         </div>

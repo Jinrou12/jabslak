@@ -22,6 +22,7 @@ import InstallAppModal from './components/InstallAppModal';
 import SplashScreen from './components/SplashScreen';
 import { searchTags, westernToKhmerDigits, khmerToWesternDigits, getKhmerPhoneticSuggestions } from './utils/khmerSearch';
 import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER } from './utils/storage';
+import { checkAttendanceTogglePermission } from './utils/attendanceLock';
 import {
   subscribeToFirebaseTags,
   saveTagToFirebase,
@@ -76,6 +77,15 @@ export default function App() {
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  // ⏱️ Auto-Lock 15s refresh interval to keep lock status and timers live
+  const [, setAutoLockTicker] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setAutoLockTicker((t) => t + 1);
+    }, 15000);
+    return () => clearInterval(timer);
   }, []);
 
   const handleInstallApp = async () => {
@@ -462,9 +472,28 @@ export default function App() {
     if (String(tagToToggle.id).startsWith('group-')) {
       targetIds.add(tagToToggle.id);
     }
-    const allArrived = targetItems.every((t) => !!t.arrived);
+    const allArrived = targetItems.every((t) => !t.arrived);
     const updatedStatus = !allArrived;
     const now = new Date().toISOString();
+
+    // 🔒 If user is trying to UNCHECK / UNDO arrival (updatedStatus === false):
+    let isUnlockingByAdmin = false;
+    if (!updatedStatus) {
+      const permission = checkAttendanceTogglePermission(tagToToggle, currentUser);
+      if (!permission.canToggle) {
+        alert(permission.reason);
+        return;
+      }
+      // If tag was auto-locked (> 5 mins) and Admin/Owner is unlocking it, prompt confirmation for safety:
+      if (permission.isLocked && permission.isAdminOrOwner) {
+        const tagDisplay = tagToToggle.tagNumberDisplay || westernToKhmerDigits(tagToToggle.tagNumber);
+        const confirmUnlock = window.confirm(
+          `🔒 ស្លាកលេខ #${tagDisplay} (${tagToToggle.name || ''}) នេះត្រូវបានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥ នាទី)។\n\nក្នុងនាមជា ${currentUser?.name || 'Admin'} (${currentUser?.role}) តើអ្នកពិតជាចង់ដកការគ្រីសនេះចេញវិញមែនទេ?`
+        );
+        if (!confirmUnlock) return;
+        isUnlockingByAdmin = true;
+      }
+    }
 
     const updatedTags = tags.map((t) => {
       if (targetIds.has(t.id)) {
@@ -518,7 +547,11 @@ export default function App() {
         confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
       } catch (e) {}
     } else {
-      showToast(`បានដកការគ្រីសវត្តមានស្លាកលេខ ${tagDisplay}!`);
+      if (isUnlockingByAdmin) {
+        showToast(`🔓 Admin (${currentUser?.name || 'Admin'}) បានដោះការគ្រីសស្លាកលេខ #${tagDisplay} រួចរាល់!`);
+      } else {
+        showToast(`បានដកការគ្រីសវត្តមានស្លាកលេខ ${tagDisplay}!`);
+      }
     }
   };
 
@@ -801,9 +834,28 @@ export default function App() {
               setActiveTab={setReportActiveTab}
             />
           </div>
-        ) : filteredTags.length > 0 ? (
-          viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 pb-12">
+        ) : (
+          <>
+            {/* 🔒 Auto-Lock Notice Banner for Arrived Filter (ផ្ទាំងមកដល់) */}
+            {attendanceFilter === 'arrived' && (
+              <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-slate-900 border border-amber-500/30 flex items-center justify-between gap-3 text-xs font-kantumruy animate-in fade-in duration-200 shadow-md shadow-amber-950/20">
+                <div className="flex items-center gap-2.5 text-amber-200">
+                  <span className="p-1.5 rounded-xl bg-amber-500/20 text-amber-300 shrink-0 text-sm">
+                    🔒
+                  </span>
+                  <div>
+                    <strong className="text-amber-300">ប្រព័ន្ធចាក់សោស្វ័យប្រវត្តិ (Auto-Lock ៥ នាទី)៖</strong>{' '}
+                    <span className="text-slate-300">
+                      ឈ្មោះដែលបានគ្រីសមកដល់លើសពី ៥ នាទី ត្រូវបាន Lock Auto។ ជំនួយការមិនអាចដកគ្រីសបានទេ (ទាល់តែ <span className="text-emerald-400 font-bold">Admin</span> ឬ <span className="text-amber-400 font-bold">Owner</span> ទើបដោះបាន)!
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {filteredTags.length > 0 ? (
+              viewMode === 'grid' ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 pb-12">
               {filteredTags.map((tag) => (
                 <TagCard
                   key={tag.id}
@@ -887,6 +939,8 @@ export default function App() {
             </div>
           </div>
         )}
+      </>
+    )}
 
       </main>
 

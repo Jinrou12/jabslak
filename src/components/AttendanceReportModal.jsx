@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { X, CheckCircle2, XCircle, Search, MapPin, Phone, Download, Printer, UserCheck, Clock, Filter, Users, ArrowRightLeft } from 'lucide-react';
+import { X, CheckCircle2, XCircle, Search, MapPin, Phone, Download, Printer, UserCheck, Clock, Filter, Users, ArrowRightLeft, Lock } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
+import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
 export default function AttendanceReportModal({ onClose, allTags, onToggleAttendance, currentUser }) {
   const [activeTab, setActiveTab] = useState('arrived'); // 'arrived' (ផ្ទាំងទី១) or 'notArrived' (ផ្ទាំងទី២) or 'all'
@@ -342,6 +343,8 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
               <tbody className="divide-y divide-slate-800/60 font-kantumruy">
                 {filteredTags.map((tag) => {
                   const isArrived = !!tag.arrived;
+                  const isLocked = isTagAttendanceLocked(tag);
+                  const remainingSecs = isArrived && !isLocked ? getRemainingLockSeconds(tag) : 0;
                   return (
                     <tr
                       key={tag.id}
@@ -392,12 +395,23 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
                       {/* Arrival Status Badge */}
                       <td className="py-3 px-4">
                         {isArrived ? (
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-950/80 border border-emerald-600/80 text-emerald-300 font-bold text-xs">
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-950/80 border border-emerald-600/80 text-emerald-300 font-bold text-xs flex-wrap">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
                             <span>បានមកដល់</span>
                             {tag.arrivedAt && (
                               <span className="text-[10px] text-emerald-400/80 font-sans-en font-normal ml-1">
                                 ({new Date(tag.arrivedAt).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })})
+                              </span>
+                            )}
+                            {isLocked && (
+                              <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded text-[10px] font-normal ml-1">
+                                <Lock className="w-2.5 h-2.5 text-amber-400" />
+                                <span>Lock Auto</span>
+                              </span>
+                            )}
+                            {!isLocked && remainingSecs > 0 && (
+                              <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded text-[10px] font-normal ml-1 animate-pulse">
+                                ⏱️ នៅសល់ {formatRemainingTimeKhmer(remainingSecs)}
                               </span>
                             )}
                           </div>
@@ -414,14 +428,42 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
                         <button
                           onClick={() => onToggleAttendance(tag)}
                           disabled={!isAdminOrOwner && currentUser?.role === 'guest'}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm ${
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm inline-flex items-center gap-1.5 ${
                             isArrived
-                              ? 'bg-slate-900 hover:bg-rose-950/80 text-rose-300 border border-slate-700 hover:border-rose-700'
+                              ? isLocked && !isAdminOrOwner
+                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
+                                : isLocked && isAdminOrOwner
+                                ? 'bg-slate-900 hover:bg-rose-950/80 text-amber-300 hover:text-rose-300 border border-amber-500/40 hover:border-rose-700'
+                                : 'bg-slate-900 hover:bg-rose-950/80 text-rose-300 border border-slate-700 hover:border-rose-700'
                               : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/50'
                           }`}
-                          title={isArrived ? 'ដកការគ្រីសវត្តមាន' : 'គ្រីសរាយការណ៍មកដល់'}
+                          title={
+                            isArrived && isLocked && !isAdminOrOwner
+                              ? '🔒 បានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥នាទី) - មិនអាចដកគ្រីសបានទេ សូមទាក់ទង Admin'
+                              : isArrived
+                              ? 'ចុចដើម្បីដកការគ្រីស'
+                              : 'គ្រីសរាយការណ៍មកដល់'
+                          }
                         >
-                          {isArrived ? 'ដកការគ្រីស' : '✔️ គ្រីសមកដល់'}
+                          {isArrived ? (
+                            isLocked ? (
+                              isAdminOrOwner ? (
+                                <>
+                                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                                  <span>ដកគ្រីស (Admin)</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                                  <span>Lock Auto</span>
+                                </>
+                              )
+                            ) : (
+                              'ដកការគ្រីស'
+                            )
+                          ) : (
+                            '✔️ គ្រីសមកដល់'
+                          )}
                         </button>
                       </td>
                     </tr>
