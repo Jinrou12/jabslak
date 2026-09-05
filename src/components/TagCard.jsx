@@ -45,41 +45,32 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
         </div>
 
         {/* Owner Name & Badges */}
-        <div className="min-w-0 flex-1">
-          <div className="text-[9px] sm:text-[11px] text-slate-400 font-medium flex items-center justify-between gap-1">
-            <div className="flex items-center gap-1 min-w-0">
-              <User className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 text-amber-400 shrink-0" />
+        <div className="min-w-0 flex-1 self-stretch flex flex-col justify-center items-center sm:items-start text-center sm:text-left">
+          <div className="text-[7.5px] sm:text-[9.5px] text-slate-400 font-medium flex items-center justify-center sm:justify-start gap-1 w-full">
+            <div className="flex items-center gap-0.5 min-w-0">
+              <User className="w-2 h-2 sm:w-3 sm:h-3 text-amber-400/80 shrink-0" />
               <span className="truncate">ម្ចាស់ស្លាក</span>
             </div>
             {tagCount > 1 && (
-              <span className="bg-amber-500/20 text-amber-300 font-black px-1 sm:px-2 py-0.2 sm:py-0.5 rounded sm:rounded-lg text-[8px] sm:text-[11px] font-kantumruy border border-amber-500/40 shadow-sm shrink-0">
+              <span className="bg-amber-500/20 text-amber-300 font-black px-1 py-0.2 rounded text-[7px] sm:text-[9px] font-kantumruy border border-amber-500/30 shrink-0">
                 {westernToKhmerDigits(tagCount)} អង្គ
               </span>
             )}
           </div>
 
-          <div className="min-h-[2.2rem] sm:min-h-0 flex flex-col justify-center mt-0.5">
-            <h3 className="text-slate-100 font-bold text-[11.5px] sm:text-base md:text-lg group-hover:text-amber-400 transition-colors font-kantumruy leading-snug line-clamp-2 break-words">
-              {tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>}
-            </h3>
-          </div>
+          <h3 className="text-slate-100 font-bold text-xs sm:text-base md:text-lg group-hover:text-amber-400 transition-colors font-kantumruy leading-snug line-clamp-2 break-words mt-0.5 text-center sm:text-left w-full">
+            {tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>}
+          </h3>
 
           {tag.isPhoneticMatch && (
-            <div className="flex items-center gap-1 text-[8.5px] sm:text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 px-1 sm:px-1.5 py-0.5 rounded mt-0.5 sm:mt-1 w-fit">
-              <Volume2 className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400 shrink-0" />
+            <div className="flex items-center justify-center gap-1 text-[7.5px] sm:text-[9.5px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 px-1 py-0.2 rounded mt-0.5 w-fit">
+              <Volume2 className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-amber-400 shrink-0" />
               <span className="truncate">សំឡេងស្រដៀង</span>
             </div>
           )}
 
-          {/* 🔒 Auto-Lock Status Badges */}
-          {isArrived && isLocked && (
-            <div className="flex items-center gap-0.5 sm:gap-1 text-[8.5px] sm:text-[10px] text-amber-300 bg-amber-500/15 border border-amber-500/35 px-1 sm:px-1.5 py-0.5 rounded mt-0.5 sm:mt-1 w-fit font-kantumruy font-semibold">
-              <Lock className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-amber-400 shrink-0" />
-              <span>Locked</span>
-            </div>
-          )}
           {isArrived && isUncheckingThis && (
-            <div className="flex items-center gap-0.5 text-[8px] sm:text-[10px] text-rose-300 bg-rose-500/20 border border-rose-500/40 px-1 sm:px-1.5 py-0.5 rounded mt-0.5 sm:mt-1 w-fit font-kantumruy font-bold animate-pulse">
+            <div className="flex items-center justify-center gap-0.5 text-[7px] sm:text-[9px] text-rose-300 bg-rose-500/20 border border-rose-500/40 px-1 py-0.2 rounded mt-0.5 w-fit font-kantumruy font-bold animate-pulse">
               <span>⚠️ ២ Click</span>
             </div>
           )}
