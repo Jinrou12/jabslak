@@ -20,59 +20,6 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
     ? 'text-xs sm:text-sm md:text-base'
     : 'text-base sm:text-lg md:text-xl';
 
-  // Define Attendance Button Node for re-use in mobile & desktop layouts
-  const attendanceButtonNode = !isGuest && onToggleAttendance ? (
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        onToggleAttendance(tag);
-      }}
-      className={`p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition-all active:scale-95 border shrink-0 animate-in zoom-in-50 duration-200 flex items-center justify-center ${
-        isArrived
-          ? isUncheckingThis
-            ? 'bg-rose-600 text-white border-rose-400 shadow-md shadow-rose-500/40 animate-pulse'
-            : isLocked
-            ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
-            : 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
-          : isPartial
-          ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/30'
-          : 'bg-slate-800/90 text-slate-400 hover:text-emerald-300 border-slate-700 hover:border-emerald-500/50'
-      }`}
-      title={
-        isArrived
-          ? isUncheckingThis
-            ? '⚠️ សូមចុចម្ដងទៀតដើម្បីដកគ្រីស (ចុច ២ Click ដោះគ្រីស)!'
-            : isLocked
-            ? '🔒 បានមកដល់ (Locked - ចុច ២ ដងដើម្បីដោះគ្រីស)'
-            : 'បានមកដល់ (ចុច ២ ដងដើម្បីដោះគ្រីស)'
-          : isPartial
-          ? `បានមកដល់ ${westernToKhmerDigits(tag.arrivedCount)}/${westernToKhmerDigits(tagCount)} អង្គ (ចុចដើម្បីគ្រីសទាំងអស់)`
-          : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកបានមកដល់'
-      }
-    >
-      {isArrived ? (
-        isUncheckingThis ? (
-          <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[3]" />
-        ) : isLocked ? (
-          <div className="relative flex items-center justify-center">
-            <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 stroke-[2.5]" />
-            <span className="absolute -bottom-1 -right-1 sm:-bottom-1.5 sm:-right-1.5 bg-slate-950 text-amber-400 p-0.5 rounded-full ring-1 ring-amber-400 shadow-sm">
-              <Lock className="w-2 h-2 sm:w-2.5 sm:h-2.5 stroke-[3]" />
-            </span>
-          </div>
-        ) : (
-          <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 stroke-[3]" />
-        )
-      ) : isPartial ? (
-        <div className="flex items-center gap-0.5 px-0.5 sm:px-1 font-extrabold text-[8px] sm:text-[10px] text-slate-950">
-          <span>{westernToKhmerDigits(tag.arrivedCount)}</span>/<span>{westernToKhmerDigits(tagCount)}</span>
-        </div>
-      ) : (
-        <Circle className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
-      )}
-    </button>
-  ) : null;
-
   return (
     <div
       onClick={() => onSelectTag(tag)}
@@ -87,31 +34,17 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
       {/* Background Subtle Gradient Glow */}
       <div className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-amber-500/10 rounded-full blur-2xl sm:blur-3xl group-hover:bg-amber-500/20 transition-all pointer-events-none"></div>
 
-      {/* Header & Owner Name Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3">
-        {/* Top Row on Mobile (Badge on left, Checkmark & Status on right) */}
-        <div className="flex items-center justify-between sm:justify-start gap-2">
-          {/* Tag Badge */}
-          <div className="w-12 h-11 sm:w-16 sm:h-14 rounded-xl sm:rounded-2xl badge-gold flex flex-col items-center justify-center shrink-0 text-slate-950 font-extrabold shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform border border-amber-300 px-0.5 sm:px-1 text-center">
-            <span className="text-[7.5px] sm:text-[9px] leading-tight font-bold font-sans-en uppercase opacity-80">ស្លាកលេខ</span>
-            <span className={`${badgeTextSize} font-black font-kantumruy leading-none mt-0.5 tracking-tight`}>
-              {khmerTagNo}
-            </span>
-          </div>
-
-          {/* Mobile Right Controls: Checkmark Button + Lock status */}
-          <div className="flex sm:hidden items-center gap-1.5 shrink-0">
-            {isArrived && isLocked && (
-              <div className="flex items-center gap-0.5 text-[8.5px] text-amber-300 bg-amber-500/15 border border-amber-500/35 px-1.5 py-0.5 rounded font-kantumruy font-semibold">
-                <Lock className="w-2 h-2 text-amber-400 shrink-0" />
-                <span>Locked</span>
-              </div>
-            )}
-            {attendanceButtonNode}
-          </div>
+      {/* Header Row: Tag Number & Owner Name & Attendance Check-in Button */}
+      <div className="flex items-start sm:items-center gap-2 sm:gap-3">
+        {/* Tag Badge */}
+        <div className="w-11 h-12 sm:w-16 sm:h-14 rounded-xl sm:rounded-2xl badge-gold flex flex-col items-center justify-center shrink-0 text-slate-950 font-extrabold shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform border border-amber-300 px-0.5 sm:px-1 text-center">
+          <span className="text-[7.5px] sm:text-[9px] leading-tight font-bold font-sans-en uppercase opacity-80">ស្លាកលេខ</span>
+          <span className={`${badgeTextSize} font-black font-kantumruy leading-none mt-0.5 tracking-tight`}>
+            {khmerTagNo}
+          </span>
         </div>
 
-        {/* Owner Name Section - FULL WIDTH on Mobile (~150px), Middle Column on Desktop */}
+        {/* Owner Name & Badges */}
         <div className="min-w-0 flex-1">
           <div className="text-[9px] sm:text-[11px] text-slate-400 font-medium flex items-center justify-between gap-1">
             <div className="flex items-center gap-1 min-w-0">
@@ -119,39 +52,17 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
               <span className="truncate">ម្ចាស់ស្លាក</span>
             </div>
             {tagCount > 1 && (
-              <span className="bg-amber-500/20 text-amber-300 font-black px-1 sm:px-2 py-0.5 rounded sm:rounded-lg text-[8.5px] sm:text-[11px] font-kantumruy border border-amber-500/40 shadow-sm shrink-0">
-                {westernToKhmerDigits(tagCount)}
-                <span className="hidden sm:inline"> អង្គ</span>
+              <span className="bg-amber-500/20 text-amber-300 font-black px-1 sm:px-2 py-0.2 sm:py-0.5 rounded sm:rounded-lg text-[8px] sm:text-[11px] font-kantumruy border border-amber-500/40 shadow-sm shrink-0">
+                {westernToKhmerDigits(tagCount)} អង្គ
               </span>
             )}
           </div>
 
-          {/* Person Name - line-clamp-2 ensures multi-line visibility without cutting off */}
-          <h3 className="text-slate-100 font-bold text-[12.5px] sm:text-base md:text-lg group-hover:text-amber-400 transition-colors font-kantumruy mt-0.5 leading-snug line-clamp-2 min-h-[2.1rem] sm:min-h-0 flex items-center">
-            {tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>}
-          </h3>
-
-          {/* Status Badges on Tablet/Desktop */}
-          <div className="hidden sm:flex items-center gap-1 mt-1">
-            {isArrived && isLocked && (
-              <div className="flex items-center gap-1 text-[10px] text-amber-300 bg-amber-500/15 border border-amber-500/35 px-1.5 py-0.5 rounded font-kantumruy font-semibold">
-                <Lock className="w-2.5 h-2.5 text-amber-400 shrink-0" />
-                <span>Locked</span>
-              </div>
-            )}
-            {isArrived && isUncheckingThis && (
-              <div className="flex items-center gap-1 text-[10px] text-rose-300 bg-rose-500/20 border border-rose-500/40 px-1.5 py-0.5 rounded font-kantumruy font-bold animate-pulse">
-                <span>⚠️ ចុចម្ដងទៀតដើម្បីដក (២ Click)</span>
-              </div>
-            )}
+          <div className="min-h-[2.2rem] sm:min-h-0 flex flex-col justify-center mt-0.5">
+            <h3 className="text-slate-100 font-bold text-[11.5px] sm:text-base md:text-lg group-hover:text-amber-400 transition-colors font-kantumruy leading-snug line-clamp-2 break-words">
+              {tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>}
+            </h3>
           </div>
-
-          {/* Unchecking alert on Mobile */}
-          {isArrived && isUncheckingThis && (
-            <div className="sm:hidden flex items-center gap-0.5 text-[8.5px] text-rose-300 bg-rose-500/20 border border-rose-500/40 px-1 py-0.5 rounded mt-0.5 w-fit font-kantumruy font-bold animate-pulse">
-              <span>⚠️ ចុចម្ដងទៀត (២ Click)</span>
-            </div>
-          )}
 
           {tag.isPhoneticMatch && (
             <div className="flex items-center gap-1 text-[8.5px] sm:text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 px-1 sm:px-1.5 py-0.5 rounded mt-0.5 sm:mt-1 w-fit">
@@ -159,12 +70,73 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
               <span className="truncate">សំឡេងស្រដៀង</span>
             </div>
           )}
+
+          {/* 🔒 Auto-Lock Status Badges */}
+          {isArrived && isLocked && (
+            <div className="flex items-center gap-0.5 sm:gap-1 text-[8.5px] sm:text-[10px] text-amber-300 bg-amber-500/15 border border-amber-500/35 px-1 sm:px-1.5 py-0.5 rounded mt-0.5 sm:mt-1 w-fit font-kantumruy font-semibold">
+              <Lock className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-amber-400 shrink-0" />
+              <span>Locked</span>
+            </div>
+          )}
+          {isArrived && isUncheckingThis && (
+            <div className="flex items-center gap-0.5 text-[8px] sm:text-[10px] text-rose-300 bg-rose-500/20 border border-rose-500/40 px-1 sm:px-1.5 py-0.5 rounded mt-0.5 sm:mt-1 w-fit font-kantumruy font-bold animate-pulse">
+              <span>⚠️ ២ Click</span>
+            </div>
+          )}
         </div>
 
-        {/* Tablet / Desktop Checkmark Button */}
-        <div className="hidden sm:block shrink-0">
-          {attendanceButtonNode}
-        </div>
+        {/* 📋 Report / Check-in Attendance Button (Assistant & Admin & Owner only) */}
+        {!isGuest && onToggleAttendance && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleAttendance(tag);
+            }}
+            className={`p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition-all active:scale-95 border shrink-0 animate-in zoom-in-50 duration-200 flex items-center justify-center ${
+              isArrived
+                ? isUncheckingThis
+                  ? 'bg-rose-600 text-white border-rose-400 shadow-md shadow-rose-500/40 animate-pulse'
+                  : isLocked
+                  ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
+                  : 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
+                : isPartial
+                ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/30'
+                : 'bg-slate-800/90 text-slate-400 hover:text-emerald-300 border-slate-700 hover:border-emerald-500/50'
+            }`}
+            title={
+              isArrived
+                ? isUncheckingThis
+                  ? '⚠️ សូមចុចម្ដងទៀតដើម្បីដកគ្រីស (ចុច ២ Click ដោះគ្រីស)!'
+                  : isLocked
+                  ? '🔒 បានមកដល់ (Locked - ចុច ២ ដងដើម្បីដោះគ្រីស)'
+                  : 'បានមកដល់ (ចុច ២ ដងដើម្បីដោះគ្រីស)'
+                : isPartial
+                ? `បានមកដល់ ${westernToKhmerDigits(tag.arrivedCount)}/${westernToKhmerDigits(tagCount)} អង្គ (ចុចដើម្បីគ្រីសទាំងអស់)`
+                : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកបានមកដល់'
+            }
+          >
+            {isArrived ? (
+              isUncheckingThis ? (
+                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[3]" />
+              ) : isLocked ? (
+                <div className="relative flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 stroke-[2.5]" />
+                  <span className="absolute -bottom-1 -right-1 sm:-bottom-1.5 sm:-right-1.5 bg-slate-950 text-amber-400 p-0.5 rounded-full ring-1 ring-amber-400 shadow-sm">
+                    <Lock className="w-2 h-2 sm:w-2.5 sm:h-2.5 stroke-[3]" />
+                  </span>
+                </div>
+              ) : (
+                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 stroke-[3]" />
+              )
+            ) : isPartial ? (
+              <div className="flex items-center gap-0.5 px-0.5 sm:px-1 font-extrabold text-[8px] sm:text-[10px] text-slate-950">
+                <span>{westernToKhmerDigits(tag.arrivedCount)}</span>/<span>{westernToKhmerDigits(tagCount)}</span>
+              </div>
+            ) : (
+              <Circle className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
+            )}
+          </button>
+        )}
       </div>
 
       {/* Prominent & Highlighted Location Banner Box (ទីតាំងស្លាកលេខ) */}
