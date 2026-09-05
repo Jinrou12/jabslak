@@ -2952,13 +2952,6 @@ export default function TempleMapModal({
           </div>
         )}
 
-        {/* ════════ ADMIN MOBILE LOCK NOTIFICATION ════════ */}
-        {isAdminOnMobile && (
-          <div className="px-3 py-1.5 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-center gap-1.5 text-amber-300 text-[11px] font-medium shrink-0 font-kantumruy">
-            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-            <span>គណនី Admin លើទូរស័ព្ទដៃ ៖ គ្មានសិទ្ធិរំកិល Pin លើ Map ឡើយ (ការពារការច្រឡំប៉ះ)</span>
-          </div>
-        )}
 
         {/* ════════ PENDING PIN TAG NOTIFICATION ════════ */}
         {pendingPinTag && (
