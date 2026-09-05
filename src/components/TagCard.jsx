@@ -23,7 +23,7 @@ function highlightMatch(text, query) {
     const isMatch = terms.some((t) => t.toLowerCase() === part.toLowerCase());
     if (isMatch) {
       return (
-        <span key={index} className="text-amber-400 font-black">
+        <span key={index} className="text-cyan-300 font-black">
           {part}
         </span>
       );
