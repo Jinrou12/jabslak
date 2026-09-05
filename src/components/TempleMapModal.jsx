@@ -599,6 +599,18 @@ export default function TempleMapModal({
   const userRole = currentUser?.role || 'guest';
   const canCustomizeMap = userRole === 'admin' || userRole === 'owner';
 
+  // Mobile touch device detection
+  const isMobileDevice = useMemo(() => {
+    if (typeof window === 'undefined') return false;
+    const uaMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const touchScreen = ('ontouchstart' in window || navigator.maxTouchPoints > 0) && window.innerWidth < 1024;
+    return uaMobile || touchScreen;
+  }, []);
+
+  // 🔒 Admin on mobile phone has NO permission to move/drag pins on map! (Only Owner, or Admin on PC)
+  const isAdminOnMobile = userRole === 'admin' && isMobileDevice;
+  const canUserDragPins = userRole === 'owner' || (userRole === 'admin' && !isMobileDevice);
+
   // Tab 1 & Tab 2 share this state
   const [locations, setLocations] = useState(getSavedTempleLocations());
   // Tab 3 has its own INDEPENDENT state
@@ -1925,7 +1937,12 @@ export default function TempleMapModal({
 
   // Ultra-Precise Pin Dragging (Synchronizes to Cloud on End)
   const handlePinDragStart = (e, loc) => {
-    if (!canCustomizeTab) return; // Only Admin & Owner can drag pins on Tab 2 & Tab 3
+    if (!canCustomizeTab || !canUserDragPins) {
+      if (isAdminOnMobile) {
+        setUndoToast('🔒 គណនី Admin លើទូរស័ព្ទដៃ គ្មានសិទ្ធិរំកិល Pin ឡើយ (ការពារការច្រឡំប៉ះ)!');
+      }
+      return;
+    }
 
     e.stopPropagation();
     pinMovedFlagRef.current = false;
@@ -2935,6 +2952,14 @@ export default function TempleMapModal({
           </div>
         )}
 
+        {/* ════════ ADMIN MOBILE LOCK NOTIFICATION ════════ */}
+        {isAdminOnMobile && (
+          <div className="px-3 py-1.5 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-center gap-1.5 text-amber-300 text-[11px] font-medium shrink-0 font-kantumruy">
+            <Lock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>គណនី Admin លើទូរស័ព្ទដៃ ៖ គ្មានសិទ្ធិរំកិល Pin លើ Map ឡើយ (ការពារការច្រឡំប៉ះ)</span>
+          </div>
+        )}
+
         {/* ════════ PENDING PIN TAG NOTIFICATION ════════ */}
         {pendingPinTag && (
           <div className="px-4 py-2 bg-emerald-500/20 border-b border-emerald-500/40 flex items-center justify-between gap-2 text-emerald-300 text-xs font-bold animate-pulse shrink-0">
@@ -3043,7 +3068,7 @@ export default function TempleMapModal({
                       const isHovered = hoveredLocation?.id === loc.id;
 
                       const isCurrentlyDragging = draggingPinId === loc.id;
-                      const canDragThisPin = activeTab !== 'labeled' && !isCategoryLocked;
+                      const canDragThisPin = canCustomizeTab && canUserDragPins && activeTab !== 'labeled' && !isCategoryLocked;
 
                       return (
                         <PinItem
@@ -3422,6 +3447,10 @@ export default function TempleMapModal({
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
+                            if (isAdminOnMobile) {
+                              setUndoToast('🔒 គណនី Admin លើទូរស័ព្ទដៃ ត្រូវបានចាក់សោរមិនឱ្យរំកិល Pin ឡើយ!');
+                              return;
+                            }
                             const nextLocked = {
                               ...lockedCategories,
                               [catName]: !lockedCategories[catName]
