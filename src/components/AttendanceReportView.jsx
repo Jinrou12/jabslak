@@ -391,36 +391,29 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                           isArrived
                             ? isUncheckingThis
                               ? 'bg-rose-600 text-white border border-rose-400 shadow-md shadow-rose-500/40 animate-pulse'
-                              : isLocked && !isAdminOrOwner
-                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
-                              : isLocked && isAdminOrOwner
+                              : isLocked
                               ? 'bg-slate-950 text-amber-300 border border-amber-500/40 hover:border-rose-500 hover:text-rose-300'
                               : 'bg-slate-950 text-rose-300 border border-slate-700 hover:border-rose-700'
                             : 'bg-emerald-600 text-white shadow-emerald-950/60'
                         }`}
                         title={
-                          isArrived && isLocked && !isAdminOrOwner
-                            ? '🔒 បានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥នាទី) - មិនអាចដកគ្រីសបានទេ សូមទាក់ទង Admin'
-                            : isUncheckingThis
-                            ? '⚠️ សូមចុចម្ដងទៀតដើម្បីដកគ្រីស (ចុច ២ Click ដោះគ្រីស)!'
-                            : undefined
+                          isArrived
+                            ? isUncheckingThis
+                              ? '⚠️ សូមចុចម្ដងទៀតដើម្បីដកគ្រីស (ចុច ២ Click ដោះគ្រីស)!'
+                              : isLocked
+                              ? '🔒 បានមកដល់ (Locked - ចុច ២ ដងដើម្បីដោះគ្រីស)'
+                              : 'ចុចដើម្បីដកការគ្រីស'
+                            : 'គ្រីសរាយការណ៍មកដល់'
                         }
                       >
                         {isArrived ? (
                           isUncheckingThis ? (
                             <span>⚠️ ចុចម្ដងទៀត (២ Click)</span>
                           ) : isLocked ? (
-                            isAdminOrOwner ? (
-                              <>
-                                <Lock className="w-3.5 h-3.5 text-amber-400" />
-                                <span>ដកគ្រីស (Admin)</span>
-                              </>
-                            ) : (
-                              <>
-                                <Lock className="w-3.5 h-3.5 text-amber-400" />
-                                <span>Lock Auto</span>
-                              </>
-                            )
+                            <>
+                              <Lock className="w-3.5 h-3.5 text-amber-400" />
+                              <span>ដកគ្រីស (២ Click)</span>
+                            </>
                           ) : (
                             'ដកការគ្រីស'
                           )
@@ -607,20 +600,18 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                               isArrived
                                 ? isUncheckingThis
                                   ? 'bg-rose-600 text-white border border-rose-400 shadow-md shadow-rose-500/40 animate-pulse'
-                                  : isLocked && !isAdminOrOwner
-                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
-                                  : isLocked && isAdminOrOwner
+                                  : isLocked
                                   ? 'bg-slate-950 hover:bg-rose-950/90 text-amber-300 hover:text-rose-300 border border-amber-500/40 hover:border-rose-700'
                                   : 'bg-slate-950 hover:bg-rose-950/90 text-rose-300 border border-slate-700 hover:border-rose-700'
                                 : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'
                             }`}
                             title={
-                              isArrived && isLocked && !isAdminOrOwner
-                                ? '🔒 បានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥នាទី) - មិនអាចដកគ្រីសបានទេ សូមទាក់ទង Admin'
-                                : isUncheckingThis
-                                ? '⚠️ សូមចុចម្ដងទៀតដើម្បីដកគ្រីស (ចុច ២ Click ដោះគ្រីស)!'
-                                : isArrived
-                                ? 'ចុចដើម្បីដកការគ្រីស'
+                              isArrived
+                                ? isUncheckingThis
+                                  ? '⚠️ សូមចុចម្ដងទៀតដើម្បីដកគ្រីស (ចុច ២ Click ដោះគ្រីស)!'
+                                  : isLocked
+                                  ? '🔒 បានមកដល់ (Locked - ចុច ២ ដងដើម្បីដោះគ្រីស)'
+                                  : 'ចុចដើម្បីដកការគ្រីស'
                                 : 'គ្រីសរាយការណ៍មកដល់'
                             }
                           >
@@ -628,17 +619,10 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                               isUncheckingThis ? (
                                 <span>⚠️ ចុចម្ដងទៀត (២ Click)</span>
                               ) : isLocked ? (
-                                isAdminOrOwner ? (
-                                  <>
-                                    <Lock className="w-3.5 h-3.5 text-amber-400" />
-                                    <span>ដកគ្រីស (Admin)</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Lock className="w-3.5 h-3.5 text-amber-400" />
-                                    <span>Lock Auto</span>
-                                  </>
-                                )
+                                <>
+                                  <Lock className="w-3.5 h-3.5 text-amber-400" />
+                                  <span>ដកគ្រីស (២ Click)</span>
+                                </>
                               ) : (
                                 'ដកការគ្រីស'
                               )

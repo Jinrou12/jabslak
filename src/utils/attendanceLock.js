@@ -1,17 +1,16 @@
 /**
  * Attendance Auto-Lock Utilities
  * 
- * Rule: When a tag is marked arrived (គ្រីសមកដល់), after 5 minutes it is auto-locked.
- * Only Admin or Owner can uncheck (ដកគ្រីស) a locked tag.
- * Regular users / Assistants can only uncheck within the first 5 minutes (grace period).
+ * Rule: When a tag is marked arrived (គ្រីសមកដល់), after 2 minutes it is auto-locked.
+ * Assistant, Admin, and Owner can all uncheck/unlock by double-clicking (២ Click) on the checkmark.
  */
 
 import { westernToKhmerDigits } from './khmerSearch.js';
 
-export const AUTO_LOCK_DURATION_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+export const AUTO_LOCK_DURATION_MS = 2 * 60 * 1000; // 2 minutes in milliseconds
 
 /**
- * Check if a single tag or grouped tag is auto-locked (arrived >= 5 minutes ago)
+ * Check if a single tag or grouped tag is auto-locked (arrived >= 2 minutes ago)
  * @param {Object} tag 
  * @returns {boolean}
  */
@@ -76,7 +75,7 @@ function getSingleRemainingSeconds(tag) {
 }
 
 /**
- * Format remaining seconds to Khmer string (e.g. "៤:២៥ នាទី")
+ * Format remaining seconds to Khmer string (e.g. "១:២៥ នាទី")
  * @param {number} totalSeconds 
  * @returns {string}
  */
@@ -93,39 +92,29 @@ export function formatRemainingTimeKhmer(totalSeconds) {
  * Verify if current user has permission to uncheck/toggle attendance
  * @param {Object} tag 
  * @param {Object} currentUser 
- * @returns {{ canToggle: boolean, isLocked: boolean, isAdminOrOwner: boolean, reason?: string }}
+ * @returns {{ canToggle: boolean, isLocked: boolean, isAdminOrOwner: boolean, isAssistant: boolean, reason?: string }}
  */
 export function checkAttendanceTogglePermission(tag, currentUser) {
   const role = currentUser?.role || 'guest';
   const isAdminOrOwner = role === 'owner' || role === 'admin';
+  const isAssistant = role === 'assistant';
 
   if (role === 'guest') {
     return {
       canToggle: false,
       isLocked: false,
       isAdminOrOwner: false,
+      isAssistant: false,
       reason: 'សិទ្ធិ Guest អាចមើល និងស្វែងរកប៉ុណ្ណោះ! មិនអាចគ្រីសមកដល់បានទេ (សម្រាប់តែក្រុមការងារ)'
     };
   }
 
   const isLocked = isTagAttendanceLocked(tag);
 
-  // If tag is already arrived and locked, only Admin or Owner can uncheck
-  const isArrived = !!tag?.arrived;
-  if (isArrived && isLocked && !isAdminOrOwner) {
-    const tagDisplay = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber) || '';
-    const tagName = tag.name || '';
-    return {
-      canToggle: false,
-      isLocked: true,
-      isAdminOrOwner: false,
-      reason: `🔒 មិនអាចដកគ្រីសបានទេ!\n\nស្លាកលេខ ${tagDisplay ? '#' + tagDisplay : ''} ${tagName ? `(${tagName})` : ''} នេះត្រូវបានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥ នាទី)។\n\nមានតែ Admin ឬ Owner ប៉ុណ្ណោះដែលអាចដកគ្រីសបាន!\nប្រសិនបើចង់ដោះវិញ សូមទាក់ទង Admin ឱ្យជួយដោះជូន។`
-    };
-  }
-
   return {
     canToggle: true,
     isLocked,
-    isAdminOrOwner
+    isAdminOrOwner,
+    isAssistant
   };
 }

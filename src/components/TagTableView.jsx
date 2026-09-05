@@ -120,8 +120,8 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                             isArrived
                               ? isUncheckingThis
                                 ? 'bg-rose-600 text-white border-rose-400 shadow-md shadow-rose-500/40 animate-pulse'
-                                : isLocked && !isAdminOrOwner
-                                ? 'bg-amber-500/90 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20'
+                                : isLocked
+                                ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
                                 : 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md shadow-emerald-500/30'
                               : 'bg-slate-800 text-slate-400 hover:text-emerald-300 border-slate-700'
                           }`}
@@ -130,9 +130,7 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                               ? isUncheckingThis
                                 ? '⚠️ សូមចុចម្ដងទៀតដើម្បីដកគ្រីស (ចុច ២ Click ដោះគ្រីស)!'
                                 : isLocked
-                                ? !isAdminOrOwner
-                                  ? '🔒 បានមកដល់ (ចាក់សោស្វ័យប្រវត្តិលើសពី ៥នាទី - មិនអាចដកគ្រីសបានទេ សូមទាក់ទង Admin)'
-                                  : '🔒 បានមកដល់ (Lock Auto - Admin ចុច ២ ដងដើម្បីដកគ្រីស)'
+                                ? '🔒 បានមកដល់ (Locked - ចុច ២ ដងដើម្បីដោះគ្រីស)'
                                 : 'បានមកដល់ (ចុច ២ ដងដើម្បីដកគ្រីស)'
                               : 'ចុចគ្រីសដើម្បីរាយការណ៍អ្នកមកដល់'
                           }
