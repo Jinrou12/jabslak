@@ -20,7 +20,12 @@ export default function SearchBar({
   onBlur
 }) {
   return (
-    <div className="sticky top-0 sm:top-2 z-30 bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 md:p-4 shadow-2xl backdrop-blur-xl transition-all space-y-3 font-kantumruy">
+    <div 
+      className="sticky z-30 bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 md:p-4 shadow-2xl backdrop-blur-xl transition-all space-y-3 font-kantumruy"
+      style={{
+        top: 'calc(max(6px, env(safe-area-inset-top, 0px)) + 4px)'
+      }}
+    >
       
       {/* Search Input Box & View Switcher */}
       <div className="flex items-center gap-2">

@@ -847,7 +847,12 @@ export default function App() {
       </div>
 
       {/* Main Content Body */}
-      <main className={`flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 ${isSearching ? 'pt-1 sm:pt-4' : ''}`}>
+      <main 
+        className="flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4"
+        style={isSearching ? {
+          paddingTop: 'calc(max(8px, env(safe-area-inset-top, 0px)) + 6px)'
+        } : undefined}
+      >
         
         {/* Search & Location Filter Section */}
         <SearchBar
