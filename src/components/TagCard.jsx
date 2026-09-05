@@ -17,18 +17,18 @@ export default function TagCard({ tag, searchQuery = '', onSelectTag, onViewOnMa
 
   // Determine badge font size based on tag number string length
   const badgeTextSize = khmerTagNo.length > 7
-    ? 'text-[10px] sm:text-xs md:text-sm'
+    ? 'text-xs sm:text-xs md:text-sm'
     : khmerTagNo.length > 4
-    ? 'text-xs sm:text-sm md:text-base'
-    : 'text-base sm:text-lg md:text-xl';
+    ? 'text-sm sm:text-base md:text-lg'
+    : 'text-lg sm:text-xl md:text-2xl';
 
-  // Dynamic typography: automatically shrink text and allow 3-4 lines for long names (e.g. tag 129, 145)
+  // Dynamic typography: crisp, prominent and legible on iPhone and Android
   const nameLen = (tag.name || '').trim().length;
-  const nameTypographyClass = nameLen > 22
-    ? 'text-[9.5px] sm:text-sm md:text-base leading-tight line-clamp-4'
-    : nameLen > 13
-    ? 'text-[10px] sm:text-base md:text-lg leading-tight line-clamp-3'
-    : 'text-xs sm:text-base md:text-lg leading-snug line-clamp-2';
+  const nameTypographyClass = nameLen > 28
+    ? 'text-xs sm:text-sm md:text-base leading-tight line-clamp-3'
+    : nameLen > 15
+    ? 'text-xs sm:text-base md:text-lg leading-tight line-clamp-3'
+    : 'text-sm sm:text-base md:text-lg leading-snug line-clamp-2';
 
   return (
     <div
@@ -47,8 +47,8 @@ export default function TagCard({ tag, searchQuery = '', onSelectTag, onViewOnMa
       {/* Header Row: Tag Number & Owner Name & Attendance Check-in Button */}
       <div className="flex items-center gap-1.5 sm:gap-3">
         {/* Tag Badge */}
-        <div className="w-11 h-12 sm:w-16 sm:h-14 rounded-xl sm:rounded-2xl badge-gold flex flex-col items-center justify-center shrink-0 text-slate-950 font-extrabold shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform border border-amber-300 px-0.5 sm:px-1 text-center">
-          <span className="text-[7.5px] sm:text-[9px] leading-tight font-bold font-sans-en uppercase opacity-80">ស្លាកលេខ</span>
+        <div className="w-12 h-13 sm:w-16 sm:h-14 rounded-xl sm:rounded-2xl badge-gold flex flex-col items-center justify-center shrink-0 text-slate-950 font-extrabold shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform border border-amber-300 px-0.5 sm:px-1 text-center">
+          <span className="text-[8.5px] sm:text-[9.5px] leading-tight font-bold font-sans-en uppercase opacity-80">ស្លាកលេខ</span>
           <span className={`${badgeTextSize} font-black font-kantumruy leading-none mt-0.5 tracking-tight`}>
             {khmerTagNo}
           </span>
@@ -56,13 +56,13 @@ export default function TagCard({ tag, searchQuery = '', onSelectTag, onViewOnMa
 
         {/* Owner Name & Badges */}
         <div className="min-w-0 flex-1 self-stretch flex flex-col justify-center items-center sm:items-start text-center sm:text-left">
-          <div className="text-[7.5px] sm:text-[9.5px] text-slate-400 font-medium flex items-center justify-center sm:justify-start gap-1 w-full">
-            <div className="flex items-center gap-0.5 min-w-0">
-              <User className="w-2 h-2 sm:w-3 sm:h-3 text-amber-400/80 shrink-0" />
+          <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium flex items-center justify-center sm:justify-start gap-1 w-full">
+            <div className="flex items-center gap-1 min-w-0">
+              <User className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-amber-400/80 shrink-0" />
               <span className="truncate">ម្ចាស់ស្លាក</span>
             </div>
             {tagCount > 1 && (
-              <span className="bg-amber-500/20 text-amber-300 font-black px-1 py-0.2 rounded text-[7px] sm:text-[9px] font-kantumruy border border-amber-500/30 shrink-0">
+              <span className="bg-amber-500/20 text-amber-300 font-black px-1.5 py-0.2 rounded text-[8px] sm:text-[9px] font-kantumruy border border-amber-500/30 shrink-0">
                 {westernToKhmerDigits(tagCount)} អង្គ
               </span>
             )}
@@ -149,17 +149,17 @@ export default function TagCard({ tag, searchQuery = '', onSelectTag, onViewOnMa
             <MapPin className="w-3 h-3 sm:w-4 sm:h-4 stroke-[2.5]" />
           </div>
           <div className="min-w-0 flex-1">
-            <span className="text-[8px] sm:text-[10px] text-amber-400 font-extrabold uppercase tracking-wider block font-kantumruy leading-tight truncate">
+            <span className="text-[9px] sm:text-[10px] text-amber-400 font-extrabold uppercase tracking-wider block font-kantumruy leading-tight truncate">
               ទីតាំងស្លាកលេខ <span className="hidden sm:inline">(LOCATION)</span>
             </span>
-            <span className="text-[10.5px] sm:text-xs md:text-sm font-extrabold text-amber-200 truncate block font-kantumruy leading-tight mt-0.5">
+            <span className="text-xs sm:text-xs md:text-sm font-extrabold text-amber-200 truncate block font-kantumruy leading-tight mt-0.5">
               {(!tag.location || tag.location === 'ទីតាំងមិនទាន់កំណត់' || tag.location === 'មិនទាន់ដៅលើ Map') ? 'មើលទីកន្លែង' : tag.location}
             </span>
           </div>
         </div>
 
         {onViewOnMap && (
-          <div className="flex items-center gap-0.5 sm:gap-1 text-[8.5px] sm:text-[10px] font-bold text-amber-300 bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg border border-amber-500/30 shrink-0 transition-all font-kantumruy">
+          <div className="flex items-center gap-0.5 sm:gap-1 text-[9px] sm:text-[10px] font-bold text-amber-300 bg-amber-500/20 hover:bg-amber-500 hover:text-slate-950 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg border border-amber-500/30 shrink-0 transition-all font-kantumruy">
             <MapIcon className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
             <span className="hidden sm:inline">ផែនទី</span>
           </div>
@@ -167,21 +167,21 @@ export default function TagCard({ tag, searchQuery = '', onSelectTag, onViewOnMa
       </div>
 
       {/* Footer Row: Phone & Action Arrow */}
-      <div className="flex items-center justify-between gap-1 sm:gap-2 pt-1 border-t border-slate-800/80 text-[9.5px] sm:text-xs text-slate-400 font-kantumruy">
+      <div className="flex items-center justify-between gap-1 sm:gap-2 pt-1 border-t border-slate-800/80 text-xs sm:text-xs text-slate-400 font-kantumruy">
         <div className="flex items-center gap-1 sm:gap-1.5 truncate min-w-0">
           {tag.phone ? (
-            <span className="flex items-center gap-0.5 sm:gap-1 text-sky-400 font-semibold font-sans-en text-[9.5px] sm:text-xs truncate">
-              <Phone className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+            <span className="flex items-center gap-1 text-sky-400 font-semibold font-sans-en text-xs truncate">
+              <Phone className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
               <span className="truncate">{tag.phone}</span>
             </span>
           ) : (
-            <span className="text-slate-500 italic text-[9px] sm:text-[11px] truncate">គ្មានលេខ</span>
+            <span className="text-slate-500 italic text-[10px] sm:text-[11px] truncate">គ្មានលេខ</span>
           )}
         </div>
 
-        <div className="flex items-center gap-0.5 text-amber-400 font-bold text-[9.5px] sm:text-xs group-hover:translate-x-0.5 sm:group-hover:translate-x-1 transition-transform shrink-0">
+        <div className="flex items-center gap-0.5 text-amber-400 font-bold text-xs group-hover:translate-x-0.5 sm:group-hover:translate-x-1 transition-transform shrink-0">
           <span>មើលលម្អិត</span>
-          <ChevronRight className="w-3 h-3 sm:w-4 sm:h-4" />
+          <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
         </div>
       </div>
 
