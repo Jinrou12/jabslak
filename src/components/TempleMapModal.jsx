@@ -194,6 +194,11 @@ export const COLOR_SWATCHES = [
   }
 ];
 
+export const COLOR_OPTION_GRADIENTS = COLOR_SWATCHES.reduce((acc, swatch) => {
+  acc[swatch.key] = swatch.gradient;
+  return acc;
+}, {});
+
 export function getGroupColorMeta(colorKey) {
   const swatch = COLOR_SWATCHES.find((s) => s.key === colorKey);
   if (swatch) {
@@ -214,15 +219,74 @@ export function getGroupColorMeta(colorKey) {
   };
 }
 
-export function getGroupMetaFromItems(items = []) {
-  const match = items.find((l) => l.badgeColor && COLOR_OPTION_GRADIENTS[l.badgeColor]);
-  return getGroupColorMeta(match ? match.badgeColor : null);
+export function getGroupColorKey(groupName, locationsList = []) {
+  if (!groupName) return 'orange';
+  const cleanCat = String(groupName).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
+  if (!cleanCat) return 'orange';
+
+  // 1. Check if any location in this group has an explicit valid badgeColor
+  if (Array.isArray(locationsList) && locationsList.length > 0) {
+    const locWithColor = locationsList.find((l) => {
+      const lCat = String(l.category || (l.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ'))
+        .replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
+      return (lCat === cleanCat || lCat.includes(cleanCat) || cleanCat.includes(lCat)) &&
+             l.badgeColor &&
+             COLOR_OPTION_GRADIENTS[l.badgeColor];
+    });
+    if (locWithColor && locWithColor.badgeColor) {
+      return locWithColor.badgeColor;
+    }
+  }
+
+  // 2. Zone-based default fallback colors for standard zones (1 to 8)
+  const zoneMatch = cleanCat.match(/^(?:ផែន|zone)\s*([១២៣៤៥៦៧៨1-8])/i);
+  if (zoneMatch) {
+    const digit = parseInt(khmerToWesternDigits(zoneMatch[1]), 10);
+    const zoneColorMap = {
+      1: 'emerald',  // ផែន១ ៖ ធម្មសភា
+      2: 'teal',     // ផែន២ ៖ សាលាឆាន់ចាស់
+      3: 'indigo',   // ផែន៣ ៖ មុខសាលាឆាន់ចាស់
+      4: 'rose',     // ផែន៤ ៖ ព្រះបរិនិព្វាន
+      5: 'purple',   // ផែន៥ ៖ បណ្ណាល័យ
+      6: 'fuchsia',  // ផែន៦ ៖ ព្រះផ្ទម
+      7: 'lime',     // ផែន៧ ៖ តាមកុដិ
+      8: 'violet'    // ផែន៨ ៖ សាលារៀន
+    };
+    if (zoneColorMap[digit]) return zoneColorMap[digit];
+  }
+
+  // 3. Name-based keywords fallback
+  if (cleanCat.includes('ធម្មសភា') || cleanCat.includes('ធម្មសាលា')) return 'emerald';
+  if (cleanCat.includes('សាលាឆាន់')) return 'teal';
+  if (cleanCat.includes('បរិនិព្វាន') || cleanCat.includes('វិហារ') || cleanCat.includes('ពោធិ')) return 'rose';
+  if (cleanCat.includes('បណ្ណាល័យ')) return 'purple';
+  if (cleanCat.includes('ព្រះផ្ទម') || cleanCat.includes('ព្រះផ្ទំ')) return 'fuchsia';
+  if (cleanCat.includes('កុដិ')) return 'lime';
+  if (cleanCat.includes('សាលារៀន') || cleanCat.includes('វិទ្យុ')) return 'violet';
+  if (cleanCat.includes('ខ្លោងទ្វារ') || cleanCat.includes('gate') || cleanCat.includes('⛩️')) return 'orange';
+  if (cleanCat.includes('អគារ') || cleanCat.includes('🏢')) return 'teal';
+
+  // 4. Stable deterministic hash for arbitrary custom categories
+  let hash = 0;
+  for (let i = 0; i < cleanCat.length; i++) {
+    hash = (hash << 5) - hash + cleanCat.charCodeAt(i);
+    hash |= 0;
+  }
+  const colorIndex = Math.abs(hash) % COLOR_SWATCHES.length;
+  return COLOR_SWATCHES[colorIndex]?.key || 'orange';
 }
 
-const COLOR_OPTION_GRADIENTS = COLOR_SWATCHES.reduce((acc, swatch) => {
-  acc[swatch.key] = swatch.gradient;
-  return acc;
-}, {});
+export function getGroupMetaFromItems(items = [], groupName = '') {
+  const match = items.find((l) => l.badgeColor && COLOR_OPTION_GRADIENTS[l.badgeColor]);
+  if (match) {
+    return getGroupColorMeta(match.badgeColor);
+  }
+  if (groupName) {
+    const fallbackColor = getGroupColorKey(groupName, items);
+    return getGroupColorMeta(fallbackColor);
+  }
+  return getGroupColorMeta(null);
+}
 
 export function getPinBadgeColorClass(loc, idx = 0, activeTab = 'interactive') {
   if (!loc) return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
@@ -237,6 +301,14 @@ export function getPinBadgeColorClass(loc, idx = 0, activeTab = 'interactive') {
   // Gates A-E: Original Gold Yellow (ពណ៌លឿង/មាស សម្រាប់ខ្លោងទ្វារ)
   if (loc.type === 'gate' || STANDARD_GATES.includes(idStr)) {
     return 'bg-gradient-to-br from-amber-300 via-amber-400 to-amber-500 text-slate-950 border-white ring-1 ring-amber-400/60';
+  }
+
+  // If location has a category, inherit that category's color
+  if (loc.category) {
+    const groupColor = getGroupColorKey(loc.category);
+    if (groupColor && COLOR_OPTION_GRADIENTS[groupColor]) {
+      return COLOR_OPTION_GRADIENTS[groupColor];
+    }
   }
 
   // Tag pins get an explicit orange/amber gradient so they stand out from cyan base building pins (if no custom badgeColor)
@@ -795,6 +867,7 @@ export default function TempleMapModal({
 
   // Computed: which locations array to use based on active tab
   const currentLocations = effectiveTab3Locations;
+  const getGroupBadgeColor = (groupName) => getGroupColorKey(groupName, currentLocations);
   const [zoomScale, setZoomScale] = useState(1.0);
   const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin circle size in px (14px)
   const [selectedSizeGroup, setSelectedSizeGroup] = useState('all'); // 'all' | categoryName
@@ -1665,6 +1738,7 @@ export default function TempleMapModal({
 
   // Core group-pin placement logic (accepts pctX, pctY in map-percentage coords)
   const handleGroupPinPlacement = (pctX, pctY) => {
+    const groupBadgeColor = getGroupBadgeColor(pinningGroupMode);
     // 1. Gather existing locations for this group
     const groupLocations = currentLocations.filter((loc) => loc.category === pinningGroupMode);
 
@@ -1706,7 +1780,7 @@ export default function TempleMapModal({
         y: 50,
         type: 'building',
         pos: 'R',
-        badgeColor: 'orange',
+        badgeColor: groupBadgeColor || 'orange',
         category: pinningGroupMode,
         tagNumber: gt.tagNumber,
         tagNumberDisplay: tagDispStr,
@@ -1891,6 +1965,8 @@ export default function TempleMapModal({
       if (firstAvailable) {
         const tagDisp = firstAvailable.tagNumberDisplay || String(firstAvailable.tagNumber);
         const latinId = String(firstAvailable.tagNumber || khmerToWesternDigits(tagDisp));
+        const targetCat = (firstAvailable.baseLocation && firstAvailable.baseLocation !== 'មើលទីកន្លែង' && firstAvailable.baseLocation !== 'មិនទាន់ដៅលើ Map') ? firstAvailable.baseLocation : '🏢 ក្រុមអគារ និង កុដិ';
+        const groupColor = getGroupBadgeColor(targetCat);
         setModalForm({
           id: latinId,
           tagNumber: firstAvailable.tagNumber,
@@ -1898,20 +1974,22 @@ export default function TempleMapModal({
           isTagPin: true,
           name: formatTagPinLocationName(firstAvailable),
           tagOwnerName: firstAvailable.name || '',
-          badgeColor: 'orange',
-          type: 'building',
+          badgeColor: groupColor || 'orange',
+          type: (groupColor === 'gold' || targetCat.includes('ខ្លោងទ្វារ')) ? 'gate' : 'building',
           pos: 'R',
-          category: (firstAvailable.baseLocation && firstAvailable.baseLocation !== 'មើលទីកន្លែង' && firstAvailable.baseLocation !== 'មិនទាន់ដៅលើ Map') ? firstAvailable.baseLocation : '🏢 ក្រុមអគារ និង កុដិ'
+          category: targetCat
         });
         setSelectedTagForPin(tagDisp || String(firstAvailable.tagNumber));
       } else {
+        const defaultCat = '🏢 ក្រុមអគារ និង កុដិ';
+        const groupColor = getGroupBadgeColor(defaultCat);
         setModalForm({
           id: getNextDefaultLocationId(currentLocations),
           name: '',
-          badgeColor: 'orange',
+          badgeColor: groupColor || 'orange',
           type: 'building',
           pos: 'R',
-          category: '🏢 ក្រុមអគារ និង កុដិ'
+          category: defaultCat
         });
         setSelectedTagForPin('');
       }
@@ -2062,13 +2140,15 @@ export default function TempleMapModal({
       setSelectedTagForPin(tagDisp);
     }
 
+    const initialCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+    const groupColor = getGroupBadgeColor(initialCat);
     setModalForm({
       id: loc.id,
       name: loc.name,
-      badgeColor: loc.badgeColor || (loc.type === 'gate' ? 'emerald' : 'emerald'),
+      badgeColor: (loc.badgeColor && COLOR_OPTION_GRADIENTS[loc.badgeColor]) ? loc.badgeColor : (groupColor || 'orange'),
       type: loc.type || 'building',
       pos: loc.pos || 'R',
-      category: loc.category || '🏢 ក្រុមអគារ និង កុដិ',
+      category: initialCat,
       isTagPin: loc.isTagPin !== undefined ? loc.isTagPin : Boolean(found),
       tagNumber: loc.tagNumber || (found ? found.tagNumber : null),
       tagNumberDisplay: loc.tagNumberDisplay || (found ? (found.tagNumberDisplay || String(found.tagNumber)) : null)
@@ -2088,26 +2168,30 @@ export default function TempleMapModal({
     if (firstAvailable) {
       const tagDisp = firstAvailable.tagNumberDisplay || String(firstAvailable.tagNumber);
       const latinId = String(firstAvailable.tagNumber || khmerToWesternDigits(tagDisp));
+      const targetCat = (firstAvailable.baseLocation && firstAvailable.baseLocation !== 'មើលទីកន្លែង' && firstAvailable.baseLocation !== 'មិនទាន់ដៅលើ Map') ? firstAvailable.baseLocation : '🏢 ក្រុមអគារ និង កុដិ';
+      const groupColor = getGroupBadgeColor(targetCat);
       setModalForm({
         id: latinId,
         tagNumber: firstAvailable.tagNumber,
         tagNumberDisplay: tagDisp,
         isTagPin: true,
         name: firstAvailable.name || firstAvailable.location || `ស្លាកលេខ #${latinId}`,
-        badgeColor: 'orange',
-        type: 'building',
+        badgeColor: groupColor || 'orange',
+        type: (groupColor === 'gold' || targetCat.includes('ខ្លោងទ្វារ')) ? 'gate' : 'building',
         pos: 'R',
-        category: (firstAvailable.baseLocation && firstAvailable.baseLocation !== 'មើលទីកន្លែង' && firstAvailable.baseLocation !== 'មិនទាន់ដៅលើ Map') ? firstAvailable.baseLocation : '🏢 ក្រុមអគារ និង កុដិ'
+        category: targetCat
       });
       setSelectedTagForPin(tagDisp || String(firstAvailable.tagNumber));
     } else {
+      const defaultCat = '🏢 ក្រុមអគារ និង កុដិ';
+      const groupColor = getGroupBadgeColor(defaultCat);
       setModalForm({
         id: getNextDefaultLocationId(currentLocations),
         name: '',
-        badgeColor: 'orange',
+        badgeColor: groupColor || 'orange',
         type: 'building',
         pos: 'R',
-        category: '🏢 ក្រុមអគារ និង កុដិ'
+        category: defaultCat
       });
       setSelectedTagForPin('');
     }
@@ -3378,7 +3462,7 @@ export default function TempleMapModal({
                 if (filteredItems.length === 0) return null;
 
                 const isOpen = openAccordions[catName] !== false;
-                const groupMeta = getGroupMetaFromItems(items);
+                const groupMeta = getGroupMetaFromItems(items, catName);
 
                 return (
                   <div
@@ -3469,12 +3553,13 @@ export default function TempleMapModal({
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
+                              const groupColor = getGroupBadgeColor(catName);
                               setEditingLoc({ isNew: true, x: 50, y: 50 });
                               setModalForm({
                                 id: getNextDefaultLocationId(currentLocations),
                                 name: '',
-                                badgeColor: activeTab === 'interactive' ? 'cyan' : 'cyan',
-                                type: 'building',
+                                badgeColor: groupColor || 'orange',
+                                type: catName.includes('ខ្លោងទ្វារ') ? 'gate' : 'building',
                                 pos: 'R',
                                 category: catName
                               });
@@ -3725,6 +3810,8 @@ export default function TempleMapModal({
                             if (found) {
                               const tagDisp = found.tagNumberDisplay || String(found.tagNumber);
                               const latinId = String(found.tagNumber || khmerToWesternDigits(tagDisp));
+                              const targetCat = (found.baseLocation && found.baseLocation !== 'មើលទីកន្លែង' && found.baseLocation !== 'មិនទាន់ដៅលើ Map') ? found.baseLocation : (modalForm.category || '🏢 ក្រុមអគារ និង កុដិ');
+                              const groupColor = getGroupBadgeColor(targetCat);
                               setModalForm((prev) => ({
                                 ...prev,
                                 id: latinId,
@@ -3733,8 +3820,9 @@ export default function TempleMapModal({
                                 isTagPin: true,
                                 name: formatTagPinLocationName(found),
                                 tagOwnerName: found.name || '',
-                                badgeColor: prev.badgeColor || 'orange',
-                                category: (found.baseLocation && found.baseLocation !== 'មើលទីកន្លែង' && found.baseLocation !== 'មិនទាន់ដៅលើ Map') ? found.baseLocation : (prev.category || '🏢 ក្រុមអគារ និង កុដិ')
+                                badgeColor: groupColor || prev.badgeColor || 'orange',
+                                type: (groupColor === 'gold' || targetCat.includes('ខ្លោងទ្វារ')) ? 'gate' : prev.type,
+                                category: targetCat
                               }));
                               setFormError('');
                             }
@@ -3833,6 +3921,14 @@ export default function TempleMapModal({
                             const latinId = String(found.tagNumber || khmerToWesternDigits(tagDisp));
                             const autoName = found.name || found.location || `ស្លាកលេខ #${latinId}`;
 
+                            const targetCat =
+                              found.baseLocation &&
+                              found.baseLocation !== 'មើលទីកន្លែង' &&
+                              found.baseLocation !== 'មិនទាន់ដៅលើ Map'
+                                ? found.baseLocation
+                                : prev.category || '🏢 ក្រុមអគារ និង កុដិ';
+                            const groupColor = getGroupBadgeColor(targetCat);
+
                             setSelectedTagForPin(tagDisp);
                             setModalForm((prev) => ({
                               ...prev,
@@ -3841,13 +3937,9 @@ export default function TempleMapModal({
                               tagNumberDisplay: tagDisp,
                               isTagPin: true,
                               name: autoName,
-                              badgeColor: prev.badgeColor || 'orange',
-                              category:
-                                found.baseLocation &&
-                                found.baseLocation !== 'មើលទីកន្លែង' &&
-                                found.baseLocation !== 'មិនទាន់ដៅលើ Map'
-                                  ? found.baseLocation
-                                  : prev.category || '🏢 ក្រុមអគារ និង កុដិ'
+                              badgeColor: groupColor || prev.badgeColor || 'orange',
+                              type: (groupColor === 'gold' || targetCat.includes('ខ្លោងទ្វារ')) ? 'gate' : prev.type,
+                              category: targetCat
                             }));
                             return;
                           }
@@ -3885,7 +3977,16 @@ export default function TempleMapModal({
                     <div className="flex items-center gap-2">
                       <select
                         value={modalForm.category || '🏢 ក្រុមអគារ និង កុដិ'}
-                        onChange={(e) => setModalForm((prev) => ({ ...prev, category: e.target.value }))}
+                        onChange={(e) => {
+                          const newCat = e.target.value;
+                          const groupColor = getGroupBadgeColor(newCat);
+                          setModalForm((prev) => ({
+                            ...prev,
+                            category: newCat,
+                            badgeColor: groupColor || prev.badgeColor || 'orange',
+                            type: (groupColor === 'gold' || newCat.includes('ខ្លោងទ្វារ')) ? 'gate' : prev.type
+                          }));
+                        }}
                         className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-amber-400"
                       >
                         {availableCategories.map((cat) => (
@@ -4403,12 +4504,13 @@ export default function TempleMapModal({
               <button
                 onClick={() => {
                   setIsGroupEditModalOpen(false);
+                  const groupColor = getGroupBadgeColor(editingGroupName);
                   setEditingLoc({ isNew: true, x: 50, y: 50 });
                   setModalForm({
                     id: getNextDefaultLocationId(currentLocations),
                     name: '',
-                    badgeColor: activeTab === 'interactive' ? 'cyan' : 'cyan',
-                    type: 'building',
+                    badgeColor: groupColor || 'orange',
+                    type: editingGroupName.includes('ខ្លោងទ្វារ') ? 'gate' : 'building',
                     pos: 'R',
                     category: editingGroupName
                   });
