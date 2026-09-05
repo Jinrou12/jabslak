@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapPin, Phone, ChevronRight, User, Map as MapIcon, CheckCircle2, Circle, Lock } from 'lucide-react';
-import { westernToKhmerDigits } from '../utils/khmerSearch';
+import { westernToKhmerDigits, formatKhmerShortTitle } from '../utils/khmerSearch';
 import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
 export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttendance, currentUser, uncheckingTagId }) {
@@ -59,7 +59,14 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
           </div>
 
           <h3 className="text-slate-100 font-bold text-xs sm:text-base md:text-lg group-hover:text-amber-400 transition-colors font-kantumruy leading-snug line-clamp-2 break-words mt-0.5 text-center sm:text-left w-full">
-            {tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>}
+            {tag.name ? (
+              <>
+                <span className="sm:hidden">{formatKhmerShortTitle(tag.name)}</span>
+                <span className="hidden sm:inline">{tag.name}</span>
+              </>
+            ) : (
+              <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>
+            )}
           </h3>
 
           {isArrived && isUncheckingThis && (

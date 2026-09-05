@@ -36,12 +36,29 @@ export function stripKhmerDiacritics(str) {
 }
 
 /**
+ * Abbreviates specific Khmer honorifics for compact phone display:
+ * 1. ឧបាសិកា -> ឧ.សិ
+ * 2. ឧបាសក -> ឧ.ស
+ * 3. ឯកឧត្តម -> ឯ.ឧ
+ * Keeps all other titles (e.g. លោកជំទាវ, លោកស្រី, etc.) intact as requested.
+ */
+export function formatKhmerShortTitle(name) {
+  if (!name) return '';
+  return name
+    .replace(/ឧបាសិកា\s*/g, 'ឧ.សិ ')
+    .replace(/ឧបាសក\s*/g, 'ឧ.ស ')
+    .replace(/ឯកឧត្តម\s*/g, 'ឯ.ឧ ')
+    .trim();
+}
+
+/**
  * Common Khmer honorifics and titles to strip when extracting core names for matching
  */
 export const KHMER_TITLES = [
   'ព្រះតេជព្រះគុណ', 'ព្រះគ្រូ', 'ភិក្ខុ', 'សាមណេរ',
-  'ឧបាសិកា', 'ឧបាសក',
-  'លោកស្រី', 'អ្នកស្រី', 'កញ្ញា', 'លោកយាយ', 'លោកតា',
+  'ឧបាសិកា', 'ឧបាសក', 'ឯកឧត្តម',
+  'ឧ.សិ', 'ឧ.ស', 'ឯ.ឧ',
+  'លោកជំទាវ', 'លោកស្រី', 'អ្នកស្រី', 'កញ្ញា', 'លោកយាយ', 'លោកតា',
   'លោក', 'យាយ', 'តា', 'ពូ', 'មីង', 'ម៉ែ', 'ឪ', 'បង', 'ប្អូន'
 ];
 
@@ -54,8 +71,9 @@ export function stripKhmerTitles(name) {
   if (!name) return '';
   let clean = normalizeKhmer(name);
   for (const title of KHMER_TITLES) {
-    clean = clean.replace(new RegExp(`^${title}\\s*`, 'g'), '');
-    clean = clean.replace(new RegExp(`\\s+${title}\\s+`, 'g'), ' ');
+    const escaped = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    clean = clean.replace(new RegExp(`^${escaped}\\s*`, 'g'), '');
+    clean = clean.replace(new RegExp(`\\s+${escaped}\\s+`, 'g'), ' ');
   }
   return clean.trim();
 }
@@ -417,21 +435,28 @@ export function searchTags(tagList, searchQuery, selectedLocation = 'ALL', atten
       itemTagWestern.includes(normalizedQuery) ||
       itemDisplayWestern.includes(normalizedQuery);
 
-    // Name match (Exact / StartsWith / Includes / Space-insensitive / Diacritic-insensitive)
+    const itemShortName = formatKhmerShortTitle(tag.name || '');
+    const itemShortNormalized = normalizeKhmer(itemShortName);
+    const itemShortNoSpaces = stripSpaces(itemShortNormalized);
+
+    // Name match (Exact / StartsWith / Includes / Space-insensitive / Diacritic-insensitive / Shortened title)
     const isNameExact =
       itemNameNormalized === normalizedQuery ||
-      (queryNoSpaces && itemNameNoSpaces === queryNoSpaces);
+      itemShortNormalized === normalizedQuery ||
+      (queryNoSpaces && (itemNameNoSpaces === queryNoSpaces || itemShortNoSpaces === queryNoSpaces));
 
     const isNameStartsWith =
       itemNameNormalized.startsWith(normalizedQuery) ||
-      (queryNoSpaces && itemNameNoSpaces.startsWith(queryNoSpaces));
+      itemShortNormalized.startsWith(normalizedQuery) ||
+      (queryNoSpaces && (itemNameNoSpaces.startsWith(queryNoSpaces) || itemShortNoSpaces.startsWith(queryNoSpaces)));
 
     const isNameIncludes =
       itemNameNormalized.includes(normalizedQuery) ||
-      (queryNoSpaces && itemNameNoSpaces.includes(queryNoSpaces));
+      itemShortNormalized.includes(normalizedQuery) ||
+      (queryNoSpaces && (itemNameNoSpaces.includes(queryNoSpaces) || itemShortNoSpaces.includes(queryNoSpaces)));
 
     const isNameDiacriticMatch =
-      Boolean(queryNoDiacriticsNoSpaces && itemNameNoDiacriticsNoSpaces.includes(queryNoDiacriticsNoSpaces));
+      Boolean(queryNoDiacriticsNoSpaces && (itemNameNoDiacriticsNoSpaces.includes(queryNoDiacriticsNoSpaces) || stripSpaces(removeDiacritics(itemShortNormalized)).includes(queryNoDiacriticsNoSpaces)));
 
     // Sound-alike / Phonetic match
     const isPhoneticExact = Boolean(
