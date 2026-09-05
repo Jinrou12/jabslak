@@ -3,7 +3,39 @@ import { MapPin, Phone, ChevronRight, User, Map as MapIcon, CheckCircle2, Circle
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
-export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttendance, currentUser, uncheckingTagId }) {
+// Helper to highlight matched search terms with a soft light amber color
+function highlightMatch(text, query) {
+  if (!text) return null;
+  if (!query || !query.trim()) return text;
+
+  const rawTerms = query.trim().split(/\s+/).filter((t) => t.length > 0);
+  if (rawTerms.length === 0) return text;
+
+  // Deduplicate and sort longest terms first
+  const terms = Array.from(new Set(rawTerms)).sort((a, b) => b.length - a.length);
+  const pattern = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const regex = new RegExp(`(${pattern})`, 'gi');
+
+  const parts = text.split(regex);
+  if (parts.length <= 1) return text;
+
+  return parts.map((part, index) => {
+    const isMatch = terms.some((t) => t.toLowerCase() === part.toLowerCase());
+    if (isMatch) {
+      return (
+        <span
+          key={index}
+          className="text-amber-200 bg-amber-400/30 px-1 py-0.5 rounded border border-amber-400/50 font-black shadow-sm"
+        >
+          {part}
+        </span>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+}
+
+export default function TagCard({ tag, searchQuery = '', onSelectTag, onViewOnMap, onToggleAttendance, currentUser, uncheckingTagId }) {
   const khmerTagNo = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
   const isArrived = !!tag.arrived;
   const isPartial = !!tag.isPartialArrived;
@@ -19,6 +51,14 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
     : khmerTagNo.length > 4
     ? 'text-xs sm:text-sm md:text-base'
     : 'text-base sm:text-lg md:text-xl';
+
+  // Dynamic typography: automatically shrink text and allow 3-4 lines for long names (e.g. tag 129, 145)
+  const nameLen = (tag.name || '').trim().length;
+  const nameTypographyClass = nameLen > 22
+    ? 'text-[9.5px] sm:text-sm md:text-base leading-tight line-clamp-4'
+    : nameLen > 13
+    ? 'text-[10px] sm:text-base md:text-lg leading-tight line-clamp-3'
+    : 'text-xs sm:text-base md:text-lg leading-snug line-clamp-2';
 
   return (
     <div
@@ -58,8 +98,8 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
             )}
           </div>
 
-          <h3 className="text-slate-100 font-bold text-xs sm:text-base md:text-lg group-hover:text-amber-400 transition-colors font-kantumruy leading-snug line-clamp-2 break-words mt-0.5 text-center sm:text-left w-full">
-            {tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>}
+          <h3 className={`text-slate-100 font-bold group-hover:text-amber-400 transition-colors font-kantumruy break-words mt-0.5 text-center sm:text-left w-full ${nameTypographyClass}`}>
+            {tag.name ? highlightMatch(tag.name, searchQuery) : <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>}
           </h3>
 
           {isArrived && isUncheckingThis && (

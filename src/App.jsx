@@ -926,6 +926,7 @@ export default function App() {
                 <TagCard
                   key={tag.id}
                   tag={tag}
+                  searchQuery={searchQuery}
                   currentUser={currentUser}
                   uncheckingTagId={uncheckingTagId}
                   onSelectTag={(t) => setSelectedTag(t)}
@@ -938,6 +939,7 @@ export default function App() {
             <div className="pb-12">
               <TagTableView
                 tags={filteredTags}
+                searchQuery={searchQuery}
                 currentUser={currentUser}
                 uncheckingTagId={uncheckingTagId}
                 onSelectTag={(t) => setSelectedTag(t)}

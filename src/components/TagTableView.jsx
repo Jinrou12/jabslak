@@ -3,7 +3,38 @@ import { MapPin, Phone, Eye, User, Hash, Map as MapIcon, CheckCircle2, Circle, L
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
-export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleAttendance, currentUser, uncheckingTagId }) {
+// Helper to highlight matched search terms with a soft light amber color
+function highlightMatch(text, query) {
+  if (!text) return null;
+  if (!query || !query.trim()) return text;
+
+  const rawTerms = query.trim().split(/\s+/).filter((t) => t.length > 0);
+  if (rawTerms.length === 0) return text;
+
+  const terms = Array.from(new Set(rawTerms)).sort((a, b) => b.length - a.length);
+  const pattern = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+  const regex = new RegExp(`(${pattern})`, 'gi');
+
+  const parts = text.split(regex);
+  if (parts.length <= 1) return text;
+
+  return parts.map((part, index) => {
+    const isMatch = terms.some((t) => t.toLowerCase() === part.toLowerCase());
+    if (isMatch) {
+      return (
+        <span
+          key={index}
+          className="text-amber-200 bg-amber-400/30 px-1 py-0.5 rounded border border-amber-400/50 font-black shadow-sm"
+        >
+          {part}
+        </span>
+      );
+    }
+    return <span key={index}>{part}</span>;
+  });
+}
+
+export default function TagTableView({ tags, searchQuery = '', onSelectTag, onViewOnMap, onToggleAttendance, currentUser, uncheckingTagId }) {
   const isGuest = currentUser?.role === 'guest';
 
   return (
@@ -51,7 +82,7 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                   {/* Name */}
                   <td className="px-4 py-3 font-bold text-slate-100 group-hover:text-amber-400 transition-colors">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span>{tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-xs">(មិនទាន់មានឈ្មោះ)</span>}</span>
+                      <span>{tag.name ? highlightMatch(tag.name, searchQuery) : <span className="text-slate-400 font-normal italic text-xs">(មិនទាន់មានឈ្មោះ)</span>}</span>
                       {tagCount > 1 && (
                         <span className="bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded-lg text-xs font-kantumruy border border-amber-500/30">
                           {westernToKhmerDigits(tagCount)} អង្គ
