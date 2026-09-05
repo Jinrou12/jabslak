@@ -62,11 +62,11 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
               <span>សូរសម្លេងស្រដៀង</span>
             </div>
           )}
-          {/* 🔒 Auto-Lock Status Badges (No countdown minutes) */}
+          {/* 🔒 Auto-Lock Status Badges */}
           {isArrived && isLocked && (
             <div className="flex items-center gap-1 text-[10px] text-amber-300 bg-amber-500/15 border border-amber-500/35 px-1.5 py-0.5 rounded-md mt-1 w-fit font-kantumruy font-semibold">
               <Lock className="w-2.5 h-2.5 text-amber-400 shrink-0" />
-              <span>Lock Auto (លើស ៥mn)</span>
+              <span>Locked</span>
             </div>
           )}
           {isArrived && isUncheckingThis && (

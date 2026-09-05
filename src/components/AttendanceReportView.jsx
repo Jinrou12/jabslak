@@ -466,7 +466,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                           {isLocked && (
                             <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/35 px-1.5 py-0.5 rounded text-[10px] font-medium font-kantumruy">
                               <Lock className="w-2.5 h-2.5 text-amber-400" />
-                              <span>Lock Auto (លើស ៥mn)</span>
+                              <span>Locked</span>
                             </span>
                           )}
                           {isUncheckingThis && (
@@ -581,7 +581,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                               {isLocked && (
                                 <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded text-[10px] font-normal ml-1">
                                   <Lock className="w-2.5 h-2.5 text-amber-400" />
-                                  <span>Lock Auto (លើស ៥mn)</span>
+                                  <span>Locked</span>
                                 </span>
                               )}
                               {isUncheckingThis && (

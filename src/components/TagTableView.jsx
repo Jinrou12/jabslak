@@ -66,7 +66,7 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                       {isArrived && isLocked && (
                         <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/35 px-1.5 py-0.5 rounded text-[10px] font-normal font-kantumruy">
                           <Lock className="w-2.5 h-2.5 text-amber-400" />
-                          <span>Lock Auto</span>
+                          <span>Locked</span>
                         </span>
                       )}
                       {isArrived && isUncheckingThis && (
