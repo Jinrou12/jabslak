@@ -2,35 +2,8 @@ import React from 'react';
 import { MapPin, Phone, ChevronRight, User, Map as MapIcon, CheckCircle2, Circle, Lock } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
+import { highlightKhmerText } from '../utils/khmerHighlight';
 
-// Helper to highlight matched search terms with a soft light amber color
-function highlightMatch(text, query) {
-  if (!text) return null;
-  if (!query || !query.trim()) return text;
-
-  const rawTerms = query.trim().split(/\s+/).filter((t) => t.length > 0);
-  if (rawTerms.length === 0) return text;
-
-  // Deduplicate and sort longest terms first
-  const terms = Array.from(new Set(rawTerms)).sort((a, b) => b.length - a.length);
-  const pattern = terms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
-  const regex = new RegExp(`(${pattern})`, 'gi');
-
-  const parts = text.split(regex);
-  if (parts.length <= 1) return text;
-
-  return parts.map((part, index) => {
-    const isMatch = terms.some((t) => t.toLowerCase() === part.toLowerCase());
-    if (isMatch) {
-      return (
-        <span key={index} className="text-cyan-300 font-black">
-          {part}
-        </span>
-      );
-    }
-    return <span key={index}>{part}</span>;
-  });
-}
 
 export default function TagCard({ tag, searchQuery = '', onSelectTag, onViewOnMap, onToggleAttendance, currentUser, uncheckingTagId }) {
   const khmerTagNo = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
@@ -96,7 +69,7 @@ export default function TagCard({ tag, searchQuery = '', onSelectTag, onViewOnMa
           </div>
 
           <h3 className={`text-slate-100 font-bold group-hover:text-amber-400 transition-colors font-kantumruy break-words mt-0.5 text-center sm:text-left w-full ${nameTypographyClass}`}>
-            {tag.name ? highlightMatch(tag.name, searchQuery) : <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>}
+            {tag.name ? highlightKhmerText(tag.name, searchQuery) : <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>}
           </h3>
 
           {isArrived && isUncheckingThis && (
