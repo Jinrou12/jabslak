@@ -1,6 +1,6 @@
 import React from 'react';
 import { MapPin, Phone, Eye, User, Hash, Map as MapIcon, CheckCircle2, Circle, Lock } from 'lucide-react';
-import { westernToKhmerDigits, formatKhmerShortTitle } from '../utils/khmerSearch';
+import { westernToKhmerDigits } from '../utils/khmerSearch';
 import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
 export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleAttendance, currentUser, uncheckingTagId }) {
@@ -51,16 +51,7 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
                   {/* Name */}
                   <td className="px-4 py-3 font-bold text-slate-100 group-hover:text-amber-400 transition-colors">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span>
-                        {tag.name ? (
-                          <>
-                            <span className="sm:hidden">{formatKhmerShortTitle(tag.name)}</span>
-                            <span className="hidden sm:inline">{tag.name}</span>
-                          </>
-                        ) : (
-                          <span className="text-slate-400 font-normal italic text-xs">(មិនទាន់មានឈ្មោះ)</span>
-                        )}
-                      </span>
+                      <span>{tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-xs">(មិនទាន់មានឈ្មោះ)</span>}</span>
                       {tagCount > 1 && (
                         <span className="bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded-lg text-xs font-kantumruy border border-amber-500/30">
                           {westernToKhmerDigits(tagCount)} អង្គ
