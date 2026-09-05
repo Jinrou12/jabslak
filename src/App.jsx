@@ -35,6 +35,8 @@ import { pushTagsToCloud, subscribeToCloudTags } from './utils/cloudSync';
 export default function App() {
   const [tags, setTags] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const isSearching = searchQuery.trim().length > 0 || isSearchFocused;
   const [selectedLocation, setSelectedLocation] = useState('ALL');
   const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'table' | 'map' | 'report'
   const [attendanceFilter, setAttendanceFilter] = useState('ALL'); // 'ALL' | 'notArrived' | 'arrived'
@@ -811,39 +813,41 @@ export default function App() {
         </div>
       )}
 
-      {/* Main Header */}
-      <Header
-        totalCount={yearTags.length}
-        filteredCount={filteredTags.length}
-        arrivedCount={arrivedCount}
-        currentUser={currentUser}
-        onOpenAddModal={() => {
-          setEditingTag(null);
-          setIsFormOpen(true);
-        }}
-        onOpenQRScanner={() => setIsQRScannerOpen(true)}
-        onOpenImportExport={() => setIsImportExportOpen(true)}
-        onResetData={handleResetData}
-        onOpenLocationStats={() => setIsLocationStatsOpen(true)}
-        onOpenAttendanceReport={() => { setReportActiveTab('arrived'); setViewMode('report'); }}
-        onOpenCloudConfig={() => setIsCloudConfigOpen(true)}
-        onOpenMobileConnect={() => setIsMobileConnectOpen(true)}
-        onOpenTempleMap={() => {
-          setTempleMapTargetLoc(null);
-          setIsTempleMapOpen(true);
-        }}
-        onOpenRoleManagement={() => setIsRoleManagementOpen(true)}
-        onOpenLoginModal={() => setIsLoginModalOpen(true)}
-        onLogout={handleLogout}
-        isCloudSyncing={isCloudSyncing}
-        selectedYear={selectedYear}
-        onToggleYear={handleToggleYear}
-        onAddYear={handleAddYear}
-        onInstallApp={() => setIsInstallModalOpen(true)}
-      />
+      {/* Main Header (Hidden on mobile phones while searching to maximize screen space) */}
+      <div className={isSearching ? 'hidden sm:block' : 'block'}>
+        <Header
+          totalCount={yearTags.length}
+          filteredCount={filteredTags.length}
+          arrivedCount={arrivedCount}
+          currentUser={currentUser}
+          onOpenAddModal={() => {
+            setEditingTag(null);
+            setIsFormOpen(true);
+          }}
+          onOpenQRScanner={() => setIsQRScannerOpen(true)}
+          onOpenImportExport={() => setIsImportExportOpen(true)}
+          onResetData={handleResetData}
+          onOpenLocationStats={() => setIsLocationStatsOpen(true)}
+          onOpenAttendanceReport={() => { setReportActiveTab('arrived'); setViewMode('report'); }}
+          onOpenCloudConfig={() => setIsCloudConfigOpen(true)}
+          onOpenMobileConnect={() => setIsMobileConnectOpen(true)}
+          onOpenTempleMap={() => {
+            setTempleMapTargetLoc(null);
+            setIsTempleMapOpen(true);
+          }}
+          onOpenRoleManagement={() => setIsRoleManagementOpen(true)}
+          onOpenLoginModal={() => setIsLoginModalOpen(true)}
+          onLogout={handleLogout}
+          isCloudSyncing={isCloudSyncing}
+          selectedYear={selectedYear}
+          onToggleYear={handleToggleYear}
+          onAddYear={handleAddYear}
+          onInstallApp={() => setIsInstallModalOpen(true)}
+        />
+      </div>
 
       {/* Main Content Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4">
+      <main className={`flex-1 max-w-7xl w-full mx-auto p-2 sm:p-4 md:p-6 space-y-3 sm:space-y-4 ${isSearching ? 'pt-1 sm:pt-4' : ''}`}>
         
         {/* Search & Location Filter Section */}
         <SearchBar
@@ -860,6 +864,8 @@ export default function App() {
           setViewMode={setViewMode}
           phoneticSuggestions={phoneticSuggestions}
           onSelectSuggestion={(sug) => setSearchQuery(sug.coreName || sug.name)}
+          onFocus={() => setIsSearchFocused(true)}
+          onBlur={() => setIsSearchFocused(false)}
         />
 
         {/* Main View Mode (Map Inline View vs Report Inline View vs Grid vs Table) */}
@@ -1147,8 +1153,10 @@ export default function App() {
         />
       )}
 
-      {/* 📱 Fixed Mobile Bottom Navigation Bar for Phones ONLY (Hidden on PC/Desktop) */}
-      <div className="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/50 backdrop-blur-xl border-t border-amber-500/40 px-3 py-1.5 flex items-center justify-around shadow-[0_-10px_35px_rgba(0,0,0,0.6)] font-kantumruy">
+      {/* 📱 Fixed Mobile Bottom Navigation Bar for Phones ONLY (Hidden while searching or on PC/Desktop) */}
+      <div className={`sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-950/50 backdrop-blur-xl border-t border-amber-500/40 px-3 py-1.5 flex items-center justify-around shadow-[0_-10px_35px_rgba(0,0,0,0.6)] font-kantumruy transition-all ${
+        isSearching ? 'hidden pointer-events-none' : 'flex'
+      }`}>
         
         {/* 1. Left Button -> +បន្ថែម (Add Tag) */}
         <button
@@ -1202,7 +1210,9 @@ export default function App() {
       </div>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-4 px-4 pb-24 sm:pb-6 text-center text-xs text-slate-500 font-kantumruy">
+      <footer className={`border-t border-slate-900 bg-slate-950 py-4 px-4 pb-24 sm:pb-6 text-center text-xs text-slate-500 font-kantumruy ${
+        isSearching ? 'hidden sm:block' : 'block'
+      }`}>
         <p>ប្រព័ន្ធគ្រប់គ្រងស្លាកលេខ និងទីតាំងស្នាក់នៅ © ២០២៦ | Realtime Cloud Sync សម្រាប់ក្រុមការងារ ២០ នាក់</p>
       </footer>
 

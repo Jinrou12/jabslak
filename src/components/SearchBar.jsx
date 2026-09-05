@@ -15,7 +15,9 @@ export default function SearchBar({
   viewMode,
   setViewMode,
   phoneticSuggestions = [],
-  onSelectSuggestion
+  onSelectSuggestion,
+  onFocus,
+  onBlur
 }) {
   return (
     <div className="sticky top-0 sm:top-2 z-30 bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 md:p-4 shadow-2xl backdrop-blur-xl transition-all space-y-3 font-kantumruy">
@@ -31,6 +33,8 @@ export default function SearchBar({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={() => onFocus && onFocus()}
+            onBlur={() => onBlur && onBlur()}
             placeholder="វាយបញ្ចូលឈ្មោះ (ឧ. គុណករុណា...), លេខស្លាក (ឧ. ១, ២, ៣...), ទីតាំង ឬលេខទូរស័ព្ទ..."
             className="w-full bg-slate-950/90 border-2 border-slate-700/80 focus:border-amber-500 rounded-xl pl-11 pr-10 py-3 text-sm md:text-base text-slate-100 placeholder:text-slate-500 focus:outline-none transition-all shadow-inner font-kantumruy"
             autoComplete="off"
@@ -38,7 +42,10 @@ export default function SearchBar({
 
           {searchQuery && (
             <button
-              onClick={() => setSearchQuery('')}
+              onClick={() => {
+                setSearchQuery('');
+                if (onBlur) onBlur();
+              }}
               className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-white bg-slate-800 rounded-full transition-all"
               title="លុបពាក្យស្វែងរក"
             >
