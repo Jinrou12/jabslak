@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, ChevronRight, User, Map as MapIcon, CheckCircle2, Circle, Volume2, Lock } from 'lucide-react';
+import { MapPin, Phone, ChevronRight, User, Map as MapIcon, CheckCircle2, Circle, Lock } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
@@ -61,13 +61,6 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
           <h3 className="text-slate-100 font-bold text-xs sm:text-base md:text-lg group-hover:text-amber-400 transition-colors font-kantumruy leading-snug line-clamp-2 break-words mt-0.5 text-center sm:text-left w-full">
             {tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>}
           </h3>
-
-          {tag.isPhoneticMatch && (
-            <div className="flex items-center justify-center gap-1 text-[7.5px] sm:text-[9.5px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 px-1 py-0.2 rounded mt-0.5 w-fit">
-              <Volume2 className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-amber-400 shrink-0" />
-              <span className="truncate">សំឡេងស្រដៀង</span>
-            </div>
-          )}
 
           {isArrived && isUncheckingThis && (
             <div className="flex items-center justify-center gap-0.5 text-[7px] sm:text-[9px] text-rose-300 bg-rose-500/20 border border-rose-500/40 px-1 py-0.2 rounded mt-0.5 w-fit font-kantumruy font-bold animate-pulse">
