@@ -1,7 +1,7 @@
 import React from 'react';
-import { MapPin, Phone, Eye, User, Hash, Map as MapIcon, CheckCircle2, Circle, Lock } from 'lucide-react';
+import { MapPin, Phone, Eye, Map as MapIcon, CheckCircle2, Circle, Lock } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
-import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
+import { isTagAttendanceLocked } from '../utils/attendanceLock';
 import { highlightKhmerText } from '../utils/khmerHighlight';
 
 
@@ -32,7 +32,6 @@ export default function TagTableView({ tags, searchQuery = '', onSelectTag, onVi
               const isPartial = !!tag.isPartialArrived;
               const tagCount = tag.count || 1;
               const isLocked = isTagAttendanceLocked(tag);
-              const isAdminOrOwner = currentUser?.role === 'owner' || currentUser?.role === 'admin';
               const isUncheckingThis = uncheckingTagId === tag.id;
 
               return (

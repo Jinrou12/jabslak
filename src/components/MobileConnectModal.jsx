@@ -1,14 +1,19 @@
 import React from 'react';
 import { X, Smartphone, QrCode, Globe, CheckCircle2, Copy, ShieldCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { copyToClipboard } from '../utils/clipboard';
 
 export default function MobileConnectModal({ onClose }) {
   const cloudflareUrl = "https://integration-calgary-began-eligible.trycloudflare.com";
   const localIpUrl = "http://192.168.18.13:5173";
 
-  const handleCopyLink = (url) => {
-    navigator.clipboard.writeText(url);
-    alert(`បានចម្លង Link: ${url} រួចរាល់!`);
+  const handleCopyLink = async (url) => {
+    const copied = await copyToClipboard(url);
+    if (copied) {
+      alert(`បានចម្លង Link: ${url} រួចរាល់!`);
+    } else {
+      alert('មិនអាចចម្លង Link បានទេ');
+    }
   };
 
   return (

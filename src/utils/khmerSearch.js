@@ -15,7 +15,7 @@ export function normalizeKhmer(str) {
   if (!str) return '';
   return String(str)
     // 1. Remove zero-width & invisible format characters
-    .replace(/[\u200B\u200C\u200D\uFEFF\u00AD]/g, '')
+    .replace(/[\u200B\uFEFF\u00AD]|\u200C|\u200D/g, '')
     // 2. Normalize non-breaking spaces
     .replace(/\u00A0/g, ' ')
     // 3. Canonicalize Khmer Shifter (Muusikatoan \u17C9, Treisap \u17CA) + Coeng Subscripts (\u17D2 + Consonant):
@@ -271,7 +271,7 @@ export function groupTagsByName(tagList) {
 
   const grouped = [];
 
-  for (const [key, groupItems] of map.entries()) {
+  for (const groupItems of map.values()) {
     groupItems.sort((a, b) => {
       const na = Number(khmerToWesternDigits(String(a.tagNumber || 0)));
       const nb = Number(khmerToWesternDigits(String(b.tagNumber || 0)));

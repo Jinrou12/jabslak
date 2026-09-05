@@ -1,7 +1,7 @@
 import React from 'react';
 import { MapPin, Phone, ChevronRight, User, Map as MapIcon, CheckCircle2, Circle, Lock } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
-import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
+import { isTagAttendanceLocked } from '../utils/attendanceLock';
 import { highlightKhmerText } from '../utils/khmerHighlight';
 
 
@@ -10,7 +10,6 @@ export default function TagCard({ tag, searchQuery = '', onSelectTag, onViewOnMa
   const isArrived = !!tag.arrived;
   const isPartial = !!tag.isPartialArrived;
   const isGuest = currentUser?.role === 'guest';
-  const isAdminOrOwner = currentUser?.role === 'owner' || currentUser?.role === 'admin';
   const isLocked = isTagAttendanceLocked(tag);
   const isUncheckingThis = uncheckingTagId === tag.id;
   const tagCount = tag.count || 1;

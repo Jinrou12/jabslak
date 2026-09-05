@@ -13,11 +13,12 @@ const KHMER_GRAPHEME_REGEX = /[\u1780-\u17B3](?:\u17D2[\u1780-\u17B3])*(?:[\u17B
  * are NEVER severed across HTML element boundaries (which prevents the dotted circle ◌ glitch).
  */
 function getKhmerGraphemeSegments(text) {
+  if (!text) return [];
   if (typeof Intl !== 'undefined' && Intl.Segmenter) {
     try {
       const segmenter = new Intl.Segmenter('km', { granularity: 'grapheme' });
       return Array.from(segmenter.segment(text));
-    } catch (e) {}
+    } catch {}
   }
 
   const segments = [];
@@ -91,7 +92,12 @@ export function buildKhmerHighlightRegex(query) {
     return p;
   });
 
-  return new RegExp('(' + patterns.join('|') + ')', 'gi');
+  try {
+    return new RegExp('(' + patterns.join('|') + ')', 'gi');
+  } catch (err) {
+    console.warn('Failed to build highlight regex:', query, err);
+    return null;
+  }
 }
 
 /**

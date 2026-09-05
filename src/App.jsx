@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, startTransition, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Tag, Plus, AlertCircle, RefreshCw, Sparkles, CheckCircle2, Map as MapIcon, ArrowLeft, Volume2 } from 'lucide-react';
+import { Plus, AlertCircle, CheckCircle2, Map as MapIcon, ArrowLeft, Volume2 } from 'lucide-react';
 import Header from './components/Header';
 import SearchBar from './components/SearchBar';
 import TagCard from './components/TagCard';
@@ -27,8 +27,7 @@ import {
   subscribeToFirebaseTags,
   saveTagToFirebase,
   deleteTagFromFirebase,
-  seedFirebaseData,
-  isConnected as isFirebaseConnected
+  seedFirebaseData
 } from './utils/firebase';
 import { pushTagsToCloud, subscribeToCloudTags } from './utils/cloudSync';
 
@@ -107,13 +106,26 @@ export default function App() {
   
   // Toast notification
   const [toastMessage, setToastMessage] = useState(null);
+  const toastTimerRef = useRef(null);
 
-  const showToast = (msg) => {
+  const showToast = useCallback((msg) => {
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current);
+    }
     setToastMessage(msg);
-    setTimeout(() => {
+    toastTimerRef.current = setTimeout(() => {
       setToastMessage(null);
+      toastTimerRef.current = null;
     }, 3500);
-  };
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleToggleYear = () => {
     const currIdx = availableYears.indexOf(selectedYear);
@@ -182,7 +194,7 @@ export default function App() {
     try {
       window.history.pushState({ appRootGuard: true }, '');
       isHistoryPushedRef.current = true;
-    } catch (e) {}
+    } catch {}
   }, []);
 
   // Back Navigation Handler with Double-Back Press Exit Guard
@@ -217,14 +229,14 @@ export default function App() {
       showToast('ចាកចេញពីកម្មវិធី');
       try {
         window.history.go(-1);
-      } catch (err) {}
+      } catch {}
       return false;
     } else {
       // 1st back press -> Prompt user and lock history
       lastBackPressTimeRef.current = now;
       try {
         window.history.pushState({ appRootGuard: true }, '');
-      } catch (err) {}
+      } catch {}
       showToast('ថយម្ដងទៀត');
       return true;
     }
@@ -239,19 +251,19 @@ export default function App() {
         closeAllModals();
         try {
           window.history.pushState({ appRootGuard: true }, '');
-        } catch (err) {}
+        } catch {}
       } else if (viewMode !== 'grid') {
         setViewMode('grid');
         try {
           window.history.pushState({ appRootGuard: true }, '');
-        } catch (err) {}
+        } catch {}
       } else if (searchQuery || selectedLocation !== 'ALL' || attendanceFilter !== 'ALL') {
         setSearchQuery('');
         setSelectedLocation('ALL');
         setAttendanceFilter('ALL');
         try {
           window.history.pushState({ appRootGuard: true }, '');
-        } catch (err) {}
+        } catch {}
       } else {
         // User is on Home Screen -> Execute Double Back Guard
         const now = Date.now();
@@ -263,7 +275,7 @@ export default function App() {
           lastBackPressTimeRef.current = now;
           try {
             window.history.pushState({ appRootGuard: true }, '');
-          } catch (err) {}
+          } catch {}
           showToast('ថយម្ដងទៀត');
         }
       }
@@ -271,7 +283,7 @@ export default function App() {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
-  }, [hasActiveModal, viewMode, searchQuery, selectedLocation, attendanceFilter]);
+  }, [hasActiveModal, viewMode, searchQuery, selectedLocation, attendanceFilter, showToast]);
   // ===== SWIPE GESTURES + DOUBLE SWIPE-RIGHT EXIT GUARD FOR TELEGRAM =====
   // - Swipe Right→Left: switch filter tab forward (ALL → notArrived → arrived → ALL)
   // - Swipe Left→Right (inside modal/map/report): go back
@@ -283,7 +295,7 @@ export default function App() {
   // Store latest state values in a ref so they're accessible inside document event listener
   const swipeStateRef = useRef({});
   useEffect(() => {
-    swipeStateRef.current = { hasActiveModal, viewMode, attendanceFilter, selectedLocation, searchQuery, isTempleMapOpen };
+    swipeStateRef.current = { hasActiveModal, viewMode, attendanceFilter, selectedLocation, searchQuery, isTempleMapOpen, showToast };
   });
 
   useEffect(() => {
@@ -320,19 +332,20 @@ export default function App() {
       const deltaY = touch.clientY - touchStartRef.current.y;
       const deltaTime = Date.now() - touchStartRef.current.time;
 
-      const { hasActiveModal: modal, viewMode: vm, attendanceFilter: af } = swipeStateRef.current;
+      const { hasActiveModal: modal, viewMode: vm, attendanceFilter: af, showToast: toastFn } = swipeStateRef.current;
+      const notify = (msg) => { if (toastFn) toastFn(msg); };
 
       // ── Swipe Right→Left (switch filter forward) ──
       if (deltaX < -35 && Math.abs(deltaY) < 120 && deltaTime < 900) {
         if (!modal && vm === 'grid') {
           if (af === 'ALL') {
-            showToast('▶ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
+            notify('▶ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
             startTransition(() => setAttendanceFilter('notArrived'));
           } else if (af === 'notArrived') {
-            showToast('▶ ប្តូរទៅតម្រង ៖ បានមកដល់');
+            notify('▶ ប្តូរទៅតម្រង ៖ បានមកដល់');
             startTransition(() => setAttendanceFilter('arrived'));
           } else {
-            showToast('▶ ប្តូរទៅតម្រង ៖ ទាំងអស់');
+            notify('▶ ប្តូរទៅតម្រង ៖ ទាំងអស់');
             startTransition(() => setAttendanceFilter('ALL'));
           }
         }
@@ -350,10 +363,10 @@ export default function App() {
         // B. Reset active filter (go back one filter step)
         if (af !== 'ALL') {
           if (af === 'arrived') {
-            showToast('◀ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
+            notify('◀ ប្តូរទៅតម្រង ៖ មិនទាន់មកដល់');
             startTransition(() => setAttendanceFilter('notArrived'));
           } else {
-            showToast('◀ ប្តូរទៅតម្រង ៖ ទាំងអស់');
+            notify('◀ ប្តូរទៅតម្រង ៖ ទាំងអស់');
             startTransition(() => setAttendanceFilter('ALL'));
           }
           return;
@@ -363,12 +376,12 @@ export default function App() {
         const now = Date.now();
         if (now - lastSwipeRightTimeRef.current < 2500) {
           lastSwipeRightTimeRef.current = 0;
-          showToast('ចាកចេញពីកម្មវិធី');
-          setTimeout(() => { try { window.history.go(-2); } catch (_) {} }, 300);
+          notify('ចាកចេញពីកម្មវិធី');
+          setTimeout(() => { try { window.history.go(-2); } catch {} }, 300);
         } else {
           lastSwipeRightTimeRef.current = now;
-          try { window.history.pushState({ appRootGuard: true }, ''); } catch (_) {}
-          showToast('អូសម្ដងទៀតដើម្បីចេញ');
+          try { window.history.pushState({ appRootGuard: true }, ''); } catch {}
+          notify('អូសម្ដងទៀតដើម្បីចេញ');
         }
         return;
       }
@@ -566,7 +579,7 @@ export default function App() {
       showToast(`បានគ្រីសរាយការណ៍ស្លាកលេខ ${tagDisplay} (${tagToToggle.name}) មកដល់រួចរាល់! (លោតទៅ ៖ បានមកដល់) ✔️`);
       try {
         confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
-      } catch (e) {}
+      } catch {}
     } else {
       if (isUnlockingByAdmin) {
         showToast(`🔓 Admin (${currentUser?.name || 'Admin'}) បានដោះការគ្រីសស្លាកលេខ #${tagDisplay} រួចរាល់!`);
@@ -664,7 +677,7 @@ export default function App() {
       showToast(`បានបន្ថែមស្លាកលេខថ្មី ${westernToKhmerDigits(tagWithYear.tagNumber)} (${tagWithYear.name}) សម្រាប់ឆ្នាំ ${westernToKhmerDigits(selectedYear)} រួចរាល់!`);
       try {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
-      } catch (e) {}
+      } catch {}
       await saveTagToFirebase(tagWithYear);
     }
 
@@ -750,7 +763,7 @@ export default function App() {
       showToast(`🎯 បានបញ្ចូលឈ្មោះតាមលេខស្លាកជោគជ័យ (ផ្គូផ្គង ${westernToKhmerDigits(matchedCount)} និងថ្មី ${westernToKhmerDigits(newCount)})!`);
     } else if (importMode === true && yearTags.length > 0) {
       // Find highest existing tag number for current year
-      const maxExistingNum = Math.max(...yearTags.map((t) => Number(t.tagNumber) || 0));
+      const maxExistingNum = yearTags.reduce((max, t) => Math.max(max, Number(t.tagNumber) || 0), 0);
 
       // Re-sequence newly imported tags starting after highest existing number
       const reSequencedImported = stampedImported.map((t, idx) => ({
@@ -797,7 +810,7 @@ export default function App() {
 
     try {
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
-    } catch (e) {}
+    } catch {}
   };
 
   return (

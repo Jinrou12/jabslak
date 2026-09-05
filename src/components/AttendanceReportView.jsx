@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { CheckCircle2, XCircle, Search, MapPin, Phone, Download, Printer, UserCheck, Users, RefreshCw, ArrowLeft, Lock } from 'lucide-react';
+import { CheckCircle2, XCircle, Search, MapPin, Phone, Download, UserCheck, ArrowLeft, Lock } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
-import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
+import { isTagAttendanceLocked } from '../utils/attendanceLock';
 
 export default function AttendanceReportView({ allTags, onToggleAttendance, currentUser, onCloseView, activeTab: activeTabProp, setActiveTab: setActiveTabProp, uncheckingTagId }) {
   const [activeTabInternal, setActiveTabInternal] = useState('arrived');

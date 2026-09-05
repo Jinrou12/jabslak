@@ -92,7 +92,7 @@ const WESTERN_TAG_COLORS = {
   '16': 'bg-gradient-to-br from-emerald-400 via-green-500 to-teal-700 text-white'       // 16: Deep Green
 };
 
-export const COLOR_SWATCHES = [
+const COLOR_SWATCHES = [
   {
     key: 'orange',
     label: '🟧 ពណ៌ទឹកក្រូច (Orange)',
@@ -194,12 +194,12 @@ export const COLOR_SWATCHES = [
   }
 ];
 
-export const COLOR_OPTION_GRADIENTS = COLOR_SWATCHES.reduce((acc, swatch) => {
+const COLOR_OPTION_GRADIENTS = COLOR_SWATCHES.reduce((acc, swatch) => {
   acc[swatch.key] = swatch.gradient;
   return acc;
 }, {});
 
-export function getGroupColorMeta(colorKey) {
+function getGroupColorMeta(colorKey) {
   const swatch = COLOR_SWATCHES.find((s) => s.key === colorKey);
   if (swatch) {
     return {
@@ -219,7 +219,7 @@ export function getGroupColorMeta(colorKey) {
   };
 }
 
-export function getGroupColorKey(groupName, locationsList = []) {
+function getGroupColorKey(groupName, locationsList = []) {
   if (!groupName) return 'orange';
   const cleanCat = String(groupName).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
   if (!cleanCat) return 'orange';
@@ -276,7 +276,7 @@ export function getGroupColorKey(groupName, locationsList = []) {
   return COLOR_SWATCHES[colorIndex]?.key || 'orange';
 }
 
-export function getGroupMetaFromItems(items = [], groupName = '') {
+function getGroupMetaFromItems(items = [], groupName = '') {
   const match = items.find((l) => l.badgeColor && COLOR_OPTION_GRADIENTS[l.badgeColor]);
   if (match) {
     return getGroupColorMeta(match.badgeColor);
@@ -288,7 +288,7 @@ export function getGroupMetaFromItems(items = [], groupName = '') {
   return getGroupColorMeta(null);
 }
 
-export function getPinBadgeColorClass(loc, idx = 0, activeTab = 'interactive') {
+function getPinBadgeColorClass(loc, idx = 0, activeTab = 'interactive') {
   if (!loc) return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
 
   const idStr = String(loc.id || '').trim();
@@ -320,7 +320,7 @@ export function getPinBadgeColorClass(loc, idx = 0, activeTab = 'interactive') {
   return 'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950 border-white ring-1 ring-sky-400/60';
 }
 
-export function getPinSizeClasses(size) {
+function getPinSizeClasses(size) {
   switch (size) {
     case 'small':
       return 'w-3.5 h-3.5 sm:w-4 sm:h-4 text-[7px] sm:text-[8px] sm:border';
@@ -332,7 +332,7 @@ export function getPinSizeClasses(size) {
   }
 }
 
-export function getLocationAbbreviation(name = '', type = 'building') {
+function getLocationAbbreviation(name = '', type = 'building') {
   if (!name) return type === 'gate' ? '⛩️' : '🏢';
   const cleanName = String(name).trim();
 
@@ -375,7 +375,7 @@ export function getLocationAbbreviation(name = '', type = 'building') {
   return cleanName.slice(0, 3);
 }
 
-export function getPinBadgeText(loc, activeTab = 'tagger') {
+function getPinBadgeText(loc, activeTab = 'tagger') {
   if (!loc) return '';
   if (loc.isTagPin || loc.tagNumber || loc.tagNumberDisplay) {
     if (loc.tagNumberDisplay) return String(loc.tagNumberDisplay);
@@ -389,7 +389,7 @@ export function getPinBadgeText(loc, activeTab = 'tagger') {
   return getLocationAbbreviation(loc.name, loc.type);
 }
 
-export function formatTagPinLocationName(tag) {
+function formatTagPinLocationName(tag) {
   if (!tag) return '';
   const rawOwner = String(tag.name || tag.tagOwnerName || '').trim();
   const cleanOwner = rawOwner.replace(/^ស្លាកលេខ\s*\S+\s*៖\s*/, '').trim();
@@ -402,7 +402,7 @@ export function formatTagPinLocationName(tag) {
   return tag.location || '';
 }
 
-export function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3Locations = []) {
+function getDisplayPinName(loc, allTags = [], activeTab = 'tagger', tab3Locations = []) {
   if (!loc) return '';
   const locIdStr = String(loc.id || '').trim();
 
@@ -655,6 +655,42 @@ const PinItem = React.memo(function PinItem({
   );
 });
 
+// Sync Tab 3 metadata with allTags while preserving Location Names (ឈ្មោះទីតាំង)
+const categoryMigrationMap = {
+  'ធម្មសភា': 'ផែន១ ៖ ធម្មសភា',
+  'សាលាធម្មសភា': 'ផែន១ ៖ ធម្មសភា',
+  'ធម្មសាលាសភា': 'ផែន១ ៖ ធម្មសភា',
+  'សាលាឆាន់': 'ផែន២ ៖ សាលាឆាន់ចាស់',
+  'សាលាឆាន់ចាស់': 'ផែន២ ៖ សាលាឆាន់ចាស់',
+  'មុខសាលាឆាន់ចាស់': 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់',
+  'ព្រះបរិនិព្វាន': 'ផែន៤ ៖ ព្រះបរិនិព្វាន',
+  'បណ្ណាល័យ': 'ផែន៥ ៖ បណ្ណាល័យ',
+  'ព្រះផ្ទម': 'ផែន៦ ៖ ព្រះផ្ទម',
+  'តាមកុដិ': 'ផែន៧ ៖ តាមកុដិ',
+  'កុដិ': 'ផែន៧ ៖ តាមកុដិ',
+  'កុដិព្រះសង្ឃ': 'ផែន៧ ៖ តាមកុដិ',
+  'សាលារៀន': 'ផែន៨ ៖ សាលារៀន'
+};
+
+function autoMigrateCategory(cat, locName = '', locId = '') {
+  const locStr = String(locName || '').replace(/[\u200B\uFEFF]|\u200C|\u200D/g, '').trim().normalize('NFC');
+  const idStr = String(locId || '').trim();
+
+  // 1. If location is specifically ធម្មសាលាសភា or ID 1 or contains ធម្មសភា / សាលាធម្មសភា and has no valid category or old category, assign to ផែន១ ៖ ធម្មសភា
+  if ((locStr.includes('ធម្មសភា') || locStr.includes('ធម្មសាលាសភា') || idStr === '១' || idStr === '1') && (!cat || cat === 'ដើម' || cat === 'ធម្មសភា' || cat === 'សាលាធម្មសភា')) {
+    return 'ផែន១ ៖ ធម្មសភា';
+  }
+
+  if (!cat) return cat;
+  const norm = String(cat).replace(/[\u200B\uFEFF]|\u200C|\u200D/g, '').trim().normalize('NFC');
+  for (const [oldKey, newName] of Object.entries(categoryMigrationMap)) {
+    if (String(oldKey).replace(/[\u200B\uFEFF]|\u200C|\u200D/g, '').trim().normalize('NFC') === norm) {
+      return newName;
+    }
+  }
+  return cat;
+}
+
 export default function TempleMapModal({
   onClose,
   allTags = [],
@@ -696,42 +732,6 @@ export default function TempleMapModal({
 
   // Tab 1 = Read only for all. Tab 2 & Tab 3 = Restricted to Admin & Owner ONLY!
   const canCustomizeTab = (activeTab === 'interactive' || activeTab === 'tagger') && canCustomizeMap;
-
-  // Sync Tab 3 metadata with allTags while preserving Location Names (ឈ្មោះទីតាំង)
-  const categoryMigrationMap = {
-    'ធម្មសភា': 'ផែន១ ៖ ធម្មសភា',
-    'សាលាធម្មសភា': 'ផែន១ ៖ ធម្មសភា',
-    'ធម្មសាលាសភា': 'ផែន១ ៖ ធម្មសភា',
-    'សាលាឆាន់': 'ផែន២ ៖ សាលាឆាន់ចាស់',
-    'សាលាឆាន់ចាស់': 'ផែន២ ៖ សាលាឆាន់ចាស់',
-    'មុខសាលាឆាន់ចាស់': 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់',
-    'ព្រះបរិនិព្វាន': 'ផែន៤ ៖ ព្រះបរិនិព្វាន',
-    'បណ្ណាល័យ': 'ផែន៥ ៖ បណ្ណាល័យ',
-    'ព្រះផ្ទម': 'ផែន៦ ៖ ព្រះផ្ទម',
-    'តាមកុដិ': 'ផែន៧ ៖ តាមកុដិ',
-    'កុដិ': 'ផែន៧ ៖ តាមកុដិ',
-    'កុដិព្រះសង្ឃ': 'ផែន៧ ៖ តាមកុដិ',
-    'សាលារៀន': 'ផែន៨ ៖ សាលារៀន'
-  };
-
-  const autoMigrateCategory = (cat, locName = '', locId = '') => {
-    const locStr = String(locName || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
-    const idStr = String(locId || '').trim();
-
-    // 1. If location is specifically ធម្មសាលាសភា or ID 1 or contains ធម្មសភា / សាលាធម្មសភា and has no valid category or old category, assign to ផែន១ ៖ ធម្មសភា
-    if ((locStr.includes('ធម្មសភា') || locStr.includes('ធម្មសាលាសភា') || idStr === '១' || idStr === '1') && (!cat || cat === 'ដើម' || cat === 'ធម្មសភា' || cat === 'សាលាធម្មសភា')) {
-      return 'ផែន១ ៖ ធម្មសភា';
-    }
-
-    if (!cat) return cat;
-    const norm = String(cat).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
-    for (const [oldKey, newName] of Object.entries(categoryMigrationMap)) {
-      if (String(oldKey).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC') === norm) {
-        return newName;
-      }
-    }
-    return cat;
-  };
 
   // P2-A: Pre-compute tag lookup Maps for O(1) matching instead of O(N) find loops
   const tagLookups = useMemo(() => {
@@ -1041,6 +1041,11 @@ export default function TempleMapModal({
     setTimeout(() => setUndoToast(''), 2200);
   };
 
+  const handleUndoRef = useRef(handleUndo);
+  handleUndoRef.current = handleUndo;
+  const handleRedoRef = useRef(handleRedo);
+  handleRedoRef.current = handleRedo;
+
   // Keyboard shortcut listener for Ctrl+Z and Ctrl+U
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -1053,7 +1058,7 @@ export default function TempleMapModal({
 
           if (!isInput && history.length > 0) {
             e.preventDefault();
-            handleUndo();
+            handleUndoRef.current();
           }
         } else if (key === 'u' || key === 'y' || (key === 'z' && e.shiftKey)) {
           const activeEl = document.activeElement;
@@ -1061,7 +1066,7 @@ export default function TempleMapModal({
 
           if (!isInput && redoStack.length > 0) {
             e.preventDefault();
-            handleRedo();
+            handleRedoRef.current();
           }
         }
       }
@@ -1069,7 +1074,7 @@ export default function TempleMapModal({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [history, redoStack, activeTab, tab3Locations, locations]);
+  }, [history.length, redoStack.length]);
 
   // Panning, wheel zoom & dragging ref
   const viewportRef = useRef(null);

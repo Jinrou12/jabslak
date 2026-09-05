@@ -1,12 +1,12 @@
 import React from 'react';
-import { Search, X, Filter, LayoutGrid, List, Map as MapIcon, CheckCircle2, XCircle, Users, Calendar, Sparkles } from 'lucide-react';
+import { Search, X, LayoutGrid, List, Map as MapIcon, CheckCircle2, XCircle, Users } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function SearchBar({
   searchQuery,
   setSearchQuery,
-  selectedLocation,
-  setSelectedLocation,
+  selectedLocation: _selectedLocation,
+  setSelectedLocation: _setSelectedLocation,
   attendanceFilter = 'ALL',
   setAttendanceFilter,
   totalCount = 0,
@@ -14,8 +14,8 @@ export default function SearchBar({
   notArrivedCount = 0,
   viewMode,
   setViewMode,
-  phoneticSuggestions = [],
-  onSelectSuggestion,
+  phoneticSuggestions: _phoneticSuggestions = [],
+  onSelectSuggestion: _onSelectSuggestion,
   onFocus,
   onBlur
 }) {

@@ -57,7 +57,7 @@ export function getRemainingLockSeconds(tag) {
     const arrivedSubTags = tag.tags.filter((t) => !!t.arrived);
     if (arrivedSubTags.length === 0) return 0;
     const remainingList = arrivedSubTags.map((t) => getSingleRemainingSeconds(t));
-    return Math.min(...remainingList);
+    return remainingList.reduce((min, s) => Math.min(min, s), remainingList[0] || 0);
   }
 
   return getSingleRemainingSeconds(tag);

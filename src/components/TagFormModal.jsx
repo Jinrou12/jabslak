@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Tag, MapPin, User, Phone, FileText, ChevronDown, Sparkles, Map as MapIcon, FileSpreadsheet } from 'lucide-react';
+import { X, Save, Tag, MapPin, User, Phone, FileText, ChevronDown, Map as MapIcon, FileSpreadsheet } from 'lucide-react';
 import { locationsList } from '../data/sampleData';
 
 export default function TagFormModal({ initialData, onClose, onSave, nextAvailableNumber, onOpenTempleMap, onOpenImportExport }) {
@@ -58,14 +58,6 @@ export default function TagFormModal({ initialData, onClose, onSave, nextAvailab
       ...prev,
       locationDetail: detailVal,
       location: finalLocation
-    }));
-    if (errors.location) setErrors((prev) => ({ ...prev, location: null }));
-  };
-
-  const handleCustomLocationChange = (customLoc) => {
-    setFormData((prev) => ({
-      ...prev,
-      location: customLoc
     }));
     if (errors.location) setErrors((prev) => ({ ...prev, location: null }));
   };

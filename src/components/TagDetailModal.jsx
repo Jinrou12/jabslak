@@ -2,6 +2,7 @@ import React from 'react';
 import { X, MapPin, Phone, User, Edit3, Trash2, Share2, Printer, CheckCircle2, QrCode, Sparkles, Tag, Navigation, Map as MapIcon, Lock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
+import { copyToClipboard } from '../utils/clipboard';
 
 export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewOnMap, currentUser }) {
   if (!tag) return null;
@@ -26,12 +27,18 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
           title: `ស្លាកលេខ ${khmerTagNo} - ${tag.name || 'គ្មានឈ្មោះ'}`,
           text: text,
         });
+        return;
       } catch (e) {
-        console.log('Share cancelled', e);
+        if (e && e.name !== 'AbortError') {
+          console.log('Share error', e);
+        }
       }
-    } else {
-      navigator.clipboard.writeText(text);
+    }
+    const copied = await copyToClipboard(text);
+    if (copied) {
       alert('បានចម្លងព័ត៌មានស្លាកលេខទៅកាន់ Clipboard!');
+    } else {
+      alert('មិនអាចចម្លងព័ត៌មានបានទេ');
     }
   };
 
