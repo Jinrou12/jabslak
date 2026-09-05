@@ -22,10 +22,7 @@ function highlightMatch(text, query) {
     const isMatch = terms.some((t) => t.toLowerCase() === part.toLowerCase());
     if (isMatch) {
       return (
-        <span
-          key={index}
-          className="text-amber-200 bg-amber-400/30 px-1 py-0.5 rounded border border-amber-400/50 font-black shadow-sm"
-        >
+        <span key={index} className="text-amber-400 font-black">
           {part}
         </span>
       );
