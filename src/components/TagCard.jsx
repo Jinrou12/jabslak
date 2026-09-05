@@ -35,7 +35,7 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
       <div className="absolute top-0 right-0 w-24 sm:w-32 h-24 sm:h-32 bg-amber-500/10 rounded-full blur-2xl sm:blur-3xl group-hover:bg-amber-500/20 transition-all pointer-events-none"></div>
 
       {/* Header Row: Tag Number & Owner Name & Attendance Check-in Button */}
-      <div className="flex items-start sm:items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-3">
         {/* Tag Badge */}
         <div className="w-11 h-12 sm:w-16 sm:h-14 rounded-xl sm:rounded-2xl badge-gold flex flex-col items-center justify-center shrink-0 text-slate-950 font-extrabold shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform border border-amber-300 px-0.5 sm:px-1 text-center">
           <span className="text-[7.5px] sm:text-[9px] leading-tight font-bold font-sans-en uppercase opacity-80">ស្លាកលេខ</span>
@@ -76,7 +76,7 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
               e.stopPropagation();
               onToggleAttendance(tag);
             }}
-            className={`p-1 sm:p-1.5 rounded-lg sm:rounded-xl transition-all active:scale-95 border shrink-0 animate-in zoom-in-50 duration-200 flex items-center justify-center ${
+            className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl transition-all active:scale-90 border shrink-0 animate-in zoom-in-50 duration-200 flex items-center justify-center ${
               isArrived
                 ? isUncheckingThis
                   ? 'bg-rose-600 text-white border-rose-400 shadow-md shadow-rose-500/40 animate-pulse'
@@ -101,23 +101,23 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
           >
             {isArrived ? (
               isUncheckingThis ? (
-                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-white stroke-[3]" />
+                <CheckCircle2 className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-white stroke-[3]" />
               ) : isLocked ? (
                 <div className="relative flex items-center justify-center">
-                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 stroke-[2.5]" />
+                  <CheckCircle2 className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-slate-950 stroke-[2.5]" />
                   <span className="absolute -bottom-1 -right-1 sm:-bottom-1.5 sm:-right-1.5 bg-slate-950 text-amber-400 p-0.5 rounded-full ring-1 ring-amber-400 shadow-sm">
-                    <Lock className="w-2 h-2 sm:w-2.5 sm:h-2.5 stroke-[3]" />
+                    <Lock className="w-2.5 h-2.5 sm:w-3 sm:h-3 stroke-[3]" />
                   </span>
                 </div>
               ) : (
-                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-slate-950 stroke-[3]" />
+                <CheckCircle2 className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-slate-950 stroke-[3]" />
               )
             ) : isPartial ? (
-              <div className="flex items-center gap-0.5 px-0.5 sm:px-1 font-extrabold text-[8px] sm:text-[10px] text-slate-950">
+              <div className="flex items-center gap-0.5 px-0.5 sm:px-1 font-extrabold text-[9px] sm:text-[11px] text-slate-950">
                 <span>{westernToKhmerDigits(tag.arrivedCount)}</span>/<span>{westernToKhmerDigits(tagCount)}</span>
               </div>
             ) : (
-              <Circle className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
+              <Circle className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-slate-400 stroke-[2]" />
             )}
           </button>
         )}
