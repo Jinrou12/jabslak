@@ -409,11 +409,6 @@ export default function AttendanceReportModal({ onClose, allTags, onToggleAttend
                                 <span>Lock Auto</span>
                               </span>
                             )}
-                            {!isLocked && remainingSecs > 0 && (
-                              <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded text-[10px] font-normal ml-1 animate-pulse">
-                                ⏱️ នៅសល់ {formatRemainingTimeKhmer(remainingSecs)}
-                              </span>
-                            )}
                           </div>
                         ) : (
                           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-950/50 border border-rose-800/80 text-rose-300 font-semibold text-xs">

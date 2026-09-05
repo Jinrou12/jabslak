@@ -4,7 +4,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
-export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewOnMap, onToggleAttendance, currentUser }) {
+export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewOnMap, onToggleAttendance, currentUser, uncheckingTagId }) {
   if (!tag) return null;
 
   const isAssistant = currentUser?.role === 'assistant';
@@ -13,7 +13,7 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
   const isArrived = !!tag.arrived;
   const isPartial = !!tag.isPartialArrived;
   const isLocked = isTagAttendanceLocked(tag);
-  const remainingSecs = isArrived && !isLocked ? getRemainingLockSeconds(tag) : 0;
+  const isUncheckingThis = uncheckingTagId === tag.id;
   const tagCount = tag.count || (tag.tags?.length || 1);
 
   const khmerTagNo = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
@@ -121,7 +121,9 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
                 }}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold transition-all shadow-lg active:scale-95 border ${
                   isArrived
-                    ? isLocked && !isAdminOrOwner
+                    ? isUncheckingThis
+                      ? 'bg-rose-600 text-white border-rose-400 shadow-rose-500/30 animate-pulse'
+                      : isLocked && !isAdminOrOwner
                       ? 'bg-amber-500/90 text-slate-950 border-amber-400 shadow-amber-500/20'
                       : 'bg-emerald-500 text-slate-950 border-emerald-300 shadow-emerald-500/25'
                     : isPartial
@@ -131,19 +133,33 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
                 title={
                   isArrived && isLocked && !isAdminOrOwner
                     ? '🔒 ស្លាកលេខនេះត្រូវបានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥នាទី) - មានតែ Admin ឬ Owner ទើបអាចដកបាន'
+                    : isUncheckingThis
+                    ? '⚠️ សូមចុចម្ដងទៀតដើម្បីដកគ្រីស (ចុច ២ Click ដោះគ្រីស)!'
                     : undefined
                 }
               >
                 {isArrived ? (
-                  isLocked ? (
+                  isUncheckingThis ? (
                     <>
-                      <Lock className="w-4 h-4 text-slate-950 stroke-[2.5]" />
-                      <span>{isAdminOrOwner ? '🔒 Lock Auto (Admin ចុចដើម្បីដោះ)' : '🔒 ចាក់សោស្វ័យប្រវត្តិ (Lock Auto 5mn)'}</span>
+                      <CheckCircle2 className="w-4 h-4 text-white stroke-[3]" />
+                      <span>⚠️ ចុចម្ដងទៀតដើម្បីដោះគ្រីស (២ Click)</span>
                     </>
+                  ) : isLocked ? (
+                    isAdminOrOwner ? (
+                      <>
+                        <Lock className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                        <span>🔒 Lock Auto (Admin ចុច ២ ដងដើម្បីដោះ)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                        <span>🔒 ចាក់សោស្វ័យប្រវត្តិ (Lock Auto 5mn)</span>
+                      </>
+                    )
                   ) : (
                     <>
                       <CheckCircle2 className="w-4 h-4 text-slate-950 stroke-[3]" />
-                      <span>បានមកដល់គ្រប់អង្គ (ចុចដើម្បីដក)</span>
+                      <span>បានមកដល់គ្រប់អង្គ (ចុច ២ ដងដើម្បីដក)</span>
                     </>
                   )
                 ) : isPartial ? (
@@ -163,12 +179,12 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
               {isArrived && isLocked && (
                 <span className="text-[11px] text-amber-400/90 font-medium font-kantumruy flex items-center gap-1">
                   <Lock className="w-3 h-3 text-amber-400" />
-                  <span>បាន Lock Auto (ហួស ៥ នាទី) — {isAdminOrOwner ? 'Admin អាចដកគ្រីសបាន' : 'ត្រូវប្រាប់ Admin ដើម្បីដោះ'}</span>
+                  <span>បាន Lock Auto (ហួស ៥ នាទី) — {isAdminOrOwner ? 'Admin អាចដកគ្រីសបាន (ចុច ២ ដង)' : 'ត្រូវប្រាប់ Admin ដើម្បីដោះ'}</span>
                 </span>
               )}
-              {isArrived && !isLocked && remainingSecs > 0 && (
-                <span className="text-[11px] text-emerald-400/90 font-medium font-kantumruy animate-pulse">
-                  ⏱️ អាចដកការគ្រីសវិញបាន (នៅសល់ {formatRemainingTimeKhmer(remainingSecs)})
+              {isArrived && isUncheckingThis && (
+                <span className="text-[11px] text-rose-400 font-medium font-kantumruy animate-pulse">
+                  ⚠️ សូមចុចម្ដងទៀតដើម្បីដោះគ្រីស (ចុច ២ Click ដោះតែម្ដង)
                 </span>
               )}
             </div>

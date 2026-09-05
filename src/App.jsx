@@ -81,6 +81,9 @@ export default function App() {
 
   // ⏱️ Auto-Lock 15s refresh interval to keep lock status and timers live
   const [, setAutoLockTicker] = useState(0);
+  const [uncheckingTagId, setUncheckingTagId] = useState(null);
+  const lastUncheckClickRef = useRef({ tagId: null, time: 0 });
+
   useEffect(() => {
     const timer = setInterval(() => {
       setAutoLockTicker((t) => t + 1);
@@ -472,7 +475,7 @@ export default function App() {
     if (String(tagToToggle.id).startsWith('group-')) {
       targetIds.add(tagToToggle.id);
     }
-    const allArrived = targetItems.every((t) => !t.arrived);
+    const allArrived = targetItems.every((t) => !!t.arrived);
     const updatedStatus = !allArrived;
     const now = new Date().toISOString();
 
@@ -484,15 +487,31 @@ export default function App() {
         alert(permission.reason);
         return;
       }
-      // If tag was auto-locked (> 5 mins) and Admin/Owner is unlocking it, prompt confirmation for safety:
+
       if (permission.isLocked && permission.isAdminOrOwner) {
-        const tagDisplay = tagToToggle.tagNumberDisplay || westernToKhmerDigits(tagToToggle.tagNumber);
-        const confirmUnlock = window.confirm(
-          `🔒 ស្លាកលេខ #${tagDisplay} (${tagToToggle.name || ''}) នេះត្រូវបានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥ នាទី)។\n\nក្នុងនាមជា ${currentUser?.name || 'Admin'} (${currentUser?.role}) តើអ្នកពិតជាចង់ដកការគ្រីសនេះចេញវិញមែនទេ?`
-        );
-        if (!confirmUnlock) return;
         isUnlockingByAdmin = true;
       }
+
+      // ⚡ 2-Click Uncheck (ចុចតែ ២ Click ដោះគ្រីសតែម្ដង)
+      const nowTime = Date.now();
+      const isSecondClick =
+        lastUncheckClickRef.current.tagId === tagToToggle.id &&
+        nowTime - lastUncheckClickRef.current.time < 3000;
+
+      if (!isSecondClick) {
+        lastUncheckClickRef.current = { tagId: tagToToggle.id, time: nowTime };
+        setUncheckingTagId(tagToToggle.id);
+        const tagDisplay = tagToToggle.tagNumberDisplay || westernToKhmerDigits(tagToToggle.tagNumber);
+        showToast(`⚠️ សូមចុចម្ដងទៀតលើ #${tagDisplay} ដើម្បីដកគ្រីស (ចុច ២ Click ដោះគ្រីស)!`);
+        setTimeout(() => {
+          setUncheckingTagId((curr) => (curr === tagToToggle.id ? null : curr));
+        }, 3000);
+        return;
+      }
+
+      // Reset 2-click tracking on successful second click
+      lastUncheckClickRef.current = { tagId: null, time: 0 };
+      setUncheckingTagId(null);
     }
 
     const updatedTags = tags.map((t) => {
@@ -828,6 +847,7 @@ export default function App() {
             <AttendanceReportView
               allTags={yearTags}
               currentUser={currentUser}
+              uncheckingTagId={uncheckingTagId}
               onToggleAttendance={handleToggleAttendance}
               onCloseView={() => setViewMode('grid')}
               activeTab={reportActiveTab}
@@ -836,23 +856,6 @@ export default function App() {
           </div>
         ) : (
           <>
-            {/* 🔒 Auto-Lock Notice Banner for Arrived Filter (ផ្ទាំងមកដល់) */}
-            {attendanceFilter === 'arrived' && (
-              <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-slate-900 border border-amber-500/30 flex items-center justify-between gap-3 text-xs font-kantumruy animate-in fade-in duration-200 shadow-md shadow-amber-950/20">
-                <div className="flex items-center gap-2.5 text-amber-200">
-                  <span className="p-1.5 rounded-xl bg-amber-500/20 text-amber-300 shrink-0 text-sm">
-                    🔒
-                  </span>
-                  <div>
-                    <strong className="text-amber-300">ប្រព័ន្ធចាក់សោស្វ័យប្រវត្តិ (Auto-Lock ៥ នាទី)៖</strong>{' '}
-                    <span className="text-slate-300">
-                      ឈ្មោះដែលបានគ្រីសមកដល់លើសពី ៥ នាទី ត្រូវបាន Lock Auto។ ជំនួយការមិនអាចដកគ្រីសបានទេ (ទាល់តែ <span className="text-emerald-400 font-bold">Admin</span> ឬ <span className="text-amber-400 font-bold">Owner</span> ទើបដោះបាន)!
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {filteredTags.length > 0 ? (
               viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 pb-12">
@@ -861,6 +864,7 @@ export default function App() {
                   key={tag.id}
                   tag={tag}
                   currentUser={currentUser}
+                  uncheckingTagId={uncheckingTagId}
                   onSelectTag={(t) => setSelectedTag(t)}
                   onViewOnMap={handleOpenMapWithLocation}
                   onToggleAttendance={handleToggleAttendance}
@@ -872,6 +876,7 @@ export default function App() {
               <TagTableView
                 tags={filteredTags}
                 currentUser={currentUser}
+                uncheckingTagId={uncheckingTagId}
                 onSelectTag={(t) => setSelectedTag(t)}
                 onViewOnMap={handleOpenMapWithLocation}
                 onToggleAttendance={handleToggleAttendance}
@@ -949,6 +954,7 @@ export default function App() {
         <TagDetailModal
           tag={selectedTag}
           currentUser={currentUser}
+          uncheckingTagId={uncheckingTagId}
           onClose={() => setSelectedTag(null)}
           onEdit={(t) => {
             setSelectedTag(null);

@@ -4,7 +4,7 @@ import * as XLSX from 'xlsx';
 import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
 import { isTagAttendanceLocked, getRemainingLockSeconds, formatRemainingTimeKhmer } from '../utils/attendanceLock';
 
-export default function AttendanceReportView({ allTags, onToggleAttendance, currentUser, onCloseView, activeTab: activeTabProp, setActiveTab: setActiveTabProp }) {
+export default function AttendanceReportView({ allTags, onToggleAttendance, currentUser, onCloseView, activeTab: activeTabProp, setActiveTab: setActiveTabProp, uncheckingTagId }) {
   const [activeTabInternal, setActiveTabInternal] = useState('arrived');
   // Use controlled prop if provided (from App.jsx after tick), else use internal state
   const activeTab = activeTabProp !== undefined ? activeTabProp : activeTabInternal;
@@ -342,23 +342,6 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
 
       </div>
 
-      {/* 🔒 Auto-Lock Notice Banner for Arrived Filter (ផ្ទាំងមកដល់) */}
-      {activeTab === 'arrived' && (
-        <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/15 via-amber-500/5 to-slate-900 border border-amber-500/30 flex items-center justify-between gap-3 text-xs font-kantumruy animate-in fade-in duration-200 shadow-md shadow-amber-950/20">
-          <div className="flex items-center gap-2.5 text-amber-200">
-            <span className="p-1.5 rounded-xl bg-amber-500/20 text-amber-300 shrink-0 text-sm">
-              🔒
-            </span>
-            <div>
-              <strong className="text-amber-300">ប្រព័ន្ធចាក់សោស្វ័យប្រវត្តិ (Auto-Lock ៥ នាទី)៖</strong>{' '}
-              <span className="text-slate-300">
-                ឈ្មោះដែលបានគ្រីសមកដល់លើសពី ៥ នាទី ត្រូវបាន Lock Auto។ ជំនួយការមិនអាចដកគ្រីសបានទេ (ទាល់តែ <span className="text-emerald-400 font-bold">Admin</span> ឬ <span className="text-amber-400 font-bold">Owner</span> ទើបដោះបាន)!
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Main Inline Attendance List (Cards on Mobile, Table on Desktop) */}
       <div className="border border-slate-800 rounded-2xl bg-slate-900/90 overflow-hidden shadow-xl">
         {filteredTags.length === 0 ? (
@@ -375,7 +358,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                 const tagDisplay = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
                 const tagCount = tag.count || 1;
                 const isLocked = isTagAttendanceLocked(tag);
-                const remainingSecs = isArrived && !isLocked ? getRemainingLockSeconds(tag) : 0;
+                const isUncheckingThis = uncheckingTagId === tag.id;
                 return (
                   <div
                     key={tag.id}
@@ -406,7 +389,9 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                         disabled={!isAdminOrOwner && currentUser?.role === 'guest'}
                         className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all active:scale-95 shadow-sm font-kantumruy flex items-center gap-1.5 ${
                           isArrived
-                            ? isLocked && !isAdminOrOwner
+                            ? isUncheckingThis
+                              ? 'bg-rose-600 text-white border border-rose-400 shadow-md shadow-rose-500/40 animate-pulse'
+                              : isLocked && !isAdminOrOwner
                               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
                               : isLocked && isAdminOrOwner
                               ? 'bg-slate-950 text-amber-300 border border-amber-500/40 hover:border-rose-500 hover:text-rose-300'
@@ -416,11 +401,15 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                         title={
                           isArrived && isLocked && !isAdminOrOwner
                             ? '🔒 បានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥នាទី) - មិនអាចដកគ្រីសបានទេ សូមទាក់ទង Admin'
+                            : isUncheckingThis
+                            ? '⚠️ សូមចុចម្ដងទៀតដើម្បីដកគ្រីស (ចុច ២ Click ដោះគ្រីស)!'
                             : undefined
                         }
                       >
                         {isArrived ? (
-                          isLocked ? (
+                          isUncheckingThis ? (
+                            <span>⚠️ ចុចម្ដងទៀត (២ Click)</span>
+                          ) : isLocked ? (
                             isAdminOrOwner ? (
                               <>
                                 <Lock className="w-3.5 h-3.5 text-amber-400" />
@@ -477,12 +466,12 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                           {isLocked && (
                             <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/35 px-1.5 py-0.5 rounded text-[10px] font-medium font-kantumruy">
                               <Lock className="w-2.5 h-2.5 text-amber-400" />
-                              <span>Lock Auto</span>
+                              <span>Lock Auto (លើស ៥mn)</span>
                             </span>
                           )}
-                          {!isLocked && remainingSecs > 0 && (
-                            <span className="text-[10px] text-emerald-300 bg-emerald-500/15 border border-emerald-500/35 px-1.5 py-0.5 rounded font-medium font-kantumruy animate-pulse">
-                              ⏱️ នៅសល់ {formatRemainingTimeKhmer(remainingSecs)}
+                          {isUncheckingThis && (
+                            <span className="text-[10px] text-rose-300 bg-rose-500/20 border border-rose-500/40 px-1.5 py-0.5 rounded font-medium font-kantumruy animate-pulse">
+                              ⚠️ ចុចម្ដងទៀតដើម្បីដក (២ Click)
                             </span>
                           )}
                         </div>
@@ -523,7 +512,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                     const tagDisplay = tag.tagNumberDisplay || westernToKhmerDigits(tag.tagNumber);
                     const tagCount = tag.count || 1;
                     const isLocked = isTagAttendanceLocked(tag);
-                    const remainingSecs = isArrived && !isLocked ? getRemainingLockSeconds(tag) : 0;
+                    const isUncheckingThis = uncheckingTagId === tag.id;
                     return (
                       <tr
                         key={tag.id}
@@ -592,12 +581,12 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                               {isLocked && (
                                 <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded text-[10px] font-normal ml-1">
                                   <Lock className="w-2.5 h-2.5 text-amber-400" />
-                                  <span>Lock Auto</span>
+                                  <span>Lock Auto (លើស ៥mn)</span>
                                 </span>
                               )}
-                              {!isLocked && remainingSecs > 0 && (
-                                <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.5 rounded text-[10px] font-normal ml-1 animate-pulse">
-                                  ⏱️ នៅសល់ {formatRemainingTimeKhmer(remainingSecs)}
+                              {isUncheckingThis && (
+                                <span className="inline-flex items-center gap-1 bg-rose-500/20 text-rose-300 border border-rose-500/40 px-1.5 py-0.5 rounded text-[10px] font-normal ml-1 animate-pulse">
+                                  ⚠️ ចុចម្ដងទៀត (២ Click)
                                 </span>
                               )}
                             </div>
@@ -616,7 +605,9 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                             disabled={!isAdminOrOwner && currentUser?.role === 'guest'}
                             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-sm inline-flex items-center gap-1.5 ${
                               isArrived
-                                ? isLocked && !isAdminOrOwner
+                                ? isUncheckingThis
+                                  ? 'bg-rose-600 text-white border border-rose-400 shadow-md shadow-rose-500/40 animate-pulse'
+                                  : isLocked && !isAdminOrOwner
                                   ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30'
                                   : isLocked && isAdminOrOwner
                                   ? 'bg-slate-950 hover:bg-rose-950/90 text-amber-300 hover:text-rose-300 border border-amber-500/40 hover:border-rose-700'
@@ -626,13 +617,17 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                             title={
                               isArrived && isLocked && !isAdminOrOwner
                                 ? '🔒 បានចាក់សោស្វ័យប្រវត្តិ (Lock Auto លើសពី ៥នាទី) - មិនអាចដកគ្រីសបានទេ សូមទាក់ទង Admin'
+                                : isUncheckingThis
+                                ? '⚠️ សូមចុចម្ដងទៀតដើម្បីដកគ្រីស (ចុច ២ Click ដោះគ្រីស)!'
                                 : isArrived
                                 ? 'ចុចដើម្បីដកការគ្រីស'
                                 : 'គ្រីសរាយការណ៍មកដល់'
                             }
                           >
                             {isArrived ? (
-                              isLocked ? (
+                              isUncheckingThis ? (
+                                <span>⚠️ ចុចម្ដងទៀត (២ Click)</span>
+                              ) : isLocked ? (
                                 isAdminOrOwner ? (
                                   <>
                                     <Lock className="w-3.5 h-3.5 text-amber-400" />
