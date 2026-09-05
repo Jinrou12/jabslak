@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, startTransition, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Tag, Plus, AlertCircle, RefreshCw, Sparkles, CheckCircle2, Map as MapIcon, ArrowLeft } from 'lucide-react';
+import { Tag, Plus, AlertCircle, RefreshCw, Sparkles, CheckCircle2, Map as MapIcon, ArrowLeft, Volume2 } from 'lucide-react';
 import Header from './components/Header';
 import SearchBar from './components/SearchBar';
 import TagCard from './components/TagCard';
@@ -20,7 +20,7 @@ import RoleManagementModal from './components/RoleManagementModal';
 import LoginModal from './components/LoginModal';
 import InstallAppModal from './components/InstallAppModal';
 import SplashScreen from './components/SplashScreen';
-import { searchTags, westernToKhmerDigits, khmerToWesternDigits } from './utils/khmerSearch';
+import { searchTags, westernToKhmerDigits, khmerToWesternDigits, getKhmerPhoneticSuggestions } from './utils/khmerSearch';
 import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER } from './utils/storage';
 import {
   subscribeToFirebaseTags,
@@ -423,6 +423,11 @@ export default function App() {
     return searchTags(yearTags, searchQuery, selectedLocation, attendanceFilter);
   }, [yearTags, searchQuery, selectedLocation, attendanceFilter]);
 
+  // Compute sound-alike / phonetic recommendations for current search query
+  const phoneticSuggestions = useMemo(() => {
+    return getKhmerPhoneticSuggestions(yearTags, searchQuery, 4);
+  }, [yearTags, searchQuery]);
+
   // Arrived & Not Arrived count calculation for current year
   const arrivedCount = useMemo(() => {
     return yearTags.filter((t) => !!t.arrived).length;
@@ -454,6 +459,9 @@ export default function App() {
 
     const targetItems = tagToToggle.tags && tagToToggle.tags.length > 0 ? tagToToggle.tags : [tagToToggle];
     const targetIds = new Set(targetItems.map((t) => t.id));
+    if (String(tagToToggle.id).startsWith('group-')) {
+      targetIds.add(tagToToggle.id);
+    }
     const allArrived = targetItems.every((t) => !!t.arrived);
     const updatedStatus = !allArrived;
     const now = new Date().toISOString();
@@ -503,7 +511,9 @@ export default function App() {
 
     const tagDisplay = tagToToggle.tagNumberDisplay || westernToKhmerDigits(tagToToggle.tagNumber);
     if (updatedStatus) {
-      showToast(`បានគ្រីសរាយការណ៍ស្លាកលេខ ${tagDisplay} (${tagToToggle.name}) មកដល់រួចរាល់! ✔️`);
+      // 🚀 Auto-jump to "បានមកដល់" (Arrived Filter) as requested!
+      setAttendanceFilter('arrived');
+      showToast(`បានគ្រីសរាយការណ៍ស្លាកលេខ ${tagDisplay} (${tagToToggle.name}) មកដល់រួចរាល់! (លោតទៅ ៖ បានមកដល់) ✔️`);
       try {
         confetti({ particleCount: 35, spread: 50, origin: { y: 0.7 } });
       } catch (e) {}
@@ -561,7 +571,39 @@ export default function App() {
     const tagWithYear = { ...tagData, year: tagData.year || selectedYear };
     let updated;
     if (editingTag) {
-      updated = tags.map((t) => (t.id === tagWithYear.id ? tagWithYear : t));
+      const isGroup = (editingTag.tags && editingTag.tags.length > 0) || String(editingTag.id).startsWith('group-');
+      if (isGroup && editingTag.tags && editingTag.tags.length > 0) {
+        // Update all constituent sub-tags with new info
+        const subIds = new Set(editingTag.tags.map((st) => st.id));
+        const updatedConstituents = [];
+        updated = tags.map((t) => {
+          if (subIds.has(t.id)) {
+            const updatedItem = {
+              ...t,
+              name: tagWithYear.name,
+              baseLocation: tagWithYear.baseLocation,
+              location: tagWithYear.location,
+              phone: tagWithYear.phone,
+              notes: tagWithYear.notes,
+              year: tagWithYear.year
+            };
+            updatedConstituents.push(updatedItem);
+            return updatedItem;
+          }
+          return t;
+        });
+        // Delete rogue group ID from Firebase if it existed
+        if (String(editingTag.id).startsWith('group-')) {
+          await deleteTagFromFirebase(editingTag.id);
+        }
+        // Save each constituent tag to Firebase
+        for (const item of updatedConstituents) {
+          await saveTagToFirebase(item);
+        }
+      } else {
+        updated = tags.map((t) => (t.id === tagWithYear.id ? tagWithYear : t));
+        await saveTagToFirebase(tagWithYear);
+      }
       showToast(`បានកែប្រែព័ត៌មានស្លាកលេខ ${westernToKhmerDigits(tagWithYear.tagNumber)} រួចរាល់!`);
     } else {
       updated = [tagWithYear, ...tags];
@@ -569,25 +611,26 @@ export default function App() {
       try {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
       } catch (e) {}
+      await saveTagToFirebase(tagWithYear);
     }
 
     setTags(updated);
     saveTags(updated);
-    
-    // Push to Zero-Config Cloud Sync & Firebase
     pushTagsToCloud(updated);
-    await saveTagToFirebase(tagWithYear);
 
     setIsFormOpen(false);
     setEditingTag(null);
-    if (selectedTag && selectedTag.id === tagWithYear.id) {
-      setSelectedTag(tagWithYear);
+    if (selectedTag) {
+      setSelectedTag(null);
     }
   };
 
   const handleDeleteTag = async (tagToDelete) => {
     const targetItems = tagToDelete.tags && tagToDelete.tags.length > 0 ? tagToDelete.tags : [tagToDelete];
     const targetIds = new Set(targetItems.map((t) => t.id));
+    if (String(tagToDelete.id).startsWith('group-')) {
+      targetIds.add(tagToDelete.id);
+    }
     const tagDisplay = tagToDelete.tagNumberDisplay || westernToKhmerDigits(tagToDelete.tagNumber);
 
     if (window.confirm(`តើអ្នកពិតជាចង់លុបស្លាកលេខ ${tagDisplay} (${tagToDelete.name}) មែនទេ?`)) {
@@ -711,6 +754,8 @@ export default function App() {
           notArrivedCount={notArrivedCount}
           viewMode={viewMode}
           setViewMode={setViewMode}
+          phoneticSuggestions={phoneticSuggestions}
+          onSelectSuggestion={(sug) => setSearchQuery(sug.coreName || sug.name)}
         />
 
         {/* Main View Mode (Map Inline View vs Report Inline View vs Grid vs Table) */}
@@ -793,6 +838,28 @@ export default function App() {
             <p className="text-xs text-slate-400 max-w-md mt-1 mb-4">
               គ្មានទិន្នន័យស្លាកលេខសម្រាប់ឆ្នាំ {westernToKhmerDigits(selectedYear)} នេះនៅឡើយទេ។ {currentUser?.role === 'owner' || currentUser?.role === 'admin' ? 'សូមបញ្ចូលទិន្នន័យ (Excel/CSV) ឬបន្ថែមស្លាកលេខថ្មី!' : ''}
             </p>
+
+            {/* If search query has sound-alike suggestions, offer them directly in the empty state */}
+            {phoneticSuggestions && phoneticSuggestions.length > 0 && (
+              <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl max-w-md w-full">
+                <p className="text-xs text-amber-300 font-bold mb-2 flex items-center justify-center gap-1.5">
+                  <Volume2 className="w-3.5 h-3.5 text-amber-400" />
+                  <span>តើអ្នកចង់រកឈ្មោះដែលមានសូរសម្លេងស្រដៀងគ្នាទាំងនេះមែនទេ?</span>
+                </p>
+                <div className="flex flex-wrap gap-1.5 justify-center">
+                  {phoneticSuggestions.map((sug, idx) => (
+                    <button
+                      key={`empty-sug-${idx}`}
+                      onClick={() => setSearchQuery(sug.coreName || sug.name)}
+                      className="bg-slate-900/90 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 border border-amber-500/30 px-2.5 py-1 rounded-lg text-xs font-semibold transition-all flex items-center gap-1"
+                    >
+                      <span>{sug.name}</span>
+                      <span className="text-[10px] text-amber-400">#{sug.tagNumberDisplay}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="flex items-center gap-3">
               {searchQuery && (
                 <button

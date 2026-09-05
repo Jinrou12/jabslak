@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, ChevronRight, User, Map as MapIcon, CheckCircle2, Circle } from 'lucide-react';
+import { MapPin, Phone, ChevronRight, User, Map as MapIcon, CheckCircle2, Circle, Volume2 } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttendance, currentUser }) {
@@ -52,6 +52,12 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
           <h3 className="text-slate-100 font-bold text-base md:text-lg group-hover:text-amber-400 transition-colors truncate font-kantumruy mt-0.5">
             {tag.name}
           </h3>
+          {tag.isPhoneticMatch && (
+            <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded-md mt-1 w-fit">
+              <Volume2 className="w-3 h-3 text-amber-400 shrink-0" />
+              <span>សូរសម្លេងស្រដៀង</span>
+            </div>
+          )}
         </div>
 
         {/* 📋 Report / Check-in Attendance Button (Assistant & Admin & Owner only) */}

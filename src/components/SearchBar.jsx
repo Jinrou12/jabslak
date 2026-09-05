@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, Filter, LayoutGrid, List, Map as MapIcon, CheckCircle2, XCircle, Users, Calendar } from 'lucide-react';
+import { Search, X, Filter, LayoutGrid, List, Map as MapIcon, CheckCircle2, XCircle, Users, Calendar, Sparkles, Volume2 } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function SearchBar({
@@ -13,7 +13,9 @@ export default function SearchBar({
   arrivedCount = 0,
   notArrivedCount = 0,
   viewMode,
-  setViewMode
+  setViewMode,
+  phoneticSuggestions = [],
+  onSelectSuggestion
 }) {
   return (
     <div className="sticky top-0 sm:top-2 z-30 bg-slate-900/95 border border-slate-800/90 rounded-2xl p-3 md:p-4 shadow-2xl backdrop-blur-xl transition-all space-y-3 font-kantumruy">
@@ -88,47 +90,75 @@ export default function SearchBar({
         </div>
       </div>
 
+      {/* 💡 Sound-Alike / Phonetic Name Recommendations Bar */}
+      {phoneticSuggestions && phoneticSuggestions.length > 0 && (
+        <div className="flex items-center gap-2 overflow-x-auto py-1.5 px-3 bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-transparent border border-amber-500/30 rounded-xl text-xs scrollbar-none animate-in fade-in slide-in-from-top-1 duration-200">
+          <div className="flex items-center gap-1.5 text-amber-300 font-bold shrink-0">
+            <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
+            <span className="hidden sm:inline">ណែនាំឈ្មោះសូរសម្លេងស្រដៀង ៖</span>
+            <span className="sm:hidden">ឈ្មោះស្រដៀង ៖</span>
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto">
+            {phoneticSuggestions.map((sug, idx) => (
+              <button
+                key={`${sug.name}-${idx}`}
+                onClick={() => onSelectSuggestion ? onSelectSuggestion(sug) : setSearchQuery(sug.coreName || sug.name)}
+                className="bg-slate-950/80 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 border border-amber-500/30 hover:border-amber-400/60 px-2.5 py-1 rounded-lg font-medium transition-all shrink-0 flex items-center gap-1.5 text-[11px] sm:text-xs shadow-sm active:scale-95"
+                title={`ចុចដើម្បីស្វែងរកឈ្មោះ ${sug.name}`}
+              >
+                <span>{sug.name}</span>
+                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.5 rounded text-[10px] font-bold">
+                  #{sug.tagNumberDisplay}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* 🟢 Status & Attendance Filter Tabs ( ទាំងអស់ | មិនទាន់មកដល់ | បានមកដល់ ) */}
-      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5 pt-1">
+      <div className="grid grid-cols-3 gap-1.5 w-full pt-1">
 
         {/* Option 1: ALL (ទាំងអស់) */}
         <button
           onClick={() => setAttendanceFilter && setAttendanceFilter('ALL')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all flex items-center gap-1.5 ${
+          className={`py-2 px-1.5 sm:px-3 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all flex items-center justify-center gap-1 sm:gap-1.5 min-w-0 text-center ${
             attendanceFilter === 'ALL'
               ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 ring-2 ring-amber-400/40'
               : 'bg-slate-950/80 text-slate-300 hover:bg-slate-800 border border-slate-800'
           }`}
         >
-          <Users className="w-3.5 h-3.5" />
-          <span>ទាំងអស់ ({westernToKhmerDigits(totalCount)})</span>
+          <Users className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">ទាំងអស់ ({westernToKhmerDigits(totalCount)})</span>
         </button>
 
         {/* Option 2: Not Arrived (មិនទាន់មកដល់ - Auto Hides Ticked) */}
         <button
           onClick={() => setAttendanceFilter && setAttendanceFilter('notArrived')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all flex items-center gap-1.5 ${
+          className={`py-2 px-1.5 sm:px-3 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all flex items-center justify-center gap-1 sm:gap-1.5 min-w-0 text-center ${
             attendanceFilter === 'notArrived'
               ? 'bg-rose-600 text-white shadow-md shadow-rose-600/30 ring-2 ring-rose-400/40'
               : 'bg-slate-950/80 text-rose-400 hover:bg-slate-800 border border-rose-500/30'
           }`}
           title="គ្រីសរាយការណ៍មកដល់ហើយ ឈ្មោះនោះនឹងត្រូវលាក់ចេញពីផ្ទាំងនេះដោយស្វ័យប្រវត្តិ"
         >
-          <XCircle className="w-3.5 h-3.5" />
-          <span>មិនទាន់មកដល់ ({westernToKhmerDigits(notArrivedCount)})</span>
+          <XCircle className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">
+            មិនទាន់<span className="hidden sm:inline">មកដល់</span> ({westernToKhmerDigits(notArrivedCount)})
+          </span>
         </button>
 
         {/* Option 3: Arrived Only (បានមកដល់) */}
         <button
           onClick={() => setAttendanceFilter && setAttendanceFilter('arrived')}
-          className={`px-3 py-1.5 rounded-xl text-xs font-extrabold shrink-0 transition-all flex items-center gap-1.5 ${
+          className={`py-2 px-1.5 sm:px-3 rounded-xl text-[11px] sm:text-xs font-extrabold transition-all flex items-center justify-center gap-1 sm:gap-1.5 min-w-0 text-center ${
             attendanceFilter === 'arrived'
               ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 ring-2 ring-emerald-400/40'
               : 'bg-slate-950/80 text-emerald-400 hover:bg-slate-800 border border-emerald-500/30'
           }`}
         >
-          <CheckCircle2 className="w-3.5 h-3.5" />
-          <span>បានមកដល់ ({westernToKhmerDigits(arrivedCount)})</span>
+          <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+          <span className="truncate">បានមកដល់ ({westernToKhmerDigits(arrivedCount)})</span>
         </button>
       </div>
 

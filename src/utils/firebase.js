@@ -106,6 +106,19 @@ export function subscribeToFirebaseTags(onDataReceived, onError) {
         } else if (typeof val === 'object') {
           tagList = Object.values(val);
         }
+        // Filter out and purge any rogue group objects accidentally saved to Firebase
+        const rogueGroups = tagList.filter(
+          (t) => t && t.id && (String(t.id).startsWith('group-') || Array.isArray(t.tags))
+        );
+        if (rogueGroups.length > 0) {
+          rogueGroups.forEach((rg) => {
+            deleteTagFromFirebase(rg.id);
+          });
+          tagList = tagList.filter(
+            (t) => t && (!t.id || (!String(t.id).startsWith('group-') && !Array.isArray(t.tags)))
+          );
+        }
+
         // Sort by tag number ascending
         tagList.sort((a, b) => Number(a.tagNumber) - Number(b.tagNumber));
 

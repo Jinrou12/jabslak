@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Phone, Eye, User, Hash, Map as MapIcon, CheckCircle2, Circle } from 'lucide-react';
+import { MapPin, Phone, Eye, User, Hash, Map as MapIcon, CheckCircle2, Circle, Volume2 } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleAttendance, currentUser }) {
@@ -46,8 +46,14 @@ export default function TagTableView({ tags, onSelectTag, onViewOnMap, onToggleA
 
                   {/* Name */}
                   <td className="px-4 py-3 font-bold text-slate-100 group-hover:text-amber-400 transition-colors">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span>{tag.name}</span>
+                      {tag.isPhoneticMatch && (
+                        <span className="inline-flex items-center gap-1 bg-amber-500/15 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[10px] font-normal">
+                          <Volume2 className="w-3 h-3 text-amber-400 shrink-0" />
+                          <span>សម្លេងស្រដៀង</span>
+                        </span>
+                      )}
                       {tagCount > 1 && (
                         <span className="bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded-lg text-xs font-kantumruy border border-amber-500/30">
                           {westernToKhmerDigits(tagCount)} អង្គ
