@@ -711,11 +711,42 @@ export default function App() {
     }
   };
 
-  const handleImportData = async (importedTags, isAppend = false) => {
+  const handleImportData = async (importedTags, importMode = false) => {
     const stampedImported = importedTags.map((t) => ({ ...t, year: selectedYear }));
     let updatedTags;
 
-    if (isAppend && yearTags.length > 0) {
+    if (importMode === 'update') {
+      // 🎯 Update Names by Tag Number: Match by tagNumber, fill in names/phone while preserving user-pinned locations!
+      const existingMap = new Map();
+      const otherYearsTags = tags.filter((t) => (t.year || '2026') !== selectedYear);
+      yearTags.forEach((t) => existingMap.set(Number(t.tagNumber), t));
+
+      let matchedCount = 0;
+      let newCount = 0;
+
+      stampedImported.forEach((imp) => {
+        const num = Number(imp.tagNumber);
+        if (existingMap.has(num)) {
+          const prev = existingMap.get(num);
+          existingMap.set(num, {
+            ...prev,
+            name: imp.name || prev.name,
+            phone: imp.phone || prev.phone,
+            notes: imp.notes ? (prev.notes ? `${prev.notes} | ${imp.notes}` : imp.notes) : prev.notes,
+            location: (prev.location && prev.location !== 'មើលទីកន្លែង') ? prev.location : (imp.location || prev.location),
+            updatedAt: new Date().toISOString()
+          });
+          matchedCount++;
+        } else {
+          existingMap.set(num, imp);
+          newCount++;
+        }
+      });
+
+      const mergedYearTags = Array.from(existingMap.values()).sort((a, b) => Number(a.tagNumber) - Number(b.tagNumber));
+      updatedTags = [...otherYearsTags, ...mergedYearTags];
+      showToast(`🎯 បានបញ្ចូលឈ្មោះតាមលេខស្លាកជោគជ័យ (ផ្គូផ្គង ${westernToKhmerDigits(matchedCount)} និងថ្មី ${westernToKhmerDigits(newCount)})!`);
+    } else if (importMode === true && yearTags.length > 0) {
       // Find highest existing tag number for current year
       const maxExistingNum = Math.max(...yearTags.map((t) => Number(t.tagNumber) || 0));
 
@@ -728,9 +759,30 @@ export default function App() {
       updatedTags = [...tags, ...reSequencedImported];
       showToast(`បានបន្ថែមទិន្នន័យថ្មីចំនួន ${westernToKhmerDigits(importedTags.length)} ស្លាកលេខ ចូលក្នុងឆ្នាំ ${westernToKhmerDigits(selectedYear)}!`);
     } else {
-      // Replace tags for current selectedYear only, preserve tags for other years
+      // Replace or Smart Merge: If existing tags already had locations pinned beforehand, PRESERVE their locations!
       const otherYearsTags = tags.filter((t) => (t.year || '2026') !== selectedYear);
-      updatedTags = [...otherYearsTags, ...stampedImported];
+      const existingMap = new Map();
+      yearTags.forEach((t) => existingMap.set(Number(t.tagNumber), t));
+
+      const mergedList = stampedImported.map((imp) => {
+        const num = Number(imp.tagNumber);
+        if (existingMap.has(num)) {
+          const prev = existingMap.get(num);
+          return {
+            ...imp,
+            location: (prev.location && prev.location !== 'មើលទីកន្លែង') ? prev.location : (imp.location || prev.location),
+            baseLocation: prev.baseLocation || imp.baseLocation,
+            pinX: prev.pinX !== undefined ? prev.pinX : imp.pinX,
+            pinY: prev.pinY !== undefined ? prev.pinY : imp.pinY,
+            mapId: prev.mapId || imp.mapId,
+            arrived: prev.arrived !== undefined ? prev.arrived : imp.arrived,
+            arrivedAt: prev.arrivedAt || imp.arrivedAt
+          };
+        }
+        return imp;
+      });
+
+      updatedTags = [...otherYearsTags, ...mergedList];
       showToast(`បានបញ្ចូលទិន្នន័យថ្មីចំនួន ${westernToKhmerDigits(importedTags.length)} ស្លាកលេខ សម្រាប់ឆ្នាំ ${westernToKhmerDigits(selectedYear)}!`);
     }
 

@@ -77,9 +77,7 @@ export default function TagFormModal({ initialData, onClose, onSave, nextAvailab
     if (!formData.tagNumber) {
       newErrors.tagNumber = 'សូមបញ្ចូលលេខស្លាក';
     }
-    if (!formData.name.trim()) {
-      newErrors.name = 'សូមបញ្ចូលឈ្មោះម្ចាស់ស្លាក';
-    }
+    // ឈ្មោះម្ចាស់ស្លាកគឺស្រេចចិត្ត (Optional) — អាចដៅទីតាំងទុកមុនដោយមិនទាន់មានឈ្មោះបាន
     if (!formData.location.trim()) {
       newErrors.location = 'សូមបញ្ចូលទីតាំងស្លាកលេខ';
     }
@@ -117,7 +115,7 @@ export default function TagFormModal({ initialData, onClose, onSave, nextAvailab
                 {isEditing ? 'កែប្រែព័ត៌មានស្លាកលេខ' : 'បន្ថែមស្លាកលេខថ្មី'}
               </h2>
               <p className="text-xs text-slate-400 font-kantumruy mt-0.5">
-                {isEditing ? 'ធ្វើបច្ចុប្បន្នភាពទិន្នន័យដែលមានស្រាប់' : 'បញ្ចូលទិន្នន័យម្ចាស់ស្លាក និងទីតាំងស្នាក់នៅ'}
+                {isEditing ? 'ធ្វើបច្ចុប្បន្នភាពទិន្នន័យដែលមានស្រាប់' : 'អាចបញ្ចូលតែលេខស្លាក និងទីតាំងទុកមុនបាន (ឈ្មោះចាំ Upload តាមក្រោយ)'}
               </p>
             </div>
           </div>
@@ -158,9 +156,12 @@ export default function TagFormModal({ initialData, onClose, onSave, nextAvailab
 
             {/* Owner Name */}
             <div className="sm:col-span-2">
-              <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center gap-1 font-kantumruy">
-                <User className="w-3.5 h-3.5 text-amber-400" />
-                <span>ឈ្មោះម្ចាស់ស្លាកលេខ *</span>
+              <label className="block text-xs font-bold text-slate-200 mb-1.5 flex items-center justify-between font-kantumruy">
+                <div className="flex items-center gap-1">
+                  <User className="w-3.5 h-3.5 text-amber-400" />
+                  <span>ឈ្មោះម្ចាស់ស្លាកលេខ</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-normal">(មិនទាន់មាន អាចទុកទំនេរបាន)</span>
               </label>
               <input
                 type="text"
@@ -169,8 +170,8 @@ export default function TagFormModal({ initialData, onClose, onSave, nextAvailab
                   setFormData({ ...formData, name: e.target.value });
                   if (errors.name) setErrors({ ...errors, name: null });
                 }}
-                placeholder="ឧ. ឧបាសក ហ៊ុយ សុខ, ញោម គង់..."
-                className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-4 py-2.5 text-slate-100 font-semibold font-kantumruy focus:outline-none transition-all"
+                placeholder="ឧ. ឧបាសក ហ៊ុយ សុខ... (ទុកទំនេរសិនបាន)"
+                className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-xl px-4 py-2.5 text-slate-100 font-semibold font-kantumruy focus:outline-none transition-all placeholder:text-slate-600"
               />
               {errors.name && (
                 <p className="text-[11px] text-rose-400 mt-1 font-kantumruy">{errors.name}</p>

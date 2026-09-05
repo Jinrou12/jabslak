@@ -54,7 +54,7 @@ export default function TagCard({ tag, onSelectTag, onViewOnMap, onToggleAttenda
             )}
           </div>
           <h3 className="text-slate-100 font-bold text-base md:text-lg group-hover:text-amber-400 transition-colors truncate font-kantumruy mt-0.5">
-            {tag.name}
+            {tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-sm">(មិនទាន់មានឈ្មោះ)</span>}
           </h3>
           {tag.isPhoneticMatch && (
             <div className="flex items-center gap-1 text-[10px] sm:text-[11px] text-amber-300/90 bg-amber-500/10 border border-amber-500/25 px-1.5 py-0.5 rounded-md mt-1 w-fit">

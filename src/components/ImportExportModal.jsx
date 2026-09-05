@@ -397,10 +397,12 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
       }
 
       onImportData(formattedTags, isAppend);
-      if (isAppend) {
+      if (isAppend === 'update') {
+        setImportStatus(`🎯 បានផ្គូផ្គង និងបញ្ចូលឈ្មោះតាមលេខស្លាក ${formattedTags.length} ស្លាកលេខ ពីឯកសារ "${file.name}" រួចរាល់!`);
+      } else if (isAppend === true) {
         setImportStatus(`បានបន្ថែមទិន្នន័យ ${formattedTags.length} ស្លាកលេខ ពីឯកសារ "${file.name}" ចូលបញ្ជីដែលមានស្រាប់!`);
       } else {
-        setImportStatus(`បានលុបទិន្នន័យចាស់ និងជំនួសដោយទិន្នន័យ ${formattedTags.length} ស្លាកលេខ ពីឯកសារ "${file.name}"!`);
+        setImportStatus(`បានបញ្ចូលទិន្នន័យ ${formattedTags.length} ស្លាកលេខ ពីឯកសារ "${file.name}" ដោយរក្សាទីតាំងដែលបានដៅទុកមុន!`);
       }
     } catch (err) {
       console.error('File import error:', err);
@@ -557,9 +559,20 @@ export default function ImportExportModal({ onClose, allTags, onImportData }) {
               </label>
             </div>
 
-            {/* Action Buttons: Explicit Add vs Replace Buttons */}
+            {/* Action Buttons: Update Names vs Add vs Replace */}
             <div className="grid grid-cols-1 gap-2">
-              <label className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-4 py-3 rounded-xl text-xs shadow-lg shadow-emerald-950/60 cursor-pointer transition-all active:scale-95">
+              <label className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-extrabold px-4 py-3 rounded-xl text-xs shadow-lg shadow-amber-950/60 cursor-pointer transition-all active:scale-95 border border-amber-300">
+                <Sparkles className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                <span>🎯 បញ្ចូលឈ្មោះតាមលេខស្លាក (Update Names by Tag #)</span>
+                <input
+                  type="file"
+                  accept="*"
+                  onChange={(e) => handleFileUpload(e, 'update')}
+                  className="hidden"
+                />
+              </label>
+
+              <label className="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs shadow-lg shadow-emerald-950/60 cursor-pointer transition-all active:scale-95">
                 <PlusCircle className="w-4 h-4" />
                 <span>➕ បន្ថែមទិន្នន័យពី File ថ្មី (Add File Data)</span>
                 <input

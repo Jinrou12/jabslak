@@ -25,11 +25,11 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
   });
 
   const handleShare = async () => {
-    const text = `🏷️ ស្លាកលេខ: ${khmerTagNo} (${tag.tagNumber})\n👤 ឈ្មោះ: ${tag.name}\n📍 ទីតាំង: ${tag.location}\n📞 ទូរស័ព្ទ: ${tag.phone || 'គ្មាន'}`;
+    const text = `🏷️ ស្លាកលេខ: ${khmerTagNo} (${tag.tagNumber})\n👤 ឈ្មោះ: ${tag.name || 'មិនទាន់មាន'}\n📍 ទីតាំង: ${tag.location}\n📞 ទូរស័ព្ទ: ${tag.phone || 'គ្មាន'}`;
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `ស្លាកលេខ ${khmerTagNo} - ${tag.name}`,
+          title: `ស្លាកលេខ ${khmerTagNo} - ${tag.name || 'គ្មានឈ្មោះ'}`,
           text: text,
         });
       } catch (e) {
@@ -109,7 +109,7 @@ export default function TagDetailModal({ tag, onClose, onEdit, onDelete, onViewO
           {/* Name */}
           <h2 className="text-2xl md:text-[1.7rem] font-bold font-moul text-transparent bg-clip-text leading-relaxed"
             style={{ backgroundImage: 'linear-gradient(135deg, #fcd34d, #f59e0b, #fbbf24)' }}>
-            {tag.name}
+            {tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-lg font-kantumruy">(មិនទាន់មានឈ្មោះ)</span>}
           </h2>
 
           {/* 📋 Attendance Check-in Button Pill (Owner, Admin, Assistant only) */}

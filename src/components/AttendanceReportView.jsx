@@ -374,7 +374,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                         </span>
                         <div className="flex items-center gap-1.5 truncate">
                           <span className="font-bold text-slate-100 text-sm truncate font-kantumruy">
-                            {tag.name}
+                            {tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-xs">(មិនទាន់មានឈ្មោះ)</span>}
                           </span>
                           {tagCount > 1 && (
                             <span className="bg-amber-500/20 text-amber-300 font-extrabold px-1.5 py-0.5 rounded text-[10px] font-kantumruy border border-amber-500/30 shrink-0">
@@ -530,7 +530,7 @@ export default function AttendanceReportView({ allTags, onToggleAttendance, curr
                         {/* Name */}
                         <td className="py-3.5 px-4 font-bold text-slate-100 text-sm">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span>{tag.name}</span>
+                            <span>{tag.name ? tag.name : <span className="text-slate-400 font-normal italic text-xs">(មិនទាន់មានឈ្មោះ)</span>}</span>
                             {tagCount > 1 && (
                               <span className="bg-amber-500/20 text-amber-300 font-extrabold px-2 py-0.5 rounded-lg text-xs font-kantumruy border border-amber-500/30">
                                 {westernToKhmerDigits(tagCount)} អង្គ
