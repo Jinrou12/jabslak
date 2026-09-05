@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, X, Filter, LayoutGrid, List, Map as MapIcon, CheckCircle2, XCircle, Users, Calendar, Sparkles, Volume2 } from 'lucide-react';
+import { Search, X, Filter, LayoutGrid, List, Map as MapIcon, CheckCircle2, XCircle, Users, Calendar, Sparkles } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function SearchBar({
@@ -90,31 +90,6 @@ export default function SearchBar({
         </div>
       </div>
 
-      {/* 💡 Sound-Alike / Phonetic Name Recommendations Bar */}
-      {phoneticSuggestions && phoneticSuggestions.length > 0 && (
-        <div className="flex items-center gap-2 overflow-x-auto py-1.5 px-3 bg-gradient-to-r from-amber-500/15 via-purple-500/10 to-transparent border border-amber-500/30 rounded-xl text-xs scrollbar-none animate-in fade-in slide-in-from-top-1 duration-200">
-          <div className="flex items-center gap-1.5 text-amber-300 font-bold shrink-0">
-            <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
-            <span className="hidden sm:inline">ណែនាំឈ្មោះសូរសម្លេងស្រដៀង ៖</span>
-            <span className="sm:hidden">ឈ្មោះស្រដៀង ៖</span>
-          </div>
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            {phoneticSuggestions.map((sug, idx) => (
-              <button
-                key={`${sug.name}-${idx}`}
-                onClick={() => onSelectSuggestion ? onSelectSuggestion(sug) : setSearchQuery(sug.coreName || sug.name)}
-                className="bg-slate-950/80 hover:bg-amber-500/20 text-slate-200 hover:text-amber-300 border border-amber-500/30 hover:border-amber-400/60 px-2.5 py-1 rounded-lg font-medium transition-all shrink-0 flex items-center gap-1.5 text-[11px] sm:text-xs shadow-sm active:scale-95"
-                title={`ចុចដើម្បីស្វែងរកឈ្មោះ ${sug.name}`}
-              >
-                <span>{sug.name}</span>
-                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1 py-0.5 rounded text-[10px] font-bold">
-                  #{sug.tagNumberDisplay}
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
 
       {/* 🟢 Status & Attendance Filter Tabs ( ទាំងអស់ | មិនទាន់មកដល់ | បានមកដល់ ) */}
       <div className="grid grid-cols-3 gap-1.5 w-full pt-1">
