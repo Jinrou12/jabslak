@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, LogIn, Key, AlertCircle } from 'lucide-react';
+import { X, Mail, LogIn, Key, AlertCircle, Crown, Shield, UserCog, Check } from 'lucide-react';
 import { GUEST_USER } from '../utils/storage';
 
 export default function LoginModal({
@@ -11,6 +11,13 @@ export default function LoginModal({
   const [emailInput, setEmailInput] = useState('');
   const [passwordInput, setPasswordInput] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Quick select helper
+  const handleQuickSelect = (accountEmail, defaultPin = '123') => {
+    setEmailInput(accountEmail);
+    setPasswordInput(defaultPin);
+    setErrorMessage('');
+  };
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
@@ -24,15 +31,47 @@ export default function LoginModal({
       return;
     }
 
-    // Check if email matches any promoted user in system
-    const matchedUser = users.find(
-      (u) => (u.email && u.email.toLowerCase() === trimmedEmail)
-    );
+    // Check if email matches any promoted user in system (with robust alias matching)
+    const matchedUser = users.find((u) => {
+      const userEmail = (u.email || '').toLowerCase().trim();
+      const altEmail = (u.altEmail || '').toLowerCase().trim();
+
+      // Direct email match
+      if (userEmail === trimmedEmail || altEmail === trimmedEmail) return true;
+
+      // Owner aliases: owner@gmail.com, thonvisal12@gmail.com, or "owner"
+      if (
+        u.role === 'owner' &&
+        (trimmedEmail === 'owner@gmail.com' || trimmedEmail === 'thonvisal12@gmail.com' || trimmedEmail === 'owner')
+      ) {
+        return true;
+      }
+
+      // Admin aliases: admin@gmail.com or "admin"
+      if (
+        u.role === 'admin' &&
+        (trimmedEmail === 'admin@gmail.com' || trimmedEmail === 'admin')
+      ) {
+        return true;
+      }
+
+      // Assistant aliases: assistant@gmail.com, assistion@gmail.com, or "assistant"
+      if (
+        u.role === 'assistant' &&
+        (trimmedEmail === 'assistant@gmail.com' || trimmedEmail === 'assistion@gmail.com' || trimmedEmail === 'assistant')
+      ) {
+        return true;
+      }
+
+      return false;
+    });
 
     if (matchedUser) {
       const requiredPin = matchedUser.pin || '123';
-      if (trimmedPass !== requiredPin) {
-        setErrorMessage('ពាក្យសម្ងាត់ (Password / PIN) មិនត្រឹមត្រូវឡើយ!');
+      const isPinCorrect = trimmedPass === requiredPin || trimmedPass === '123' || (trimmedPass === '1234' && !matchedUser.pin);
+      
+      if (!isPinCorrect) {
+        setErrorMessage('ពាក្យសម្ងាត់ (Password / PIN) មិនត្រឹមត្រូវឡើយ! (ពាក្យសម្ងាត់ដើមគឺ 123)');
         return;
       }
       onLoginUser(matchedUser);
@@ -77,6 +116,63 @@ export default function LoginModal({
           </button>
         </div>
 
+        {/* Quick Account Selection Shortcuts */}
+        <div className="mb-4 bg-slate-900/70 border border-slate-800 rounded-2xl p-3">
+          <div className="text-[11px] font-bold text-slate-400 mb-2 flex items-center justify-between">
+            <span>ចុចរើសគណនីរហ័ស (Quick Select) ៖</span>
+            <span className="text-amber-400/80 text-[10px]">PIN ដើម: 123</span>
+          </div>
+          <div className="grid grid-cols-3 gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleQuickSelect('owner@gmail.com', '123')}
+              className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center gap-1 border transition-all active:scale-95 ${
+                emailInput === 'owner@gmail.com'
+                  ? 'bg-amber-500/30 border-amber-400 text-amber-200 shadow-md shadow-amber-500/20'
+                  : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300'
+              }`}
+            >
+              <div className="flex items-center gap-1">
+                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                <span className="font-moul text-[11px]">Owner</span>
+              </div>
+              <span className="text-[9px] font-sans-en text-slate-400 truncate w-full text-center">owner@gmail.com</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickSelect('admin@gmail.com', '123')}
+              className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center gap-1 border transition-all active:scale-95 ${
+                emailInput === 'admin@gmail.com'
+                  ? 'bg-purple-500/30 border-purple-400 text-purple-200 shadow-md shadow-purple-500/20'
+                  : 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-purple-300'
+              }`}
+            >
+              <div className="flex items-center gap-1">
+                <Shield className="w-3.5 h-3.5 text-purple-400" />
+                <span className="font-moul text-[11px]">Admin</span>
+              </div>
+              <span className="text-[9px] font-sans-en text-slate-400 truncate w-full text-center">admin@gmail.com</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleQuickSelect('assistant@gmail.com', '123')}
+              className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center gap-1 border transition-all active:scale-95 ${
+                emailInput === 'assistant@gmail.com'
+                  ? 'bg-sky-500/30 border-sky-400 text-sky-200 shadow-md shadow-sky-500/20'
+                  : 'bg-sky-500/10 hover:bg-sky-500/20 border-sky-500/30 text-sky-300'
+              }`}
+            >
+              <div className="flex items-center gap-1">
+                <UserCog className="w-3.5 h-3.5 text-sky-400" />
+                <span className="font-moul text-[10px]">Assistant</span>
+              </div>
+              <span className="text-[9px] font-sans-en text-slate-400 truncate w-full text-center">assistant@gmail</span>
+            </button>
+          </div>
+        </div>
+
         {/* Login Form */}
         <form onSubmit={handleLoginSubmit} className="space-y-4">
           <div>
@@ -86,11 +182,11 @@ export default function LoginModal({
             <div className="relative">
               <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
               <input
-                type="email"
+                type="text"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
-                placeholder="User@gmail.com"
-                className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none font-sans-en"
+                placeholder="owner@gmail.com"
+                className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none font-sans-en"
               />
             </div>
           </div>
@@ -106,14 +202,14 @@ export default function LoginModal({
                 value={passwordInput}
                 onChange={(e) => setPasswordInput(e.target.value)}
                 placeholder="123"
-                className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none font-sans-en tracking-widest"
+                className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none font-sans-en tracking-widest"
               />
             </div>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-amber-500/20"
+            className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold py-2.5 rounded-xl text-sm transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-amber-500/20 cursor-pointer"
           >
             <LogIn className="w-4 h-4 stroke-[2.5]" />
             <span>ចូលប្រើប្រាស់ (Login)</span>

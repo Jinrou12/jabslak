@@ -46,7 +46,7 @@ export const GUEST_USER = {
 };
 
 export const DEFAULT_USERS = [
-  { id: 'u-owner', name: 'លោកប្រធាន (Owner)', email: 'thonvisal12@gmail.com', role: 'owner', phone: '012345678', pin: '123' },
+  { id: 'u-owner', name: 'លោកប្រធាន (Owner)', email: 'owner@gmail.com', altEmail: 'thonvisal12@gmail.com', role: 'owner', phone: '012345678', pin: '123' },
   { id: 'u-admin', name: 'អ្នកគ្រប់គ្រង (Admin)', email: 'admin@gmail.com', role: 'admin', phone: '098765432', pin: '123' },
   { id: 'u-assistant', name: 'អ្នកជំនួយការ (Assistant)', email: 'assistant@gmail.com', role: 'assistant', phone: '011223344', pin: '123' },
   { id: 'u-assistant2', name: 'អ្នកជំនួយការ (Assistion)', email: 'assistion@gmail.com', role: 'assistant', phone: '011223344', pin: '123' }
@@ -58,7 +58,25 @@ export function getSavedUsers() {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed;
+        let changed = false;
+        const migrated = parsed.map((u) => {
+          if (u.role === 'owner') {
+            if (u.email !== 'owner@gmail.com' || !u.altEmail) {
+              changed = true;
+              return {
+                ...u,
+                email: 'owner@gmail.com',
+                altEmail: u.email && u.email !== 'owner@gmail.com' ? u.email : 'thonvisal12@gmail.com',
+                pin: u.pin || '123'
+              };
+            }
+          }
+          return u;
+        });
+        if (changed) {
+          saveUsers(migrated);
+        }
+        return migrated;
       }
     }
   } catch (err) {
