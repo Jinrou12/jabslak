@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   X,
   MapPin,
@@ -37,18 +37,18 @@ import {
   TEMPLE_PALI_DIRECTIONS,
   getSavedTempleLocations,
   getSavedTab3Locations,
-  saveTempleLocations,
-  saveTab3Locations,
-  resetTempleLocations,
-  resetTab3Locations
+  saveTempleLocations as rawSaveTempleLocations,
+  saveTab3Locations as rawSaveTab3Locations,
+  resetTempleLocations as rawResetTempleLocations,
+  resetTab3Locations as rawResetTab3Locations
 } from '../data/templeLocations';
 import {
   subscribeToFirebaseTempleLocations,
-  saveTempleLocationsToFirebase,
+  saveTempleLocationsToFirebase as rawSaveTempleLocationsToFirebase,
   subscribeToFirebaseTab3Locations,
-  saveTab3LocationsToFirebase,
+  saveTab3LocationsToFirebase as rawSaveTab3LocationsToFirebase,
   subscribeToGroupSettings,
-  saveGroupSettingsToFirebase
+  saveGroupSettingsToFirebase as rawSaveGroupSettingsToFirebase
 } from '../utils/firebase';
 import { getTempleCustomMapImage, saveTempleCustomMapImage } from '../utils/templeStorage';
 import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName, formatTagRanges } from '../utils/khmerSearch';
@@ -752,11 +752,41 @@ export default function TempleMapModal({
   const isAdminOnMobile = userRole === 'admin' && isMobileDevice;
   const canUserDragPins = userRole === 'owner' || (userRole === 'admin' && !isMobileDevice);
 
-  // Tab 1 & Tab 2 share this state
-  const [locations, setLocations] = useState(getSavedTempleLocations());
-  // Tab 3 has its own INDEPENDENT state
-  const [tab3Locations, setTab3Locations] = useState(getSavedTab3Locations());
+  const currentTempleId = currentTemple?.id || 'khemavan';
+  const isKhemavan = currentTempleId === 'khemavan';
+
+  // Temple-scoped storage wrappers that automatically pass currentTempleId
+  const saveTab3Locations = useCallback((locs) => rawSaveTab3Locations(locs, currentTempleId), [currentTempleId]);
+  const saveTab3LocationsToFirebase = useCallback((locs) => rawSaveTab3LocationsToFirebase(locs, currentTempleId), [currentTempleId]);
+  const saveTempleLocations = useCallback((locs) => rawSaveTempleLocations(locs, currentTempleId), [currentTempleId]);
+  const saveTempleLocationsToFirebase = useCallback((locs) => rawSaveTempleLocationsToFirebase(locs, currentTempleId), [currentTempleId]);
+  const resetTab3Locations = useCallback(() => rawResetTab3Locations(currentTempleId), [currentTempleId]);
+  const resetTempleLocations = useCallback(() => rawResetTempleLocations(currentTempleId), [currentTempleId]);
+
+  // Tab 1 & Tab 2 share this state (scoped to current temple)
+  const [locations, setLocations] = useState(() => getSavedTempleLocations(currentTempleId));
+  // Tab 3 has its own INDEPENDENT state (scoped to current temple: starts EMPTY [] for other temples)
+  const [tab3Locations, setTab3Locations] = useState(() => getSavedTab3Locations(currentTempleId));
   const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ នៅស្លាកលើ Map)
+
+  useEffect(() => {
+    setLocations(getSavedTempleLocations(currentTempleId));
+    setTab3Locations(getSavedTab3Locations(currentTempleId));
+    const mgrKey = isKhemavan ? 'TEMPLE_GROUP_MANAGERS_V1' : `TEMPLE_GROUP_MANAGERS_${currentTempleId.toUpperCase()}`;
+    try {
+      const savedMgr = localStorage.getItem(mgrKey);
+      setGroupManagers(savedMgr ? JSON.parse(savedMgr) : {});
+    } catch {
+      setGroupManagers({});
+    }
+    const delKey = isKhemavan ? 'TEMPLE_DELETED_GROUPS_V1' : `TEMPLE_DELETED_GROUPS_${currentTempleId.toUpperCase()}`;
+    try {
+      const savedDel = localStorage.getItem(delKey);
+      setDeletedCategories(savedDel ? JSON.parse(savedDel) : []);
+    } catch {
+      setDeletedCategories([]);
+    }
+  }, [currentTempleId, isKhemavan]);
 
   // Group tags by person name for dropdown selector & pins
   const groupedAllTags = useMemo(() => {
@@ -790,8 +820,8 @@ export default function TempleMapModal({
     const mapped = tab3Locations.map((loc) => {
       const locIdStr = String(loc.id || '').trim();
       
-      // Look up authentic original location name from INITIAL_TEMPLE_LOCATIONS ONLY for base building/gate pins
-      const initialMatch = !loc.isTagPin ? INITIAL_TEMPLE_LOCATIONS.find((init) => String(init.id).trim() === locIdStr) : null;
+      // Look up authentic original location name from INITIAL_TEMPLE_LOCATIONS ONLY for Wat Khemavan base building/gate pins
+      const initialMatch = (!loc.isTagPin && isKhemavan) ? INITIAL_TEMPLE_LOCATIONS.find((init) => String(init.id).trim() === locIdStr) : null;
       const locationName = initialMatch ? initialMatch.name : loc.name;
 
       // P2-A: O(1) tag matching via pre-computed Maps
@@ -954,7 +984,8 @@ export default function TempleMapModal({
   // Group Person in Charge (អ្នកទទួលបន្ទុក ក្នុង Group) State
   const [groupManagers, setGroupManagers] = useState(() => {
     try {
-      const saved = localStorage.getItem('TEMPLE_GROUP_MANAGERS_V1');
+      const key = isKhemavan ? 'TEMPLE_GROUP_MANAGERS_V1' : `TEMPLE_GROUP_MANAGERS_${currentTempleId.toUpperCase()}`;
+      const saved = localStorage.getItem(key);
       return saved ? JSON.parse(saved) : {};
     } catch {
       return {};
@@ -964,7 +995,8 @@ export default function TempleMapModal({
   const saveGroupManagers = (updated) => {
     setGroupManagers(updated);
     try {
-      localStorage.setItem('TEMPLE_GROUP_MANAGERS_V1', JSON.stringify(updated));
+      const key = isKhemavan ? 'TEMPLE_GROUP_MANAGERS_V1' : `TEMPLE_GROUP_MANAGERS_${currentTempleId.toUpperCase()}`;
+      localStorage.setItem(key, JSON.stringify(updated));
     } catch (e) {}
   };
 
@@ -977,8 +1009,8 @@ export default function TempleMapModal({
   const [redoStack, setRedoStack] = useState([]);
   const [undoToast, setUndoToast] = useState('');
 
-  // Track deleted categories so deleted groups disappear completely (PROTECT core preset 8 zones!)
-  const CORE_PRESET_ZONES = useMemo(() => [
+  // Track deleted categories so deleted groups disappear completely (PROTECT core preset 8 zones for Wat Khemavan ONLY!)
+  const CORE_PRESET_ZONES = useMemo(() => isKhemavan ? [
     'ផែន១ ៖ ធម្មសភា',
     'ផែន២ ៖ សាលាឆាន់ចាស់',
     'ផែន៣ ៖ មុខសាលាឆាន់ចាស់',
@@ -990,13 +1022,14 @@ export default function TempleMapModal({
     'ធម្មសភា',
     'សាលាធម្មសភា',
     'ធម្មសាលាសភា'
-  ], []);
+  ] : [], [isKhemavan]);
 
   const [deletedCategories, setDeletedCategories] = useState(() => {
     try {
-      const saved = localStorage.getItem('TEMPLE_DELETED_GROUPS_V1');
+      const key = isKhemavan ? 'TEMPLE_DELETED_GROUPS_V1' : `TEMPLE_DELETED_GROUPS_${currentTempleId.toUpperCase()}`;
+      const saved = localStorage.getItem(key);
       const list = saved ? JSON.parse(saved) : [];
-      return list.filter((c) => !['ផែន១ ៖ ធម្មសភា', 'ផែន២ ៖ សាលាឆាន់ចាស់', 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់', 'ផែន៤ ៖ ព្រះបរិនិព្វាន', 'ផែន៥ ៖ បណ្ណាល័យ', 'ផែន៦ ៖ ព្រះផ្ទម', 'ផែន៧ ៖ តាមកុដិ', 'ផែន៨ ៖ សាលារៀន', 'ធម្មសភា', 'សាលាធម្មសភា', 'ធម្មសាលាសភា'].includes(c));
+      return isKhemavan ? list.filter((c) => !['ផែន១ ៖ ធម្មសភា', 'ផែន២ ៖ សាលាឆាន់ចាស់', 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់', 'ផែន៤ ៖ ព្រះបរិនិព្វាន', 'ផែន៥ ៖ បណ្ណាល័យ', 'ផែន៦ ៖ ព្រះផ្ទម', 'ផែន៧ ៖ តាមកុដិ', 'ផែន៨ ៖ សាលារៀន', 'ធម្មសភា', 'សាលាធម្មសភា', 'ធម្មសាលាសភា'].includes(c)) : list;
     } catch {
       return [];
     }
@@ -1005,7 +1038,8 @@ export default function TempleMapModal({
   const saveDeletedCategories = (list) => {
     setDeletedCategories(list);
     try {
-      localStorage.setItem('TEMPLE_DELETED_GROUPS_V1', JSON.stringify(list));
+      const key = isKhemavan ? 'TEMPLE_DELETED_GROUPS_V1' : `TEMPLE_DELETED_GROUPS_${currentTempleId.toUpperCase()}`;
+      localStorage.setItem(key, JSON.stringify(list));
     } catch (e) {
       console.error(e);
     }
@@ -1155,33 +1189,37 @@ export default function TempleMapModal({
   useEffect(() => {
     const unsubscribe = subscribeToFirebaseTempleLocations(
       (cloudLocations) => {
-        if (Array.isArray(cloudLocations) && cloudLocations.length > 0) {
+        if (Array.isArray(cloudLocations)) {
+          if (isKhemavan && cloudLocations.length === 0) return;
           setLocations(cloudLocations);
         }
       },
       (err) => {
         console.warn('Temple locations using local cache:', err);
-      }
+      },
+      currentTempleId
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [currentTempleId, isKhemavan]);
 
   // Tab 3 has its own INDEPENDENT subscription
   useEffect(() => {
     const unsubscribe = subscribeToFirebaseTab3Locations(
       (cloudLocations) => {
-        if (Array.isArray(cloudLocations) && cloudLocations.length > 0) {
+        if (Array.isArray(cloudLocations)) {
+          if (isKhemavan && cloudLocations.length === 0) return;
           setTab3Locations(cloudLocations);
         }
       },
       (err) => {
         console.warn('Tab 3 locations using local cache:', err);
-      }
+      },
+      currentTempleId
     );
 
     return () => unsubscribe();
-  }, []);
+  }, [currentTempleId, isKhemavan]);
 
   // Subscribe to Realtime Group Settings (Hidden, Locked & Managers synced across PC & Phone)
   useEffect(() => {
@@ -1200,14 +1238,15 @@ export default function TempleMapModal({
         if (Object.keys(managers).length > 0) {
           setGroupManagers(managers);
           try {
-            localStorage.setItem('TEMPLE_GROUP_MANAGERS_V1', JSON.stringify(managers));
+            const key = isKhemavan ? 'TEMPLE_GROUP_MANAGERS_V1' : `TEMPLE_GROUP_MANAGERS_${currentTempleId.toUpperCase()}`;
+            localStorage.setItem(key, JSON.stringify(managers));
           } catch (e) {}
         }
       }
-    });
+    }, currentTempleId);
 
     return () => unsubscribe();
-  }, []);
+  }, [currentTempleId, isKhemavan]);
 
   const syncGroupSettingsToCloud = (nextHidden, nextLocked, nextManagers = groupManagers) => {
     const allCatNames = new Set([
@@ -1228,7 +1267,7 @@ export default function TempleMapModal({
       };
     });
 
-    saveGroupSettingsToFirebase(payload);
+    rawSaveGroupSettingsToFirebase(payload, currentTempleId);
   };
 
   // 🎯 Ultra-Fluid 120fps Native Camera Centering (Zero Jitter, Zero Stutter)

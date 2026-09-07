@@ -38,10 +38,23 @@ const STORAGE_KEY = 'TEMPLE_MAP_LOCATIONS_PERSIST_V4';
 const STORAGE_KEY_TAB3 = 'TEMPLE_MAP_LOCATIONS_TAB3_V1';
 
 /**
- * Load temple locations from LocalStorage or return default 21 points
+ * Load temple locations from LocalStorage or return default points
  * Used by Tab 1 (read-only) and Tab 2 (editable)
  */
-export function getSavedTempleLocations() {
+export function getSavedTempleLocations(templeId = 'khemavan') {
+  if (templeId && templeId !== 'khemavan') {
+    const key = `TEMPLE_MAP_LOCATIONS_WAT_${templeId.toUpperCase()}`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  // Wat Khemavan
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -62,19 +75,26 @@ export function getSavedTempleLocations() {
 /**
  * Save temple locations to LocalStorage (Tab 1 & Tab 2)
  */
-export function saveTempleLocations(locations) {
+export function saveTempleLocations(locations, templeId = 'khemavan') {
+  const key = (!templeId || templeId === 'khemavan')
+    ? STORAGE_KEY
+    : `TEMPLE_MAP_LOCATIONS_WAT_${templeId.toUpperCase()}`;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(locations));
+    localStorage.setItem(key, JSON.stringify(locations));
   } catch (e) {
     console.error('Failed to save temple locations to storage:', e);
   }
 }
 
 /**
- * Reset temple locations back to initial 21 points (Tab 1 & Tab 2)
+ * Reset temple locations back to initial points
  */
-export function resetTempleLocations() {
-  saveTempleLocations(INITIAL_TEMPLE_LOCATIONS);
+export function resetTempleLocations(templeId = 'khemavan') {
+  if (templeId && templeId !== 'khemavan') {
+    saveTempleLocations([], templeId);
+    return [];
+  }
+  saveTempleLocations(INITIAL_TEMPLE_LOCATIONS, 'khemavan');
   return INITIAL_TEMPLE_LOCATIONS;
 }
 
@@ -83,9 +103,25 @@ export function resetTempleLocations() {
 // ════════════════════════════════════════════════
 
 /**
- * Load Tab 3 locations from LocalStorage or return default 21 points
+ * Load Tab 3 locations from LocalStorage
+ * For Wat Khemavan: loads original 170 locations
+ * For other temples: returns empty array [] so new temples start with clean map!
  */
-export function getSavedTab3Locations() {
+export function getSavedTab3Locations(templeId = 'khemavan') {
+  if (templeId && templeId !== 'khemavan') {
+    const key = `TEMPLE_MAP_LOCATIONS_TAB3_WAT_${templeId.toUpperCase()}`;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    // Newly created temple starts with clean map (0 pins)
+    return [];
+  }
+
+  // Wat Khemavan
   try {
     const saved = localStorage.getItem(STORAGE_KEY_TAB3);
     if (saved) {
@@ -104,20 +140,27 @@ export function getSavedTab3Locations() {
 }
 
 /**
- * Save Tab 3 locations to LocalStorage (independent, does NOT touch Tab 1 & Tab 2)
+ * Save Tab 3 locations to LocalStorage (independent per temple)
  */
-export function saveTab3Locations(locations) {
+export function saveTab3Locations(locations, templeId = 'khemavan') {
+  const key = (!templeId || templeId === 'khemavan')
+    ? STORAGE_KEY_TAB3
+    : `TEMPLE_MAP_LOCATIONS_TAB3_WAT_${templeId.toUpperCase()}`;
   try {
-    localStorage.setItem(STORAGE_KEY_TAB3, JSON.stringify(locations));
+    localStorage.setItem(key, JSON.stringify(locations));
   } catch (e) {
     console.error('Failed to save Tab 3 locations to storage:', e);
   }
 }
 
 /**
- * Reset Tab 3 locations back to initial 21 points
+ * Reset Tab 3 locations
  */
-export function resetTab3Locations() {
-  saveTab3Locations(INITIAL_TEMPLE_LOCATIONS);
+export function resetTab3Locations(templeId = 'khemavan') {
+  if (templeId && templeId !== 'khemavan') {
+    saveTab3Locations([], templeId);
+    return [];
+  }
+  saveTab3Locations(INITIAL_TEMPLE_LOCATIONS, 'khemavan');
   return INITIAL_TEMPLE_LOCATIONS;
 }

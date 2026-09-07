@@ -154,23 +154,20 @@ export function subscribeToFirebaseTags(onDataReceived, onError, templeId = 'khe
  * Subscribe to real-time temple locations in Firebase Realtime Database
  * Ensures PC and Phone are 100% synchronized in real time!
  */
-export function subscribeToFirebaseTempleLocations(onDataReceived, onError) {
+export function subscribeToFirebaseTempleLocations(onDataReceived, onError, templeId = 'khemavan') {
   if (!db) {
     if (onError) onError(new Error('Firebase DB is not initialized'));
     return () => {};
   }
 
-  // Guard flag: prevent infinite re-seeding loop.
-  // When we detect stale coordinates and write back to Firebase, onValue fires
-  // again — without this guard that triggers another write, ad infinitum.
+  const isKhemavan = !templeId || templeId === 'khemavan';
+  const path = isKhemavan ? 'temple_locations' : `temples/${templeId}/map_locations`;
   let isSeeding = false;
-
-  const locsRef = ref(db, 'temple_locations');
+  const locsRef = ref(db, path);
   
   const unsubscribe = onValue(
     locsRef,
     (snapshot) => {
-      // Skip callbacks triggered by our own seeding write
       if (isSeeding) return;
 
       if (snapshot.exists()) {
@@ -182,39 +179,27 @@ export function subscribeToFirebaseTempleLocations(onDataReceived, onError) {
           locList = Object.values(val);
         }
         if (locList.length > 0) {
-          const local = getSavedTempleLocations();
-          if (Array.isArray(local) && local.length > locList.length) {
-            const mergedMap = new Map();
-            locList.forEach((item) => mergedMap.set(String(item.id), item));
-            local.forEach((item) => {
-              if (!mergedMap.has(String(item.id))) {
-                mergedMap.set(String(item.id), item);
-              }
-            });
-            const mergedList = Array.from(mergedMap.values());
-            saveTempleLocationsToFirebase(mergedList);
-            onDataReceived(mergedList);
-            return;
-          }
-
-          saveTempleLocationsLocal(locList);
+          saveTempleLocations(locList, templeId);
           onDataReceived(locList);
           return;
         }
       }
       
-      // If empty in cloud -> use local storage if available, else seed INITIAL_TEMPLE_LOCATIONS
-      const local = getSavedTempleLocations();
-      const defaultToUse = (Array.isArray(local) && local.length > 0) ? local : INITIAL_TEMPLE_LOCATIONS;
-      
-      isSeeding = true;
-      saveTempleLocationsToFirebase(defaultToUse).finally(() => {
-        isSeeding = false;
-      });
-      onDataReceived(defaultToUse);
+      // If empty in cloud:
+      if (isKhemavan) {
+        const local = getSavedTempleLocations('khemavan');
+        const defaultToUse = (Array.isArray(local) && local.length > 0) ? local : INITIAL_TEMPLE_LOCATIONS;
+        isSeeding = true;
+        saveTempleLocationsToFirebase(defaultToUse, 'khemavan').finally(() => {
+          isSeeding = false;
+        });
+        onDataReceived(defaultToUse);
+      } else {
+        onDataReceived([]);
+      }
     },
     (err) => {
-      console.error('Firebase temple locations subscription error:', err);
+      console.error(`Firebase temple locations subscription error for ${path}:`, err);
       if (onError) onError(err);
     }
   );
@@ -225,12 +210,14 @@ export function subscribeToFirebaseTempleLocations(onDataReceived, onError) {
 /**
  * Save temple locations to Firebase Realtime DB and LocalStorage (Tab 1 & Tab 2)
  */
-export async function saveTempleLocationsToFirebase(locations) {
-  saveTempleLocationsLocal(locations);
+export async function saveTempleLocationsToFirebase(locations, templeId = 'khemavan') {
+  saveTempleLocations(locations, templeId);
   if (!db) return false;
   try {
+    const isKhemavan = !templeId || templeId === 'khemavan';
+    const path = isKhemavan ? 'temple_locations' : `temples/${templeId}/map_locations`;
     const cleanLocations = JSON.parse(JSON.stringify(locations || []));
-    const locsRef = ref(db, 'temple_locations');
+    const locsRef = ref(db, path);
     await set(locsRef, cleanLocations);
     return true;
   } catch (err) {
@@ -240,20 +227,24 @@ export async function saveTempleLocationsToFirebase(locations) {
 }
 
 // ════════════════════════════════════════════════
-// TAB 3 INDEPENDENT FIREBASE SYNC
+// TAB 3 INDEPENDENT FIREBASE SYNC (Scoped per Temple!)
 // ════════════════════════════════════════════════
 
 /**
  * Subscribe to Tab 3 temple locations in Firebase (independent from Tab 1/2)
+ * For Wat Khemavan: uses temple_locations_tab3
+ * For other temples: uses temples/{templeId}/map_locations_tab3 (starts EMPTY with 0 pins!)
  */
-export function subscribeToFirebaseTab3Locations(onDataReceived, onError) {
+export function subscribeToFirebaseTab3Locations(onDataReceived, onError, templeId = 'khemavan') {
   if (!db) {
     if (onError) onError(new Error('Firebase DB is not initialized'));
     return () => {};
   }
 
+  const isKhemavan = !templeId || templeId === 'khemavan';
+  const path = isKhemavan ? 'temple_locations_tab3' : `temples/${templeId}/map_locations_tab3`;
   let isSeedingTab3 = false;
-  const locsRef = ref(db, 'temple_locations_tab3');
+  const locsRef = ref(db, path);
   
   const unsubscribe = onValue(
     locsRef,
@@ -269,39 +260,29 @@ export function subscribeToFirebaseTab3Locations(onDataReceived, onError) {
           locList = Object.values(val);
         }
         if (locList.length > 0) {
-          const local = getSavedTab3Locations();
-          if (Array.isArray(local) && local.length > locList.length) {
-            const mergedMap = new Map();
-            locList.forEach((item) => mergedMap.set(String(item.id), item));
-            local.forEach((item) => {
-              if (!mergedMap.has(String(item.id))) {
-                mergedMap.set(String(item.id), item);
-              }
-            });
-            const mergedList = Array.from(mergedMap.values());
-            saveTab3LocationsToFirebase(mergedList);
-            onDataReceived(mergedList);
-            return;
-          }
-
-          saveTab3LocationsLocal(locList);
+          saveTab3Locations(locList, templeId);
           onDataReceived(locList);
           return;
         }
       }
       
-      // If empty in cloud -> check LocalStorage first before resetting to INITIAL
-      const local = getSavedTab3Locations();
-      const defaultToUse = (Array.isArray(local) && local.length > 0) ? local : INITIAL_TEMPLE_LOCATIONS;
-
-      isSeedingTab3 = true;
-      saveTab3LocationsToFirebase(defaultToUse).finally(() => {
-        isSeedingTab3 = false;
-      });
-      onDataReceived(defaultToUse);
+      // If empty in cloud:
+      if (isKhemavan) {
+        const local = getSavedTab3Locations('khemavan');
+        const defaultToUse = (Array.isArray(local) && local.length > 0) ? local : INITIAL_TEMPLE_LOCATIONS;
+        isSeedingTab3 = true;
+        saveTab3LocationsToFirebase(defaultToUse, 'khemavan').finally(() => {
+          isSeedingTab3 = false;
+        });
+        onDataReceived(defaultToUse);
+      } else {
+        // Other temples start with EMPTY pins list [] (zero pins)
+        const local = getSavedTab3Locations(templeId);
+        onDataReceived(Array.isArray(local) ? local : []);
+      }
     },
     (err) => {
-      console.error('Firebase Tab 3 locations subscription error:', err);
+      console.error(`Firebase Tab 3 locations subscription error for ${path}:`, err);
       if (onError) onError(err);
     }
   );
@@ -310,14 +291,16 @@ export function subscribeToFirebaseTab3Locations(onDataReceived, onError) {
 }
 
 /**
- * Save Tab 3 locations to Firebase (independent, does NOT touch Tab 1/2)
+ * Save Tab 3 locations to Firebase (independent per temple)
  */
-export async function saveTab3LocationsToFirebase(locations) {
-  saveTab3LocationsLocal(locations);
+export async function saveTab3LocationsToFirebase(locations, templeId = 'khemavan') {
+  saveTab3Locations(locations, templeId);
   if (!db) return false;
   try {
+    const isKhemavan = !templeId || templeId === 'khemavan';
+    const path = isKhemavan ? 'temple_locations_tab3' : `temples/${templeId}/map_locations_tab3`;
     const cleanLocations = JSON.parse(JSON.stringify(locations || []));
-    const locsRef = ref(db, 'temple_locations_tab3');
+    const locsRef = ref(db, path);
     await set(locsRef, cleanLocations);
     return true;
   } catch (err) {
@@ -398,9 +381,11 @@ export async function seedFirebaseData(initialData, force = false, templeId = 'k
 /**
  * Subscribe to Category Group Settings (Hidden / Locked states synced across devices)
  */
-export function subscribeToGroupSettings(onDataReceived) {
+export function subscribeToGroupSettings(onDataReceived, templeId = 'khemavan') {
   if (!db) return () => {};
-  const settingsRef = ref(db, 'map_group_settings');
+  const isKhemavan = !templeId || templeId === 'khemavan';
+  const path = isKhemavan ? 'map_group_settings' : `temples/${templeId}/map_group_settings`;
+  const settingsRef = ref(db, path);
   const unsubscribe = onValue(
     settingsRef,
     (snapshot) => {
@@ -411,7 +396,7 @@ export function subscribeToGroupSettings(onDataReceived) {
       }
     },
     (err) => {
-      console.warn('Group settings subscription error:', err);
+      console.warn(`Group settings subscription error for ${path}:`, err);
     }
   );
   return unsubscribe;
@@ -420,10 +405,12 @@ export function subscribeToGroupSettings(onDataReceived) {
 /**
  * Save Category Group Settings to Firebase Realtime Database
  */
-export async function saveGroupSettingsToFirebase(settings) {
+export async function saveGroupSettingsToFirebase(settings, templeId = 'khemavan') {
   if (!db) return false;
   try {
-    const settingsRef = ref(db, 'map_group_settings');
+    const isKhemavan = !templeId || templeId === 'khemavan';
+    const path = isKhemavan ? 'map_group_settings' : `temples/${templeId}/map_group_settings`;
+    const settingsRef = ref(db, path);
     await set(settingsRef, settings);
     return true;
   } catch (err) {
