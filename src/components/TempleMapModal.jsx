@@ -50,7 +50,7 @@ import {
   subscribeToGroupSettings,
   saveGroupSettingsToFirebase as rawSaveGroupSettingsToFirebase
 } from '../utils/firebase';
-import { getTempleCustomMapImage, saveTempleCustomMapImage } from '../utils/templeStorage';
+import { getTempleCustomMapImage, saveTempleCustomMapImage, compressImage } from '../utils/templeStorage';
 import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName, formatTagRanges } from '../utils/khmerSearch';
 
 const PIN_COLOR_GRADIENTS = [
@@ -710,34 +710,37 @@ export default function TempleMapModal({
   const userRole = currentUser?.role || 'guest';
   const canCustomizeMap = userRole === 'admin' || userRole === 'owner';
 
-  // Custom Map Image State per Temple
+  const currentTempleId = currentTemple?.id || 'khemavan';
+  const isKhemavan = currentTempleId === 'khemavan';
+
+  // Custom Map Image State per Temple (Wat Khemavan has default drone photo; other temples start with null unless custom uploaded)
   const mapInputRef = useRef(null);
   const [customMapImage, setCustomMapImage] = useState(() => {
-    return getTempleCustomMapImage(currentTemple?.id, currentTemple?.mapImage || '/temple_map/map_new_latest.jpg');
+    return getTempleCustomMapImage(currentTempleId, currentTemple?.mapImage);
   });
 
   useEffect(() => {
-    setCustomMapImage(getTempleCustomMapImage(currentTemple?.id, currentTemple?.mapImage || '/temple_map/map_new_latest.jpg'));
-  }, [currentTemple?.id, currentTemple?.mapImage]);
+    setCustomMapImage(getTempleCustomMapImage(currentTempleId, currentTemple?.mapImage));
+  }, [currentTempleId, currentTemple?.mapImage]);
 
-  const handleMapImageUpload = (e) => {
+  // Active map image source: Wat Khemavan always has fallback /temple_map/map_new_latest.jpg; other temples only show customMapImage
+  const activeMapSrc = isKhemavan ? (customMapImage || '/temple_map/map_new_latest.jpg') : customMapImage;
+
+  const handleMapImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert('ទំហំរូបភាពធំពេក! សូមជ្រើសរើសរូបភាពក្រោម 5MB');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target.result;
+    try {
+      const dataUrl = await compressImage(file, 2048, 2048, 0.82);
       setCustomMapImage(dataUrl);
-      saveTempleCustomMapImage(currentTemple?.id || 'khemavan', dataUrl);
+      saveTempleCustomMapImage(currentTempleId, dataUrl);
       if (onUpdateTempleMap) {
-        onUpdateTempleMap(currentTemple?.id || 'khemavan', dataUrl);
+        onUpdateTempleMap(currentTempleId, dataUrl);
       }
       alert(`បានផ្លាស់ប្តូររូបភាពប្លង់វត្ត «${currentTemple?.name || 'វត្ត'}» ជោគជ័យ!`);
-    };
-    reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error compressing map image:', err);
+      alert('មិនអាចដំណើរការរូបភាពប្លង់បានទេ! សូមជ្រើសរើសរូបភាពម្តងទៀត។');
+    }
   };
 
   // Mobile touch device detection
@@ -751,9 +754,6 @@ export default function TempleMapModal({
   // 🔒 Admin on mobile phone has NO permission to move/drag pins on map! (Only Owner, or Admin on PC)
   const isAdminOnMobile = userRole === 'admin' && isMobileDevice;
   const canUserDragPins = userRole === 'owner' || (userRole === 'admin' && !isMobileDevice);
-
-  const currentTempleId = currentTemple?.id || 'khemavan';
-  const isKhemavan = currentTempleId === 'khemavan';
 
   // Temple-scoped storage wrappers that automatically pass currentTempleId
   const saveTab3Locations = useCallback((locs) => rawSaveTab3Locations(locs, currentTempleId), [currentTempleId]);
@@ -2924,11 +2924,11 @@ export default function TempleMapModal({
                 <button
                   type="button"
                   onClick={() => mapInputRef.current?.click()}
-                  className="px-2.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
-                  title="ដូររូបភាពប្លង់ផែនទីសម្រាប់វត្តនេះ (Upload Map)"
+                  className="px-3 py-1.5 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md shadow-amber-500/30 active:scale-95 cursor-pointer font-kantumruy"
+                  title="ចុចដើម្បីបញ្ចូល ឬដូររូបភាពប្លង់វត្តនេះ (Upload Map)"
                 >
-                  <Upload className="w-3.5 h-3.5 text-amber-400" />
-                  <span className="hidden sm:inline">ដូររូបប្លង់វត្ត</span>
+                  <Upload className="w-4 h-4 text-slate-950 stroke-[2.5]" />
+                  <span className="font-bold whitespace-nowrap">ដូររូបប្លង់វត្ត</span>
                 </button>
               </>
             )}
@@ -3204,74 +3204,121 @@ export default function TempleMapModal({
               )}
 
               {/* Scalable Map Box */}
-              <div
-                ref={mapContainerRef}
-                onClick={handleMapClick}
-                className="relative w-full mx-auto origin-top-left"
-                style={{
-                  width: `${zoomScale * 100}%`,
-                  minWidth: '100%',
-                  willChange: 'transform',
-                  transform: 'translateZ(0)',
-                  contain: 'layout style'
-                }}
-              >
-                {/* Crisp Clean Base Temple Map Image */}
-                <img
-                  src={customMapImage || currentTemple?.mapImage || '/temple_map/map_new_latest.jpg'}
-                  alt="Temple Map"
-                  className="w-full h-auto block pointer-events-none"
-                />
+              {activeMapSrc ? (
+                <div
+                  ref={mapContainerRef}
+                  onClick={handleMapClick}
+                  className="relative w-full mx-auto origin-top-left"
+                  style={{
+                    width: `${zoomScale * 100}%`,
+                    minWidth: '100%',
+                    willChange: 'transform',
+                    transform: 'translateZ(0)',
+                    contain: 'layout style'
+                  }}
+                >
+                  {/* Floating Change Map Button for Owner directly on map */}
+                  {userRole === 'owner' && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        mapInputRef.current?.click();
+                      }}
+                      className="absolute top-3 left-3 z-30 px-3 py-1.5 rounded-xl bg-slate-950/90 hover:bg-slate-900 text-amber-300 border border-amber-500/50 shadow-xl backdrop-blur-md flex items-center gap-1.5 text-xs font-bold font-kantumruy transition-all hover:scale-105 active:scale-95 cursor-pointer pointer-events-auto"
+                      title="ចុចដើម្បីដូររូបភាពប្លង់វត្ត (Change Map Image)"
+                    >
+                      <Upload className="w-3.5 h-3.5 text-amber-400 stroke-[2.5]" />
+                      <span>ដូររូបប្លង់វត្ត</span>
+                    </button>
+                  )}
 
-                {/* ════════ PURE TRANSPARENT PNG KHMER COMPASS ROSE ════════ */}
-                <div className="absolute inset-0 pointer-events-none z-10">
-                  <CompassRose
-                    isVisible={isCompassVisible}
-                    isExpanded={isCompassExpanded}
-                    onToggleExpand={() => setIsCompassExpanded(!isCompassExpanded)}
+                  {/* Crisp Clean Base Temple Map Image */}
+                  <img
+                    src={activeMapSrc}
+                    alt="Temple Map"
+                    className="w-full h-auto block pointer-events-none"
                   />
-                </div>
 
-                {/* ════════ MAP PIN MARKERS & MATHEMATICALLY LOCKED BADGES ════════ */}
-                {isPinsVisible && (
-                  <div className="absolute inset-0 z-20 pointer-events-none">
-                    {currentLocations.map((loc, locIdx) => {
-                      const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
-                      if (hiddenCategories[locCat]) return null;
-
-                      const currentPinSize = groupPinSizes[locCat] || pinSizePx;
-                      const isCategoryLocked = lockedCategories[locCat];
-                      const isHighlighted =
-                        selectedLocation?.id === loc.id ||
-                        hoveredLocation?.id === loc.id;
-                      const isHovered = hoveredLocation?.id === loc.id;
-
-                      const isCurrentlyDragging = draggingPinId === loc.id;
-                      const canDragThisPin = canCustomizeTab && canUserDragPins && activeTab !== 'labeled' && !isCategoryLocked;
-
-                      return (
-                        <PinItem
-                          key={loc.id}
-                          loc={loc}
-                          locIdx={locIdx}
-                          activeTab={activeTab}
-                          currentPinSize={currentPinSize}
-                          isHighlighted={isHighlighted}
-                          isHovered={isHovered}
-                          isCurrentlyDragging={isCurrentlyDragging}
-                          canDragThisPin={canDragThisPin}
-                          onPinDragStart={handlePinDragStart}
-                          onMapClick={handleMapClick}
-                          pinMovedFlagRef={pinMovedFlagRef}
-                          pinningGroupMode={pinningGroupMode}
-                          setSelectedLocation={setSelectedLocation}
-                          setHoveredLocation={setHoveredLocation}
-                        />
-                      );
-                    })}
+                  {/* ════════ PURE TRANSPARENT PNG KHMER COMPASS ROSE ════════ */}
+                  <div className="absolute inset-0 pointer-events-none z-10">
+                    <CompassRose
+                      isVisible={isCompassVisible}
+                      isExpanded={isCompassExpanded}
+                      onToggleExpand={() => setIsCompassExpanded(!isCompassExpanded)}
+                    />
                   </div>
-                )}
-              </div>
+
+                  {/* ════════ MAP PIN MARKERS & MATHEMATICALLY LOCKED BADGES ════════ */}
+                  {isPinsVisible && (
+                    <div className="absolute inset-0 z-20 pointer-events-none">
+                      {currentLocations.map((loc, locIdx) => {
+                        const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+                        if (hiddenCategories[locCat]) return null;
+
+                        const currentPinSize = groupPinSizes[locCat] || pinSizePx;
+                        const isCategoryLocked = lockedCategories[locCat];
+                        const isHighlighted =
+                          selectedLocation?.id === loc.id ||
+                          hoveredLocation?.id === loc.id;
+                        const isHovered = hoveredLocation?.id === loc.id;
+
+                        const isCurrentlyDragging = draggingPinId === loc.id;
+                        const canDragThisPin = canCustomizeTab && canUserDragPins && activeTab !== 'labeled' && !isCategoryLocked;
+
+                        return (
+                          <PinItem
+                            key={loc.id}
+                            loc={loc}
+                            locIdx={locIdx}
+                            activeTab={activeTab}
+                            currentPinSize={currentPinSize}
+                            isHighlighted={isHighlighted}
+                            isHovered={isHovered}
+                            isCurrentlyDragging={isCurrentlyDragging}
+                            canDragThisPin={canDragThisPin}
+                            onPinDragStart={handlePinDragStart}
+                            onMapClick={handleMapClick}
+                            pinMovedFlagRef={pinMovedFlagRef}
+                            pinningGroupMode={pinningGroupMode}
+                            setSelectedLocation={setSelectedLocation}
+                            setHoveredLocation={setHoveredLocation}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Empty Blueprint Placeholder for Temples without Map yet */
+                <div className="w-full min-h-[380px] sm:min-h-[460px] bg-slate-950/90 border-2 border-dashed border-amber-500/40 rounded-2xl flex flex-col items-center justify-center p-6 text-center space-y-4 my-2">
+                  <div className="w-20 h-20 rounded-3xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-xl shadow-amber-500/10 animate-pulse">
+                    <MapIcon className="w-10 h-10 stroke-[1.5]" />
+                  </div>
+                  <div className="max-w-md space-y-1">
+                    <h3 className="text-base sm:text-lg font-bold font-moul text-amber-400">
+                      «{currentTemple?.name || 'វត្តនេះ'}» មិនទាន់មានរូបភាពប្លង់វត្តនៅឡើយទេ
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-400 font-kantumruy">
+                      សូមបញ្ចូលរូបភាពប្លង់ ឬរូបថតពីលើអាកាស (PNG/JPG) ដើម្បីចាប់ផ្តើមដៅទីតាំង និងស្លាកលេខ
+                    </p>
+                  </div>
+                  {userRole === 'owner' ? (
+                    <button
+                      type="button"
+                      onClick={() => mapInputRef.current?.click()}
+                      className="px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold font-moul text-xs sm:text-sm flex items-center gap-2 shadow-xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+                    >
+                      <Upload className="w-5 h-5 stroke-[2.5]" />
+                      <span>+ បញ្ចូលរូបភាពប្លង់វត្ត (Upload Map)</span>
+                    </button>
+                  ) : (
+                    <div className="text-xs text-slate-500 italic font-kantumruy">
+                      (ទាក់ទងម្ចាស់ប្រព័ន្ធ / Owner ដើម្បីបញ្ចូលប្លង់ផែនទីវត្ត)
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Selected Location Banner Popover */}

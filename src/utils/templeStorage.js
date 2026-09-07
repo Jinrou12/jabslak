@@ -172,14 +172,30 @@ export function getTempleLocationsStorageKey(templeId) {
 
 /**
  * Load custom map image for a specific temple
+ * Wat Khemavan uses /temple_map/map_new_latest.jpg
+ * Other temples only use custom uploaded map or null
  */
-export function getTempleCustomMapImage(templeId, defaultImage = '/temple_map/map_new_latest.jpg') {
-  if (!templeId) return defaultImage;
+export function getTempleCustomMapImage(templeId, defaultImage = null) {
+  if (!templeId || templeId === 'khemavan') {
+    try {
+      const savedImg = localStorage.getItem('TEMPLE_CUSTOM_MAP_khemavan');
+      if (savedImg) return savedImg;
+    } catch (e) {}
+    return defaultImage || '/temple_map/map_new_latest.jpg';
+  }
+
+  // Other temples
   try {
     const savedImg = localStorage.getItem(`TEMPLE_CUSTOM_MAP_${templeId}`);
-    if (savedImg) return savedImg;
+    if (savedImg && savedImg !== '/temple_map/map_new_latest.jpg') {
+      return savedImg;
+    }
   } catch (e) {}
-  return defaultImage;
+
+  if (defaultImage && defaultImage !== '/temple_map/map_new_latest.jpg') {
+    return defaultImage;
+  }
+  return null;
 }
 
 /**
@@ -188,12 +204,52 @@ export function getTempleCustomMapImage(templeId, defaultImage = '/temple_map/ma
 export function saveTempleCustomMapImage(templeId, imageData) {
   if (!templeId) return;
   try {
-    localStorage.setItem(`TEMPLE_CUSTOM_MAP_${templeId}`, imageData);
+    if (imageData) {
+      localStorage.setItem(`TEMPLE_CUSTOM_MAP_${templeId}`, imageData);
+    } else {
+      localStorage.removeItem(`TEMPLE_CUSTOM_MAP_${templeId}`);
+    }
     // Also update temple list object
     const allTemples = getSavedTemples();
-    const updated = allTemples.map((t) => (t.id === templeId ? { ...t, mapImage: imageData } : t));
+    const updated = allTemples.map((t) => (t.id === templeId ? { ...t, mapImage: imageData || null } : t));
     saveTemples(updated);
   } catch (e) {
     console.error('Error saving custom map image:', e);
   }
+}
+
+/**
+ * Client-side high performance image compressor using HTML5 Canvas
+ * Resizes images to max 2048px and quality 0.82 JPEG to avoid localStorage QuotaExceededError
+ */
+export function compressImage(file, maxWidth = 2048, maxHeight = 2048, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxWidth || height > maxHeight) {
+          if (width > height) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressedDataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(compressedDataUrl);
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }

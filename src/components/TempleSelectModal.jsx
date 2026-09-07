@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Building2, Plus, Copy, Check, ExternalLink, Trash2, Edit2, Shield, MapPin, Sparkles, AlertCircle } from 'lucide-react';
-import { getTempleShareUrl } from '../utils/templeStorage';
+import { X, Building2, Plus, Copy, Check, ExternalLink, Trash2, Edit2, Shield, MapPin, Sparkles, AlertCircle, Upload, Image as ImageIcon } from 'lucide-react';
+import { getTempleShareUrl, compressImage } from '../utils/templeStorage';
 
 export default function TempleSelectModal({
   currentTemple,
@@ -22,6 +22,7 @@ export default function TempleSelectModal({
   const [templeName, setTempleName] = useState('');
   const [templeLocation, setTempleLocation] = useState('');
   const [templeDesc, setTempleDesc] = useState('');
+  const [templeMapImage, setTempleMapImage] = useState(null);
   const [copiedTempleId, setCopiedTempleId] = useState(null);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -30,6 +31,7 @@ export default function TempleSelectModal({
     setTempleName('');
     setTempleLocation('');
     setTempleDesc('');
+    setTempleMapImage(null);
     setErrorMsg('');
     setIsAddFormOpen(true);
   };
@@ -39,6 +41,8 @@ export default function TempleSelectModal({
     setTempleName(t.name);
     setTempleLocation(t.location || '');
     setTempleDesc(t.description || '');
+    const cleanImg = (t.id !== 'khemavan' && t.mapImage === '/temple_map/map_new_latest.jpg') ? null : (t.mapImage || null);
+    setTempleMapImage(cleanImg);
     setErrorMsg('');
     setIsAddFormOpen(true);
   };
@@ -58,7 +62,8 @@ export default function TempleSelectModal({
         ...editingTemple,
         name: trimmedName,
         location: templeLocation.trim(),
-        description: templeDesc.trim()
+        description: templeDesc.trim(),
+        mapImage: templeMapImage || (editingTemple.id === 'khemavan' ? '/temple_map/map_new_latest.jpg' : null)
       });
       showToast?.(`បានកែប្រែព័ត៌មាន «${trimmedName}» រួចរាល់!`);
     } else {
@@ -70,7 +75,7 @@ export default function TempleSelectModal({
         shortName: trimmedName.replace(/^វត្ត\s*/, ''),
         location: templeLocation.trim() || 'ប្រទេសកម្ពុជា',
         description: templeDesc.trim(),
-        mapImage: '/temple_map/map_new_latest.jpg',
+        mapImage: templeMapImage || null,
         createdAt: new Date().toISOString().split('T')[0],
         isDefault: false
       };
@@ -211,6 +216,79 @@ export default function TempleSelectModal({
                   placeholder="ឧ. គ្រប់គ្រងស្លាកលេខពិធីបុណ្យ"
                   className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none"
                 />
+              </div>
+
+              {/* 🗺️ Map Blueprint Upload Field */}
+              <div>
+                <label className="text-xs font-bold text-slate-300 block mb-1">
+                  រូបភាពប្លង់វត្ត (Map Blueprint Image) ៖
+                </label>
+                {templeMapImage ? (
+                  <div className="relative rounded-xl border border-amber-500/50 overflow-hidden bg-slate-950 p-1">
+                    <img
+                      src={templeMapImage}
+                      alt="Map Blueprint Preview"
+                      className="w-full h-36 object-contain rounded-lg bg-slate-900"
+                    />
+                    <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                      <label className="px-2.5 py-1 bg-amber-500 text-slate-950 hover:bg-amber-400 rounded-lg text-xs font-bold cursor-pointer shadow-md flex items-center gap-1">
+                        <Upload className="w-3 h-3 stroke-[2.5]" />
+                        <span>ប្តូររូប</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              try {
+                                const compressed = await compressImage(file);
+                                setTempleMapImage(compressed);
+                              } catch (err) {
+                                alert('មិនអាចដំណើរការរូបភាពបានទេ!');
+                              }
+                            }
+                          }}
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setTempleMapImage(null)}
+                        className="px-2 py-1 bg-rose-600/90 hover:bg-rose-700 text-white rounded-lg text-xs font-bold shadow-md"
+                      >
+                        លុប
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="border-2 border-dashed border-slate-700 hover:border-amber-500/60 rounded-xl p-4 flex flex-col items-center justify-center gap-1.5 cursor-pointer bg-slate-950/60 hover:bg-slate-900 transition-all group">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/10 group-hover:bg-amber-500/20 text-amber-400 flex items-center justify-center transition-all">
+                      <Upload className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-bold text-amber-300 group-hover:text-amber-200">
+                      + ជ្រើសរើសរូបភាពប្លង់វត្ត (PNG / JPG)
+                    </span>
+                    <span className="text-[10px] text-slate-500">
+                      (ប្រព័ន្ធនឹង Compress ទំហំស្វ័យប្រវត្តិដើម្បីល្បឿនលឿន)
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          try {
+                            const compressed = await compressImage(file);
+                            setTempleMapImage(compressed);
+                          } catch (err) {
+                            alert('មិនអាចដំណើរការរូបភាពបានទេ!');
+                          }
+                        }
+                      }}
+                    />
+                  </label>
+                )}
               </div>
 
               {errorMsg && (
