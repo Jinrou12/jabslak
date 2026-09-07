@@ -50,6 +50,7 @@ import {
   subscribeToGroupSettings,
   saveGroupSettingsToFirebase
 } from '../utils/firebase';
+import { getTempleCustomMapImage, saveTempleCustomMapImage } from '../utils/templeStorage';
 import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName, formatTagRanges } from '../utils/khmerSearch';
 
 const PIN_COLOR_GRADIENTS = [
@@ -695,6 +696,8 @@ export default function TempleMapModal({
   onClose,
   allTags = [],
   currentUser,
+  currentTemple = null,
+  onUpdateTempleMap = null,
   highlightLocationName = null,
   onFilterByLocation,
   onAddTagForLocation,
@@ -706,6 +709,36 @@ export default function TempleMapModal({
   // Assistant and Guest can only VIEW the map
   const userRole = currentUser?.role || 'guest';
   const canCustomizeMap = userRole === 'admin' || userRole === 'owner';
+
+  // Custom Map Image State per Temple
+  const mapInputRef = useRef(null);
+  const [customMapImage, setCustomMapImage] = useState(() => {
+    return getTempleCustomMapImage(currentTemple?.id, currentTemple?.mapImage || '/temple_map/map_new_latest.jpg');
+  });
+
+  useEffect(() => {
+    setCustomMapImage(getTempleCustomMapImage(currentTemple?.id, currentTemple?.mapImage || '/temple_map/map_new_latest.jpg'));
+  }, [currentTemple?.id, currentTemple?.mapImage]);
+
+  const handleMapImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert('ទំហំរូបភាពធំពេក! សូមជ្រើសរើសរូបភាពក្រោម 5MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target.result;
+      setCustomMapImage(dataUrl);
+      saveTempleCustomMapImage(currentTemple?.id || 'khemavan', dataUrl);
+      if (onUpdateTempleMap) {
+        onUpdateTempleMap(currentTemple?.id || 'khemavan', dataUrl);
+      }
+      alert(`បានផ្លាស់ប្តូររូបភាពប្លង់វត្ត «${currentTemple?.name || 'វត្ត'}» ជោគជ័យ!`);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Mobile touch device detection
   const isMobileDevice = useMemo(() => {
@@ -2823,7 +2856,12 @@ export default function TempleMapModal({
                 <h2 className="text-sm sm:text-base md:text-lg font-bold font-moul text-amber-400 truncate">
                   ផែនទីវត្ត និង ទីតាំង
                 </h2>
-                <span className="bg-amber-500/20 text-amber-300 text-[10px] sm:text-xs font-bold px-2 py-0.2 rounded-full border border-amber-500/30 shrink-0">
+                {currentTemple?.name && (
+                  <span className="bg-amber-500/25 text-amber-300 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border border-amber-500/40 shrink-0 font-moul">
+                    {currentTemple.name}
+                  </span>
+                )}
+                <span className="bg-slate-800 text-slate-300 text-[10px] sm:text-xs font-bold px-2 py-0.2 rounded-full border border-slate-700 shrink-0">
                   {westernToKhmerDigits(currentLocations.length)} ទីតាំង
                 </span>
               </div>
@@ -2833,8 +2871,28 @@ export default function TempleMapModal({
             </div>
           </div>
 
-          {/* Quick Header Actions (Close / Back Button) */}
+          {/* Quick Header Actions (Upload Map for Owner, Close / Back Button) */}
           <div className="flex items-center gap-1.5 shrink-0">
+            {userRole === 'owner' && (
+              <>
+                <input
+                  type="file"
+                  ref={mapInputRef}
+                  accept="image/*"
+                  onChange={handleMapImageUpload}
+                  className="hidden"
+                />
+                <button
+                  type="button"
+                  onClick={() => mapInputRef.current?.click()}
+                  className="px-2.5 py-1.5 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 text-amber-300 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                  title="ដូររូបភាពប្លង់ផែនទីសម្រាប់វត្តនេះ (Upload Map)"
+                >
+                  <Upload className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">ដូររូបប្លង់វត្ត</span>
+                </button>
+              </>
+            )}
             {onClose && (
               <button
                 type="button"
@@ -3121,7 +3179,7 @@ export default function TempleMapModal({
               >
                 {/* Crisp Clean Base Temple Map Image */}
                 <img
-                  src="/temple_map/map_new_latest.jpg"
+                  src={customMapImage || currentTemple?.mapImage || '/temple_map/map_new_latest.jpg'}
                   alt="Temple Map"
                   className="w-full h-auto block pointer-events-none"
                 />

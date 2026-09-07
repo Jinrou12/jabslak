@@ -85,15 +85,26 @@ export function migrateTagListToTempleLocations(tagList) {
 }
 
 /**
+ * Helper to get scoped Firebase path per temple
+ */
+export function getFirebaseTagsPath(templeId = 'khemavan') {
+  if (!templeId || templeId === 'khemavan') {
+    return 'tags';
+  }
+  return `temples/${templeId}/tags`;
+}
+
+/**
  * Subscribe to real-time changes in Firebase Realtime Database
  */
-export function subscribeToFirebaseTags(onDataReceived, onError) {
+export function subscribeToFirebaseTags(onDataReceived, onError, templeId = 'khemavan') {
   if (!db) {
     if (onError) onError(new Error('Firebase DB is not initialized'));
     return () => {};
   }
 
-  const tagsRef = ref(db, 'tags');
+  const path = getFirebaseTagsPath(templeId);
+  const tagsRef = ref(db, path);
   
   const unsubscribe = onValue(
     tagsRef,
@@ -112,7 +123,7 @@ export function subscribeToFirebaseTags(onDataReceived, onError) {
         );
         if (rogueGroups.length > 0) {
           rogueGroups.forEach((rg) => {
-            deleteTagFromFirebase(rg.id);
+            deleteTagFromFirebase(rg.id, templeId);
           });
           tagList = tagList.filter(
             (t) => t && (!t.id || (!String(t.id).startsWith('group-') && !Array.isArray(t.tags)))
@@ -131,7 +142,7 @@ export function subscribeToFirebaseTags(onDataReceived, onError) {
       }
     },
     (err) => {
-      console.error('Firebase realtime subscription error:', err);
+      console.error(`Firebase realtime subscription error for ${path}:`, err);
       if (onError) onError(err);
     }
   );
@@ -318,10 +329,11 @@ export async function saveTab3LocationsToFirebase(locations) {
 /**
  * Save or update a single tag in Firebase
  */
-export async function saveTagToFirebase(tag) {
+export async function saveTagToFirebase(tag, templeId = 'khemavan') {
   if (!db) return false;
   try {
-    const tagRef = ref(db, `tags/${tag.id}`);
+    const basePath = getFirebaseTagsPath(templeId);
+    const tagRef = ref(db, `${basePath}/${tag.id}`);
     await set(tagRef, tag);
     return true;
   } catch (err) {
@@ -333,10 +345,11 @@ export async function saveTagToFirebase(tag) {
 /**
  * Delete a tag from Firebase
  */
-export async function deleteTagFromFirebase(tagId) {
+export async function deleteTagFromFirebase(tagId, templeId = 'khemavan') {
   if (!db) return false;
   try {
-    const tagRef = ref(db, `tags/${tagId}`);
+    const basePath = getFirebaseTagsPath(templeId);
+    const tagRef = ref(db, `${basePath}/${tagId}`);
     await remove(tagRef);
     return true;
   } catch (err) {
@@ -346,16 +359,17 @@ export async function deleteTagFromFirebase(tagId) {
 }
 
 /**
- * Seed initial 1,000 tag records into Firebase
+ * Seed initial tag records into Firebase (scoped per temple)
  */
-export async function seedFirebaseData(initialData, force = false) {
+export async function seedFirebaseData(initialData, force = false, templeId = 'khemavan') {
   if (!db) return false;
   try {
-    const tagsRef = ref(db, 'tags');
+    const basePath = getFirebaseTagsPath(templeId);
+    const tagsRef = ref(db, basePath);
     if (force) {
       if (!initialData || initialData.length === 0) {
         await remove(tagsRef);
-        console.log('Successfully cleared all tags from Firebase Realtime Database!');
+        console.log(`Successfully cleared tags from Firebase for ${basePath}!`);
         return true;
       }
       const dataMap = {};
@@ -363,7 +377,7 @@ export async function seedFirebaseData(initialData, force = false) {
         dataMap[t.id] = t;
       });
       await set(tagsRef, dataMap);
-      console.log('Successfully updated tags to Firebase Realtime Database!');
+      console.log(`Successfully updated tags in Firebase for ${basePath}!`);
       return true;
     }
     const snapshot = await get(tagsRef);
@@ -418,4 +432,49 @@ export async function saveGroupSettingsToFirebase(settings) {
   }
 }
 
+/**
+ * Subscribe to registered temples in Firebase Realtime Database
+ */
+export function subscribeToFirebaseTemples(onDataReceived) {
+  if (!db) return () => {};
+  const templesRef = ref(db, 'registered_temples');
+  const unsubscribe = onValue(
+    templesRef,
+    (snapshot) => {
+      if (snapshot.exists()) {
+        const val = snapshot.val();
+        let list = [];
+        if (Array.isArray(val)) {
+          list = val.filter(Boolean);
+        } else if (typeof val === 'object') {
+          list = Object.values(val);
+        }
+        if (list.length > 0) {
+          onDataReceived(list);
+        }
+      }
+    },
+    (err) => {
+      console.warn('Temples subscription error:', err);
+    }
+  );
+  return unsubscribe;
+}
+
+/**
+ * Save registered temples to Firebase
+ */
+export async function saveTemplesToFirebase(temples) {
+  if (!db) return false;
+  try {
+    const templesRef = ref(db, 'registered_temples');
+    await set(templesRef, temples);
+    return true;
+  } catch (err) {
+    console.error('Error saving temples to Firebase:', err);
+    return false;
+  }
+}
+
 export { db, isConnected };
+

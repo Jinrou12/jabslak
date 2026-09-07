@@ -1,5 +1,5 @@
 import React from 'react';
-import { Tag, Plus, FileSpreadsheet, Trash2, Users, MapPin, Cloud, Map as MapIcon, Crown, Shield, UserCheck, Lock, UserCog, LogIn, Eye, LogOut, Calendar, ChevronDown, Smartphone } from 'lucide-react';
+import { Tag, Plus, FileSpreadsheet, Trash2, Users, MapPin, Cloud, Map as MapIcon, Crown, Shield, UserCheck, Lock, UserCog, LogIn, Eye, LogOut, Calendar, ChevronDown, Smartphone, Building2 } from 'lucide-react';
 import { westernToKhmerDigits } from '../utils/khmerSearch';
 
 export default function Header({
@@ -7,6 +7,8 @@ export default function Header({
   filteredCount,
   arrivedCount,
   currentUser,
+  currentTemple,
+  onOpenTempleSelectModal,
   onOpenAddModal,
   onOpenQRScanner,
   onOpenImportExport,
@@ -80,17 +82,39 @@ export default function Header({
                   v2.0
                 </span>
               </div>
-              <p className="text-[10px] sm:text-xs text-slate-400 font-kantumruy flex items-center gap-1.5 truncate">
-                <span className="truncate">គ្រប់គ្រងទីតាំង</span>
+              <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+                {/* Active Temple Selector Pill */}
+                <button
+                  type="button"
+                  onClick={onOpenTempleSelectModal}
+                  className="px-2 py-0.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-[10px] sm:text-xs font-bold font-moul flex items-center gap-1 active:scale-95 transition-all shadow-sm cursor-pointer"
+                  title="ចុចដើម្បីប្តូរ ឬមើលវត្តផ្សេងៗ"
+                >
+                  <Building2 className="w-3 h-3 text-amber-400 shrink-0" />
+                  <span className="truncate max-w-[130px] sm:max-w-none">{currentTemple?.name || 'វត្តខេមវ័ន'}</span>
+                  <ChevronDown className="w-3 h-3 text-amber-400 shrink-0" />
+                </button>
                 <span className="text-slate-600">•</span>
-                <span className="text-amber-300 font-bold shrink-0">{westernToKhmerDigits(totalCount)} ស្លាក</span>
-              </p>
+                <span className="text-[10px] sm:text-xs text-amber-300 font-bold shrink-0">{westernToKhmerDigits(totalCount)} ស្លាក</span>
+              </div>
             </div>
           </div>
 
-          {/* Right Action Controls (Role, Login/Logout, Cloud, Install App icons on Far Right) */}
+          {/* Right Action Controls (Temple, Role, Login/Logout, Cloud, Install App icons on Far Right) */}
           <div className="flex items-center gap-1.5 ml-auto shrink-0 font-kantumruy">
             
+            {/* 🏛️ Temple Switcher Button (Desktop ONLY) */}
+            <button
+              type="button"
+              onClick={onOpenTempleSelectModal}
+              className="hidden lg:flex px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl text-xs font-bold items-center justify-center gap-1.5 bg-slate-900/90 hover:bg-amber-500/20 text-amber-300 border border-slate-700 hover:border-amber-500/50 shadow-sm active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
+              title="ជ្រើសរើស ឬបន្ថែមវត្ត (Switch Temple)"
+            >
+              <Building2 className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400 shrink-0" />
+              <span className="font-moul text-amber-300 text-xs truncate max-w-[120px]">{currentTemple?.name || 'វត្តខេមវ័ន'}</span>
+              <ChevronDown className="w-3 h-3 text-amber-400 shrink-0 ml-0.5" />
+            </button>
+
             {/* 📅 Year Switcher Button (PC / Desktop ONLY: hidden sm:flex) */}
             <button
               type="button"
@@ -184,6 +208,18 @@ export default function Header({
         {/* Second Row: Action Buttons Bar */}
         <div className="flex flex-wrap items-center gap-2 pt-1 w-full font-kantumruy">
           
+          {/* 🏛️ Temple Switcher Button (Mobile ONLY: flex sm:hidden) */}
+          <button
+            type="button"
+            onClick={onOpenTempleSelectModal}
+            className="flex sm:hidden px-2.5 py-2 rounded-xl text-xs font-bold items-center justify-center gap-1.5 bg-slate-900/90 hover:bg-amber-500/20 text-amber-300 border border-slate-700 hover:border-amber-500/50 shadow-sm active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
+            title="ជ្រើសរើស ឬបន្ថែមវត្ត (Switch Temple)"
+          >
+            <Building2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span className="font-moul text-amber-300 text-xs truncate max-w-[100px]">{currentTemple?.name || 'វត្តខេមវ័ន'}</span>
+            <ChevronDown className="w-3 h-3 text-amber-400 shrink-0 ml-0.5" />
+          </button>
+
           {/* 📅 Year Switcher Button (Mobile ONLY: flex sm:hidden) */}
           <button
             type="button"

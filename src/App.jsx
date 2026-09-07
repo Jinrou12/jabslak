@@ -18,16 +18,29 @@ import MobileConnectModal from './components/MobileConnectModal';
 import TempleMapModal from './components/TempleMapModal';
 import RoleManagementModal from './components/RoleManagementModal';
 import LoginModal from './components/LoginModal';
+import TempleSelectModal from './components/TempleSelectModal';
 import InstallAppModal from './components/InstallAppModal';
 import SplashScreen from './components/SplashScreen';
 import { searchTags, westernToKhmerDigits, khmerToWesternDigits, getKhmerPhoneticSuggestions } from './utils/khmerSearch';
 import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER } from './utils/storage';
+import {
+  DEFAULT_TEMPLES,
+  getSavedTemples,
+  saveTemples,
+  getTempleIdFromUrl,
+  setTempleUrl,
+  getTempleShareUrl,
+  getSavedTagsForTemple,
+  saveTagsForTemple
+} from './utils/templeStorage';
 import { checkAttendanceTogglePermission } from './utils/attendanceLock';
 import {
   subscribeToFirebaseTags,
   saveTagToFirebase,
   deleteTagFromFirebase,
-  seedFirebaseData
+  seedFirebaseData,
+  subscribeToFirebaseTemples,
+  saveTemplesToFirebase
 } from './utils/firebase';
 import { pushTagsToCloud, subscribeToCloudTags } from './utils/cloudSync';
 
@@ -47,6 +60,32 @@ export default function App() {
 
   // Stable callback — must NOT be an inline arrow or the SplashScreen timer resets on every re-render
   const handleSplashFinish = useCallback(() => setShowSplash(false), []);
+
+  // Multi-Temple State
+  const [temples, setTemples] = useState(() => getSavedTemples());
+  const [currentTemple, setCurrentTemple] = useState(() => {
+    const activeId = getTempleIdFromUrl();
+    const all = getSavedTemples();
+    const found = all.find((t) => t.id === activeId);
+    if (found) return found;
+    if (activeId && activeId !== 'khemavan') {
+      const newT = {
+        id: activeId,
+        name: `វត្ត (${activeId})`,
+        shortName: activeId,
+        location: 'ប្រទេសកម្ពុជា',
+        description: 'វត្តអារាមបានចែករំលែកតាមរយៈតំណភ្ជាប់ (Link)',
+        mapImage: '/temple_map/map_new_latest.jpg',
+        createdAt: new Date().toISOString().split('T')[0],
+        isDefault: false
+      };
+      const merged = [...all, newT];
+      saveTemples(merged);
+      return newT;
+    }
+    return all[0];
+  });
+  const [isTempleSelectOpen, setIsTempleSelectOpen] = useState(false);
 
   // User & Role State
   const [users, setUsers] = useState(getSavedUsers());
@@ -164,7 +203,8 @@ export default function App() {
     isMobileConnectOpen ||
     isTempleMapOpen ||
     isRoleManagementOpen ||
-    isLoginModalOpen
+    isLoginModalOpen ||
+    isTempleSelectOpen
   );
 
   const closeAllModals = () => {
@@ -178,6 +218,7 @@ export default function App() {
     setIsTempleMapOpen(false);
     setIsRoleManagementOpen(false);
     setIsLoginModalOpen(false);
+    setIsTempleSelectOpen(false);
     setEditingTag(null);
   };
 
@@ -398,6 +439,76 @@ export default function App() {
   // ================================================================
 
 
+  // Subscribe to registered temples in Firebase Realtime Database
+  useEffect(() => {
+    const unsubscribeTemples = subscribeToFirebaseTemples((fbTemples) => {
+      if (Array.isArray(fbTemples) && fbTemples.length > 0) {
+        const hasKhemavan = fbTemples.some((t) => t.id === 'khemavan');
+        const listToUse = hasKhemavan ? fbTemples : [DEFAULT_TEMPLES[0], ...fbTemples];
+        setTemples(listToUse);
+        saveTemples(listToUse);
+
+        setCurrentTemple((prev) => {
+          const matched = listToUse.find((t) => t.id === prev?.id);
+          return matched || prev;
+        });
+      }
+    });
+
+    return () => {
+      unsubscribeTemples();
+    };
+  }, []);
+
+  // Multi-Temple Handlers
+  const handleSelectTemple = (temple) => {
+    setCurrentTemple(temple);
+    setTempleUrl(temple.id);
+    showToast(`បានប្តូរទៅកាន់ ៖ ${temple.name}`);
+  };
+
+  const handleAddTemple = (newTemple) => {
+    const updated = [...temples, newTemple];
+    setTemples(updated);
+    saveTemples(updated);
+    saveTemplesToFirebase(updated);
+    setCurrentTemple(newTemple);
+    setTempleUrl(newTemple.id);
+  };
+
+  const handleUpdateTemple = (updatedTemple) => {
+    const updated = temples.map((t) => (t.id === updatedTemple.id ? updatedTemple : t));
+    setTemples(updated);
+    saveTemples(updated);
+    saveTemplesToFirebase(updated);
+    if (currentTemple?.id === updatedTemple.id) {
+      setCurrentTemple(updatedTemple);
+    }
+  };
+
+  const handleDeleteTemple = (templeId) => {
+    if (templeId === 'khemavan') return;
+    const updated = temples.filter((t) => t.id !== templeId);
+    setTemples(updated);
+    saveTemples(updated);
+    saveTemplesToFirebase(updated);
+    if (currentTemple?.id === templeId) {
+      const defaultT = updated[0];
+      setCurrentTemple(defaultT);
+      setTempleUrl(defaultT.id);
+    }
+  };
+
+  const handleUpdateTempleMap = (templeId, newMapImage) => {
+    const updated = temples.map((t) => (t.id === templeId ? { ...t, mapImage: newMapImage } : t));
+    setTemples(updated);
+    saveTemples(updated);
+    saveTemplesToFirebase(updated);
+    if (currentTemple?.id === templeId) {
+      setCurrentTemple((prev) => ({ ...prev, mapImage: newMapImage }));
+    }
+  };
+
   // Load initial tags & subscribe to Cloud & Firebase Realtime updates
   useEffect(() => {
     // Helper: mark cloud as syncing and auto-reset after 5s
@@ -407,31 +518,35 @@ export default function App() {
       cloudSyncTimerRef.current = setTimeout(() => setIsCloudSyncing(false), 5000);
     };
 
-    // 1. Load local fallback
-    const localTags = getSavedTags();
+    // 1. Load local fallback for current temple
+    const localTags = getSavedTagsForTemple(currentTemple.id);
     setTags(localTags);
 
-    // 2. Subscribe to Zero-Config Cloud Sync (Auto-Sync PC & Mobile)
-    const unsubscribeCloud = subscribeToCloudTags((cloudTags) => {
-      if (Array.isArray(cloudTags)) {
-        setTags(cloudTags);
-        saveTags(cloudTags);
-        markSynced();
-      }
-    });
+    // 2. Subscribe to Zero-Config Cloud Sync (ONLY for Wat Khemavan)
+    let unsubscribeCloud = () => {};
+    if (currentTemple.id === 'khemavan') {
+      unsubscribeCloud = subscribeToCloudTags((cloudTags) => {
+        if (Array.isArray(cloudTags)) {
+          setTags(cloudTags);
+          saveTagsForTemple('khemavan', cloudTags);
+          markSynced();
+        }
+      });
+    }
 
-    // 3. Subscribe to Firebase Realtime Database (if configured)
+    // 3. Subscribe to Firebase Realtime Database (scoped to currentTemple.id)
     const unsubscribeFirebase = subscribeToFirebaseTags(
       (fbTags) => {
         if (Array.isArray(fbTags)) {
           setTags(fbTags);
-          saveTags(fbTags);
+          saveTagsForTemple(currentTemple.id, fbTags);
           markSynced();
         }
       },
       (err) => {
-        console.warn('Using Local Storage fallback:', err);
-      }
+        console.warn(`Using Local Storage fallback for temple ${currentTemple.id}:`, err);
+      },
+      currentTemple.id
     );
 
     return () => {
@@ -439,7 +554,7 @@ export default function App() {
       unsubscribeFirebase();
       clearTimeout(cloudSyncTimerRef.current);
     };
-  }, []);
+  }, [currentTemple.id]);
 
   // Filter tags by selected year (default 2026 for unassigned tags)
   const yearTags = useMemo(() => {
@@ -541,12 +656,14 @@ export default function App() {
     });
 
     setTags(updatedTags);
-    saveTags(updatedTags);
+    saveTagsForTemple(currentTemple.id, updatedTags);
 
-    // Push to Cloud & Firebase
-    pushTagsToCloud(updatedTags);
+    // Push to Cloud (Wat Khemavan only) & Firebase
+    if (currentTemple.id === 'khemavan') {
+      pushTagsToCloud(updatedTags);
+    }
     for (const t of updatedTags.filter((item) => targetIds.has(item.id))) {
-      await saveTagToFirebase(t);
+      await saveTagToFirebase(t, currentTemple.id);
     }
 
     if (selectedTag) {
@@ -661,15 +778,15 @@ export default function App() {
         });
         // Delete rogue group ID from Firebase if it existed
         if (String(editingTag.id).startsWith('group-')) {
-          await deleteTagFromFirebase(editingTag.id);
+          await deleteTagFromFirebase(editingTag.id, currentTemple.id);
         }
         // Save each constituent tag to Firebase
         for (const item of updatedConstituents) {
-          await saveTagToFirebase(item);
+          await saveTagToFirebase(item, currentTemple.id);
         }
       } else {
         updated = tags.map((t) => (t.id === tagWithYear.id ? tagWithYear : t));
-        await saveTagToFirebase(tagWithYear);
+        await saveTagToFirebase(tagWithYear, currentTemple.id);
       }
       showToast(`បានកែប្រែព័ត៌មានស្លាកលេខ ${westernToKhmerDigits(tagWithYear.tagNumber)} រួចរាល់!`);
     } else {
@@ -678,12 +795,14 @@ export default function App() {
       try {
         confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
       } catch {}
-      await saveTagToFirebase(tagWithYear);
+      await saveTagToFirebase(tagWithYear, currentTemple.id);
     }
 
     setTags(updated);
-    saveTags(updated);
-    pushTagsToCloud(updated);
+    saveTagsForTemple(currentTemple.id, updated);
+    if (currentTemple.id === 'khemavan') {
+      pushTagsToCloud(updated);
+    }
 
     setIsFormOpen(false);
     setEditingTag(null);
@@ -703,12 +822,14 @@ export default function App() {
     if (window.confirm(`តើអ្នកពិតជាចង់លុបស្លាកលេខ ${tagDisplay} (${tagToDelete.name}) មែនទេ?`)) {
       const updated = tags.filter((t) => !targetIds.has(t.id));
       setTags(updated);
-      saveTags(updated);
+      saveTagsForTemple(currentTemple.id, updated);
       
       // Push to Zero-Config Cloud Sync & Firebase
-      pushTagsToCloud(updated);
+      if (currentTemple.id === 'khemavan') {
+        pushTagsToCloud(updated);
+      }
       for (const id of targetIds) {
-        await deleteTagFromFirebase(id);
+        await deleteTagFromFirebase(id, currentTemple.id);
       }
 
       setSelectedTag(null);
@@ -717,12 +838,14 @@ export default function App() {
   };
 
   const handleResetData = async () => {
-    if (window.confirm('តើអ្នកពិតជាចង់លុបទិន្នន័យទាំងអស់ (ទាំងចាស់ ទាំងថ្មី) ចោលទាំងស្រុងមែនទេ?')) {
+    if (window.confirm(`តើអ្នកពិតជាចង់លុបទិន្នន័យទាំងអស់នៃ «${currentTemple.name}» ចោលទាំងស្រុងមែនទេ?`)) {
       setTags([]);
-      saveTags([]);
-      await seedFirebaseData([], true);
-      pushTagsToCloud([]);
-      showToast('បានលុបទិន្នន័យទាំងអស់ចោលទាំងស្រុងរួចរាល់!');
+      saveTagsForTemple(currentTemple.id, []);
+      await seedFirebaseData([], true, currentTemple.id);
+      if (currentTemple.id === 'khemavan') {
+        pushTagsToCloud([]);
+      }
+      showToast(`បានលុបទិន្នន័យទាំងអស់នៃ «${currentTemple.name}» ចោលទាំងស្រុងរួចរាល់!`);
     }
   };
 
@@ -802,11 +925,13 @@ export default function App() {
     }
 
     setTags(updatedTags);
-    saveTags(updatedTags);
+    saveTagsForTemple(currentTemple.id, updatedTags);
     
     // Push to Zero-Config Cloud Sync (PC to Mobile instant sync) & Firebase
-    pushTagsToCloud(updatedTags);
-    await seedFirebaseData(updatedTags, true);
+    if (currentTemple.id === 'khemavan') {
+      pushTagsToCloud(updatedTags);
+    }
+    await seedFirebaseData(updatedTags, true, currentTemple.id);
 
     try {
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
@@ -833,6 +958,8 @@ export default function App() {
           filteredCount={filteredTags.length}
           arrivedCount={arrivedCount}
           currentUser={currentUser}
+          currentTemple={currentTemple}
+          onOpenTempleSelectModal={() => setIsTempleSelectOpen(true)}
           onOpenAddModal={() => {
             setEditingTag(null);
             setIsFormOpen(true);
@@ -892,6 +1019,8 @@ export default function App() {
             <TempleMapModal
               allTags={yearTags}
               currentUser={currentUser}
+              currentTemple={currentTemple}
+              onUpdateTempleMap={handleUpdateTempleMap}
               highlightLocationName={templeMapTargetLoc}
               onClose={() => {
                 setViewMode('grid');
@@ -1118,6 +1247,8 @@ export default function App() {
         <TempleMapModal
           allTags={yearTags}
           currentUser={currentUser}
+          currentTemple={currentTemple}
+          onUpdateTempleMap={handleUpdateTempleMap}
           highlightLocationName={templeMapTargetLoc}
           onClose={() => {
             setIsTempleMapOpen(false);
@@ -1140,6 +1271,21 @@ export default function App() {
             setIsTempleMapOpen(false);
             setIsFormOpen(true);
           }}
+        />
+      )}
+
+      {/* 🏛️ Temple Directory & Switcher Modal */}
+      {isTempleSelectOpen && (
+        <TempleSelectModal
+          currentTemple={currentTemple}
+          temples={temples}
+          currentUser={currentUser}
+          onClose={() => setIsTempleSelectOpen(false)}
+          onSelectTemple={handleSelectTemple}
+          onAddTemple={handleAddTemple}
+          onUpdateTemple={handleUpdateTemple}
+          onDeleteTemple={handleDeleteTemple}
+          showToast={showToast}
         />
       )}
 
