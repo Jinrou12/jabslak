@@ -959,7 +959,11 @@ export default function App() {
           arrivedCount={arrivedCount}
           currentUser={currentUser}
           currentTemple={currentTemple}
-          onOpenTempleSelectModal={() => setIsTempleSelectOpen(true)}
+          onOpenTempleSelectModal={() => {
+            if (currentUser?.role === 'owner') {
+              setIsTempleSelectOpen(true);
+            }
+          }}
           onOpenAddModal={() => {
             setEditingTag(null);
             setIsFormOpen(true);
@@ -1274,8 +1278,8 @@ export default function App() {
         />
       )}
 
-      {/* 🏛️ Temple Directory & Switcher Modal */}
-      {isTempleSelectOpen && (
+      {/* 🏛️ Temple Directory & Switcher Modal (FOR OWNER ONLY) */}
+      {isTempleSelectOpen && currentUser?.role === 'owner' && (
         <TempleSelectModal
           currentTemple={currentTemple}
           temples={temples}

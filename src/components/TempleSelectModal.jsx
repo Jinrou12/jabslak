@@ -14,6 +14,8 @@ export default function TempleSelectModal({
   showToast
 }) {
   const isOwner = currentUser?.role === 'owner';
+  if (!isOwner) return null;
+
   const [isAddFormOpen, setIsAddFormOpen] = useState(false);
   const [editingTemple, setEditingTemple] = useState(null);
 
