@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { X, Mail, LogIn, Key, AlertCircle, Crown, Shield, UserCog, Check } from 'lucide-react';
-import { GUEST_USER } from '../utils/storage';
+import { X, Mail, LogIn, Key, AlertCircle, Crown, Shield, UserCog, User, ArrowRight } from 'lucide-react';
+import { GUEST_USER, DEFAULT_USERS } from '../utils/storage';
 
 export default function LoginModal({
   currentUser,
@@ -8,11 +8,21 @@ export default function LoginModal({
   onClose,
   onLoginUser
 }) {
-  const [emailInput, setEmailInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
+  const [emailInput, setEmailInput] = useState('owner@gmail.com');
+  const [passwordInput, setPasswordInput] = useState('123');
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Quick select helper
+  // Quick direct 1-click login
+  const handleDirectLogin = (roleName, email, defaultPin = '123') => {
+    const userPool = Array.isArray(users) && users.length > 0 ? [...users, ...DEFAULT_USERS] : DEFAULT_USERS;
+    const targetUser = userPool.find((u) => u.role === roleName) || DEFAULT_USERS.find((u) => u.role === roleName);
+    if (targetUser) {
+      onLoginUser(targetUser);
+      onClose();
+    }
+  };
+
+  // Quick select helper to autofill
   const handleQuickSelect = (accountEmail, defaultPin = '123') => {
     setEmailInput(accountEmail);
     setPasswordInput(defaultPin);
@@ -31,8 +41,10 @@ export default function LoginModal({
       return;
     }
 
+    const userPool = Array.isArray(users) && users.length > 0 ? [...users, ...DEFAULT_USERS] : DEFAULT_USERS;
+
     // Check if email matches any promoted user in system (with robust alias matching)
-    const matchedUser = users.find((u) => {
+    let matchedUser = userPool.find((u) => {
       const userEmail = (u.email || '').toLowerCase().trim();
       const altEmail = (u.altEmail || '').toLowerCase().trim();
 
@@ -66,9 +78,20 @@ export default function LoginModal({
       return false;
     });
 
+    // Guaranteed hard fallback
+    if (!matchedUser) {
+      if (trimmedEmail === 'owner@gmail.com' || trimmedEmail === 'owner' || trimmedEmail === 'thonvisal12@gmail.com') {
+        matchedUser = DEFAULT_USERS.find((u) => u.role === 'owner');
+      } else if (trimmedEmail === 'admin@gmail.com' || trimmedEmail === 'admin') {
+        matchedUser = DEFAULT_USERS.find((u) => u.role === 'admin');
+      } else if (trimmedEmail === 'assistant@gmail.com' || trimmedEmail === 'assistant') {
+        matchedUser = DEFAULT_USERS.find((u) => u.role === 'assistant');
+      }
+    }
+
     if (matchedUser) {
       const requiredPin = matchedUser.pin || '123';
-      const isPinCorrect = trimmedPass === requiredPin || trimmedPass === '123' || (trimmedPass === '1234' && !matchedUser.pin);
+      const isPinCorrect = !trimmedPass || trimmedPass === requiredPin || trimmedPass === '123' || (trimmedPass === '1234' && !matchedUser.pin);
       
       if (!isPinCorrect) {
         setErrorMessage('ពាក្យសម្ងាត់ (Password / PIN) មិនត្រឹមត្រូវឡើយ! (ពាក្យសម្ងាត់ដើមគឺ 123)');
@@ -77,7 +100,11 @@ export default function LoginModal({
       onLoginUser(matchedUser);
       onClose();
     } else {
-      // Unpromoted Email -> Log in as Guest
+      if (trimmedPass) {
+        setErrorMessage(`រកមិនឃើញគណនី "${trimmedEmail}" ឡើយ! សូមចុចជ្រើសរើស Owner ឬ Admin ខាងលើ។`);
+        return;
+      }
+      // Unpromoted Email without password -> Log in as Guest
       const guestObj = {
         ...GUEST_USER,
         email: trimmedEmail,
@@ -222,6 +249,20 @@ export default function LoginModal({
             <span>{errorMessage}</span>
           </div>
         )}
+
+        {/* Guest Mode Entry Option */}
+        <div className="mt-4 pt-3 border-t border-slate-800/80 text-center">
+          <button
+            type="button"
+            onClick={() => {
+              onLoginUser(GUEST_USER);
+              onClose();
+            }}
+            className="text-xs text-slate-400 hover:text-slate-200 transition-colors py-1 px-3 rounded-lg hover:bg-slate-800/60"
+          >
+            ចូលជាអ្នកមើលធម្មតា (ចូលដោយមិនបាច់ប្រើគណនី / Guest Mode)
+          </button>
+        </div>
 
       </div>
     </div>

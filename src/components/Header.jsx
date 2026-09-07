@@ -117,12 +117,14 @@ export default function Header({
             )}
 
             {/* 1. Role Icon Badge */}
-            <div
-              className={`flex items-center justify-center p-1.5 sm:p-2 rounded-xl border transition-all active:scale-95 ${getRoleBadge().color}`}
-              title={`${getUserDisplayName()} (${getRoleBadge().text})`}
+            <button
+              type="button"
+              onClick={onOpenLoginModal}
+              className={`flex items-center justify-center p-1.5 sm:p-2 rounded-xl border transition-all active:scale-95 cursor-pointer hover:opacity-90 shadow-sm ${getRoleBadge().color}`}
+              title={`${getUserDisplayName()} (${getRoleBadge().text}) - ចុចដើម្បីចូលប្រើ ឬប្តូរគណនី`}
             >
               {React.createElement(getRoleBadge().icon, { className: 'w-4 h-4' })}
-            </div>
+            </button>
 
             {/* Role Management (Owner only) */}
             {isOwner && (
