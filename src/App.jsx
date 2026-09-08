@@ -1324,6 +1324,7 @@ export default function App() {
         <LoginModal
           currentUser={currentUser}
           users={users}
+          currentTemple={currentTemple}
           onClose={() => setIsLoginModalOpen(false)}
           onLoginUser={handleLoginUser}
         />

@@ -5,6 +5,7 @@ import { GUEST_USER, DEFAULT_USERS } from '../utils/storage';
 export default function LoginModal({
   currentUser,
   users,
+  currentTemple,
   onClose,
   onLoginUser
 }) {
@@ -27,7 +28,7 @@ export default function LoginModal({
     const userPool = Array.isArray(users) && users.length > 0 ? [...users, ...DEFAULT_USERS] : DEFAULT_USERS;
 
     // Check if email matches any promoted user in system (with robust alias matching)
-    let matchedUser = userPool.find((u) => {
+    const matchingCandidates = userPool.filter((u) => {
       const userEmail = (u.email || '').toLowerCase().trim();
       const altEmail = (u.altEmail || '').toLowerCase().trim();
 
@@ -60,6 +61,14 @@ export default function LoginModal({
 
       return false;
     });
+
+    // 🎯 Smart Temple Matching:
+    // 1. First priority: User whose templeId matches the active temple
+    // 2. Second priority: Global user (Owner / templeId === 'ALL')
+    // 3. Fallback: Any matching candidate
+    let matchedUser = matchingCandidates.find((u) => u.templeId === currentTemple?.id)
+      || matchingCandidates.find((u) => u.templeId === 'ALL' || u.role === 'owner')
+      || matchingCandidates[0];
 
     // Guaranteed hard fallback
     if (!matchedUser) {
