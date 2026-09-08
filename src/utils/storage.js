@@ -50,6 +50,7 @@ export const GUEST_USER = {
 export const DEFAULT_USERS = [
   { id: 'u-owner', name: 'លោកប្រធាន (Owner)', email: 'owner@gmail.com', altEmail: 'thonvisal12@gmail.com', role: 'owner', templeId: 'ALL', assignedZone: 'ALL', phone: '012345678', pin: '123' },
   { id: 'u-admin-zone1', name: 'ភិក្ខុអាន់ឃ្លី (Admin ផែន១)', email: 'annkle@gmail.com', role: 'admin', templeId: 'khemavan', assignedZone: 'ផែន១ ៖ ធម្មសភា', phone: '012999888', pin: '123' },
+  { id: 'u-assistant-samnang', name: 'សំណាង (Assistant ផែន១)', email: 'samnang@gmail.com', role: 'assistant', templeId: 'khemavan', assignedZone: 'ផែន១ ៖ ធម្មសភា', phone: '012112233', pin: '123' },
   { id: 'u-admin', name: 'អ្នកគ្រប់គ្រង (Admin - ខេមវ័ន)', email: 'admin@gmail.com', role: 'admin', templeId: 'khemavan', assignedZone: 'ALL', phone: '098765432', pin: '123' },
   { id: 'u-assistant', name: 'អ្នកជំនួយការ (Assistant - ខេមវ័ន)', email: 'assistant@gmail.com', role: 'assistant', templeId: 'khemavan', assignedZone: 'ALL', phone: '011223344', pin: '123' },
   { id: 'u-assistant2', name: 'អ្នកជំនួយការ (Assistion - ខេមវ័ន)', email: 'assistion@gmail.com', role: 'assistant', templeId: 'khemavan', assignedZone: 'ALL', phone: '011223344', pin: '123' }
@@ -62,8 +63,9 @@ export function getSavedUsers() {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
         let changed = false;
-        const hasAnnkle = parsed.some((u) => u.email === 'annkle@gmail.com');
         let workingList = [...parsed];
+
+        const hasAnnkle = workingList.some((u) => u.email === 'annkle@gmail.com');
         if (!hasAnnkle) {
           workingList.push({
             id: 'u-admin-zone1',
@@ -73,6 +75,21 @@ export function getSavedUsers() {
             templeId: 'khemavan',
             assignedZone: 'ផែន១ ៖ ធម្មសភា',
             phone: '012999888',
+            pin: '123'
+          });
+          changed = true;
+        }
+
+        const hasSamnang = workingList.some((u) => u.email === 'samnang@gmail.com');
+        if (!hasSamnang) {
+          workingList.push({
+            id: 'u-assistant-samnang',
+            name: 'សំណាង (Assistant ផែន១)',
+            email: 'samnang@gmail.com',
+            role: 'assistant',
+            templeId: 'khemavan',
+            assignedZone: 'ផែន១ ៖ ធម្មសភា',
+            phone: '012112233',
             pin: '123'
           });
           changed = true;

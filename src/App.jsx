@@ -44,7 +44,9 @@ import {
   subscribeToFirebaseTemples,
   saveTemplesToFirebase,
   migrateTempleFirebaseData,
-  subscribeToFirebaseTab3Locations
+  subscribeToFirebaseTab3Locations,
+  subscribeToTeamLiveLocations,
+  clearTeamSOSAlert
 } from './utils/firebase';
 import { pushTagsToCloud, subscribeToCloudTags } from './utils/cloudSync';
 
@@ -128,6 +130,17 @@ export default function App() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
+
+  // 🚨 Real-time Global Team SOS Alert Monitor
+  const [teamLocations, setTeamLocations] = useState([]);
+  useEffect(() => {
+    const unsub = subscribeToTeamLiveLocations(setTeamLocations, currentTemple.id);
+    return () => unsub();
+  }, [currentTemple.id]);
+
+  const activeGlobalSOS = useMemo(() => {
+    return teamLocations.find((m) => Boolean(m.needHelp));
+  }, [teamLocations]);
 
   // ⏱️ Auto-Lock 15s refresh interval to keep lock status and timers live
   const [, setAutoLockTicker] = useState(0);
@@ -1012,6 +1025,71 @@ export default function App() {
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-6 sm:bottom-6 z-50 bg-amber-500 text-slate-950 font-bold px-4 py-2 rounded-2xl shadow-2xl flex items-center justify-center gap-2 border border-amber-300 animate-in slide-in-from-bottom-5 duration-300 pointer-events-none max-w-[90vw] shrink-0">
           <CheckCircle2 className="w-5 h-5 text-slate-950 shrink-0" />
           <span className="text-sm font-kantumruy">{toastMessage}</span>
+        </div>
+      )}
+
+      {/* 🚨 Floating Global Team SOS Emergency Alert Banner */}
+      {activeGlobalSOS && (
+        <div className="fixed top-2 left-2 right-2 sm:left-auto sm:right-4 sm:max-w-md z-50 bg-gradient-to-r from-rose-950 via-red-900 to-rose-950 border-2 border-rose-500 rounded-2xl p-3 shadow-2xl shadow-rose-950/80 animate-in slide-in-from-top-4 duration-300 font-kantumruy">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-10 h-10 rounded-2xl bg-rose-500 text-slate-950 flex items-center justify-center font-bold text-lg shrink-0 shadow-lg animate-bounce">
+                🚨
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <h4 className="text-xs sm:text-sm font-bold font-moul text-white truncate">
+                    {activeGlobalSOS.userName || activeGlobalSOS.name} ត្រូវការជំនួយបន្ទាន់!
+                  </h4>
+                  <span className="text-[9px] bg-rose-500 text-slate-950 font-bold px-1.5 py-0.2 rounded font-sans-en">
+                    SOS
+                  </span>
+                </div>
+                <p className="text-xs text-rose-200 truncate mt-0.5">
+                  📍 ទីតាំង ៖ <span className="text-amber-300 font-bold">{activeGlobalSOS.locationName || activeGlobalSOS.assignedZone || 'ក្នុងបរិវេណវត្ត'}</span>
+                </p>
+                {activeGlobalSOS.helpMessage && (
+                  <p className="text-[11px] text-rose-300 italic truncate mt-0.5">
+                    💬 {activeGlobalSOS.helpMessage}
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => clearTeamSOSAlert(activeGlobalSOS.userId, activeGlobalSOS, currentTemple.id)}
+              className="p-1 text-rose-300 hover:text-white rounded-lg hover:bg-rose-900/50 shrink-0 cursor-pointer"
+              title="បិទការជូនដំណឹង"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="mt-2 pt-2 border-t border-rose-800/80 flex items-center justify-end gap-2">
+            {activeGlobalSOS.phone && (
+              <a
+                href={`tel:${activeGlobalSOS.phone}`}
+                className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1 shadow-md transition-all cursor-pointer"
+              >
+                <PhoneCall className="w-3.5 h-3.5" />
+                <span>ខលទៅផ្ទាល់</span>
+              </a>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setTempleMapTargetLoc({
+                  name: activeGlobalSOS.locationName || activeGlobalSOS.assignedZone,
+                  x: activeGlobalSOS.x || 16.15,
+                  y: activeGlobalSOS.y || 44.31
+                });
+                setIsTempleMapOpen(true);
+              }}
+              className="px-3 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-1 shadow-md transition-all cursor-pointer"
+            >
+              <MapPin className="w-3.5 h-3.5" />
+              <span>ស្វែងរកលើ Map</span>
+            </button>
+          </div>
         </div>
       )}
 

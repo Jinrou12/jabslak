@@ -706,4 +706,155 @@ export async function migrateTempleFirebaseData(oldId, newId) {
   }
 }
 
+/**
+ * Subscribe to Team Live Locations & SOS Alerts
+ * Synced in real-time across devices via REST polling + WebSocket
+ */
+export function subscribeToTeamLiveLocations(onDataReceived, templeId = 'khemavan') {
+  const isKhemavan = !templeId || templeId === 'khemavan';
+  const path = isKhemavan ? 'team_live_locations' : `temples/${templeId}/team_live_locations`;
+  const localCacheKey = `TEAM_LOCATIONS_CACHE_${templeId}`;
+  let isSubscribed = true;
+  let lastJson = '';
+
+  const processLocations = (val) => {
+    if (!val || typeof val !== 'object') {
+      onDataReceived([]);
+      return;
+    }
+    const list = Array.isArray(val)
+      ? val.filter(Boolean)
+      : Object.values(val).filter(Boolean);
+
+    const jsonStr = JSON.stringify(list);
+    if (jsonStr !== lastJson) {
+      lastJson = jsonStr;
+      try {
+        localStorage.setItem(localCacheKey, jsonStr);
+      } catch (e) {}
+      onDataReceived(list);
+    }
+  };
+
+  // 1. Initial cached value
+  try {
+    const cached = localStorage.getItem(localCacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed)) onDataReceived(parsed);
+    }
+  } catch (e) {}
+
+  // 2. Direct REST polling
+  const fetchRest = async () => {
+    if (!isSubscribed) return;
+    const data = await restGet(path);
+    if (data) processLocations(data);
+  };
+
+  fetchRest();
+  const pollInterval = setInterval(fetchRest, 3000);
+  const handleVis = () => {
+    if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+      fetchRest();
+    }
+  };
+  if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', handleVis);
+  }
+
+  // 3. WebSocket listener if Firebase SDK is ready
+  let unsubscribeDb = () => {};
+  if (db) {
+    try {
+      const teamRef = ref(db, path);
+      unsubscribeDb = onValue(teamRef, (snapshot) => {
+        if (!isSubscribed) return;
+        if (snapshot.exists()) {
+          processLocations(snapshot.val());
+        } else {
+          processLocations([]);
+        }
+      });
+    } catch (e) {}
+  }
+
+  return () => {
+    isSubscribed = false;
+    clearInterval(pollInterval);
+    if (typeof document !== 'undefined') {
+      document.removeEventListener('visibilitychange', handleVis);
+    }
+    unsubscribeDb();
+  };
+}
+
+/**
+ * Save / Update a Team Member's Live Location and Status
+ */
+export async function saveUserLiveLocation(locData, templeId = 'khemavan') {
+  if (!locData || !locData.userId) return false;
+  const isKhemavan = !templeId || templeId === 'khemavan';
+  const path = isKhemavan 
+    ? `team_live_locations/${locData.userId}` 
+    : `temples/${templeId}/team_live_locations/${locData.userId}`;
+
+  const payload = {
+    ...locData,
+    updatedAt: new Date().toISOString()
+  };
+
+  // Optimistic local cache update
+  const localCacheKey = `TEAM_LOCATIONS_CACHE_${templeId}`;
+  try {
+    const cached = localStorage.getItem(localCacheKey);
+    let list = cached ? JSON.parse(cached) : [];
+    if (!Array.isArray(list)) list = [];
+    const idx = list.findIndex((m) => m.userId === locData.userId);
+    if (idx >= 0) {
+      list[idx] = { ...list[idx], ...payload };
+    } else {
+      list.push(payload);
+    }
+    localStorage.setItem(localCacheKey, JSON.stringify(list));
+  } catch (e) {}
+
+  // 1. Direct REST PUT
+  restPut(path, payload).catch(() => {});
+
+  // 2. Firebase SDK set
+  if (db) {
+    try {
+      const itemRef = ref(db, path);
+      await set(itemRef, payload);
+    } catch (e) {}
+  }
+  return true;
+}
+
+/**
+ * Trigger SOS Alert for a Team Member
+ */
+export async function sendTeamSOSAlert(alertData, templeId = 'khemavan') {
+  return saveUserLiveLocation({
+    ...alertData,
+    needHelp: true,
+    status: 'need_help',
+    helpMessage: alertData.helpMessage || 'ត្រូវការជំនួយបន្ទាន់ពី Admin / ក្រុមការងារ!'
+  }, templeId);
+}
+
+/**
+ * Clear SOS Alert for a Team Member
+ */
+export async function clearTeamSOSAlert(userId, currentData = {}, templeId = 'khemavan') {
+  return saveUserLiveLocation({
+    ...currentData,
+    userId,
+    needHelp: false,
+    status: 'active',
+    helpMessage: ''
+  }, templeId);
+}
+
 export { db, isConnected };

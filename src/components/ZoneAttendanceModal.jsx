@@ -15,11 +15,23 @@ import {
   Map as MapIcon,
   Sparkles,
   ChevronDown,
-  Lock
+  Lock,
+  Users,
+  AlertTriangle,
+  Radio,
+  Bell,
+  AlertCircle
 } from 'lucide-react';
 import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
-import { getSavedTab3Locations } from '../data/templeLocations';
-import { subscribeToFirebaseTab3Locations } from '../utils/firebase';
+import { getSavedTab3Locations, INITIAL_TEMPLE_LOCATIONS } from '../data/templeLocations';
+import {
+  subscribeToFirebaseTab3Locations,
+  subscribeToTeamLiveLocations,
+  saveUserLiveLocation,
+  sendTeamSOSAlert,
+  clearTeamSOSAlert
+} from '../utils/firebase';
+import { getSavedUsers } from '../utils/storage';
 
 const KHEMAVAN_CORE_ZONES = [
   'ផែន១ ៖ ធម្មសភា',
@@ -152,6 +164,117 @@ export default function ZoneAttendanceModal({
   const notArrivedInZone = totalInZone - arrivedInZone;
   const arrivedPercentage = totalInZone > 0 ? Math.round((arrivedInZone / totalInZone) * 100) : 0;
 
+  // ════════ TEAM LIVE LOCATIONS & SOS ALERT SYSTEM ════════
+  const [teamLiveLocations, setTeamLiveLocations] = useState([]);
+  const [isSpotPickerOpen, setIsSpotPickerOpen] = useState(false);
+
+  useEffect(() => {
+    const unsub = subscribeToTeamLiveLocations(setTeamLiveLocations, templeId);
+    return () => unsub();
+  }, [templeId]);
+
+  const allUsers = useMemo(() => getSavedUsers(), []);
+
+  // Team members assigned to this active zone
+  const zoneTeamMembers = useMemo(() => {
+    const targetNorm = normalizeZoneName(effectiveActiveZone);
+    const matched = allUsers.filter((u) => {
+      if (u.role === 'guest') return false;
+      const uZone = normalizeZoneName(u.assignedZone);
+      return uZone === targetNorm || uZone.includes(targetNorm) || (u.role === 'owner' && targetNorm === 'ផែន១ ៖ ធម្មសភា');
+    });
+
+    return matched.map((member) => {
+      const live = teamLiveLocations.find(
+        (l) => l.userId === member.id || (l.email && l.email === member.email)
+      );
+      return {
+        ...member,
+        locationName: live?.locationName || '',
+        status: live?.status || 'active',
+        needHelp: Boolean(live?.needHelp),
+        helpMessage: live?.helpMessage || '',
+        updatedAt: live?.updatedAt || null,
+        x: live?.x || 16.15,
+        y: live?.y || 44.31
+      };
+    });
+  }, [allUsers, teamLiveLocations, effectiveActiveZone]);
+
+  // Active SOS alert in this zone
+  const activeSosMember = useMemo(() => {
+    return zoneTeamMembers.find((m) => Boolean(m.needHelp));
+  }, [zoneTeamMembers]);
+
+  // Current user's live record
+  const myLiveRecord = useMemo(() => {
+    return teamLiveLocations.find(
+      (l) => l.userId === currentUser?.id || (l.email && l.email === currentUser?.email)
+    );
+  }, [teamLiveLocations, currentUser]);
+
+  // Available spots in this zone (e.g. ធម្មសភា, តុ១...)
+  const zoneAvailableSpots = useMemo(() => {
+    const targetNorm = normalizeZoneName(effectiveActiveZone);
+    const list = [];
+    INITIAL_TEMPLE_LOCATIONS.forEach((b) => {
+      if (normalizeZoneName(b.category) === targetNorm) {
+        list.push({ name: b.name, x: b.x, y: b.y });
+      }
+    });
+    tab3Pins.forEach((p) => {
+      if (normalizeZoneName(p.category) === targetNorm && p.name) {
+        if (!list.some((item) => item.name === p.name)) {
+          list.push({ name: p.name, x: p.x, y: p.y });
+        }
+      }
+    });
+    if (list.length === 0) {
+      list.push({ name: effectiveActiveZone, x: 50, y: 50 });
+    }
+    return list;
+  }, [effectiveActiveZone, tab3Pins]);
+
+  const handleSetMyLocation = async (spot) => {
+    if (!currentUser?.id) return;
+    setIsSpotPickerOpen(false);
+    await saveUserLiveLocation({
+      userId: currentUser.id,
+      userName: currentUser.name || 'ក្រុមការងារ',
+      email: currentUser.email || '',
+      role: currentUser.role || 'assistant',
+      assignedZone: effectiveActiveZone,
+      phone: currentUser.phone || '',
+      locationName: spot.name,
+      x: spot.x,
+      y: spot.y,
+      status: 'active',
+      needHelp: myLiveRecord?.needHelp || false
+    }, templeId);
+  };
+
+  const handleToggleSOS = async () => {
+    if (!currentUser?.id) return;
+    const isCurrentlySos = Boolean(myLiveRecord?.needHelp);
+    if (!isCurrentlySos) {
+      const defaultSpot = zoneAvailableSpots[0] || { name: effectiveActiveZone, x: 50, y: 50 };
+      await sendTeamSOSAlert({
+        userId: currentUser.id,
+        userName: currentUser.name || 'ក្រុមការងារ',
+        email: currentUser.email || '',
+        role: currentUser.role || 'assistant',
+        assignedZone: effectiveActiveZone,
+        phone: currentUser.phone || '',
+        locationName: myLiveRecord?.locationName || defaultSpot.name,
+        x: myLiveRecord?.x || defaultSpot.x,
+        y: myLiveRecord?.y || defaultSpot.y,
+        helpMessage: `${currentUser.name || 'សមាជិក'} ត្រូវការជំនួយបន្ទាន់ពី Admin / ក្រុមការងារ!`
+      }, templeId);
+    } else {
+      await clearTeamSOSAlert(currentUser.id, myLiveRecord, templeId);
+    }
+  };
+
   // Filtered tags for display based on search and status
   const displayedTags = useMemo(() => {
     let list = zoneTags;
@@ -232,8 +355,8 @@ export default function ZoneAttendanceModal({
                   <Lock className="w-4 h-4" />
                 </div>
                 <div className="min-w-0">
-                  <span className="text-[10px] text-slate-400 block font-sans-en uppercase tracking-wider">
-                    ទទួលបន្ទុកផ្តាច់មុខ (Assigned Zone)
+                  <span className="text-[10px] text-amber-300/90 block font-kantumruy font-bold">
+                    មើលតែទីតាំងដែរខ្លួនទទួលបន្ទុក
                   </span>
                   <span className="text-xs sm:text-sm font-bold text-amber-300 font-moul truncate block">
                     {userAssignedZone}
@@ -302,6 +425,225 @@ export default function ZoneAttendanceModal({
               </div>
             </>
           )}
+        </div>
+
+        {/* ════════ TEAM LIVE LOCATIONS & SOS ALERT BAR ════════ */}
+        <div className="px-3.5 py-2 bg-slate-950/95 border-b border-slate-800 space-y-2 shrink-0 font-kantumruy">
+          {/* Active SOS Alert Banner (Displays prominent flashing alarm if someone needs help) */}
+          {activeSosMember && (
+            <div className="bg-gradient-to-r from-rose-950/90 via-rose-900/80 to-rose-950/90 border-2 border-rose-500/90 rounded-2xl p-2.5 shadow-xl shadow-rose-950/60 flex items-center justify-between gap-2 animate-pulse">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-rose-500 text-slate-950 flex items-center justify-center font-bold text-sm shrink-0 shadow-md animate-bounce">
+                  🚨
+                </div>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold font-moul text-rose-200 truncate flex items-center gap-1.5">
+                    <span>{activeSosMember.userName || activeSosMember.name} ត្រូវការជំនួយបន្ទាន់!</span>
+                    <span className="text-[9px] bg-rose-500 text-slate-950 px-1.5 py-0.2 rounded font-extrabold font-sans-en">SOS</span>
+                  </div>
+                  <p className="text-[11px] text-rose-300 truncate mt-0.5 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 shrink-0 text-rose-400" />
+                    <span>ទីតាំង ៖ {activeSosMember.locationName || effectiveActiveZone}</span>
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                {activeSosMember.phone && (
+                  <a
+                    href={`tel:${activeSosMember.phone}`}
+                    className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
+                    title={`ខលទៅ ${activeSosMember.name}`}
+                  >
+                    <PhoneCall className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">ខល</span>
+                  </a>
+                )}
+                {onOpenTempleMap && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenTempleMap({
+                        name: activeSosMember.locationName || effectiveActiveZone,
+                        x: activeSosMember.x || 16.15,
+                        y: activeSosMember.y || 44.31
+                      });
+                    }}
+                    className="px-2.5 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
+                    title="ស្វែងរកទីតាំងលើ Map"
+                  >
+                    <MapIcon className="w-3.5 h-3.5" />
+                    <span>រកលើ Map</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Team Members Strip */}
+          <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-2.5 shadow-sm space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Users className="w-4 h-4 text-amber-400 shrink-0" />
+                <span className="text-xs font-bold text-amber-300 font-moul">ក្រុមការងារក្នុងផែន ៖</span>
+                <span className="text-[11px] text-slate-400 font-bold">({westernToKhmerDigits(zoneTeamMembers.length)} នាក់)</span>
+              </div>
+
+              {/* Set My Location Button + SOS Trigger Button */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsSpotPickerOpen(!isSpotPickerOpen)}
+                    className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/40 text-[11px] font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm"
+                    title="ដៅទីតាំងដែលខ្លួនកំពុងឈរ/ចាំ"
+                  >
+                    <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
+                    <span className="truncate max-w-[110px] sm:max-w-[140px]">
+                      {myLiveRecord?.locationName ? `ខ្ញុំនៅ: ${myLiveRecord.locationName}` : '📍 ដាក់ទីតាំងខ្ញុំ'}
+                    </span>
+                    <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+                  </button>
+
+                  {isSpotPickerOpen && (
+                    <div className="absolute right-0 top-full mt-1.5 w-56 bg-slate-900 border border-amber-500/50 rounded-2xl shadow-2xl p-1.5 z-50 space-y-1 animate-in zoom-in-95 font-kantumruy max-h-60 overflow-y-auto">
+                      <div className="text-[10px] font-bold text-amber-400/90 px-2 py-1 border-b border-slate-800 flex items-center justify-between">
+                        <span>ជ្រើសរើសទីតាំងរបស់អ្នក ៖</span>
+                        <button
+                          type="button"
+                          onClick={() => setIsSpotPickerOpen(false)}
+                          className="text-slate-400 hover:text-white cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      {zoneAvailableSpots.map((spot, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => handleSetMyLocation(spot)}
+                          className={`w-full text-left px-2.5 py-1.5 text-xs rounded-xl transition-all flex items-center justify-between cursor-pointer ${
+                            myLiveRecord?.locationName === spot.name
+                              ? 'bg-amber-500 text-slate-950 font-bold'
+                              : 'text-slate-200 hover:text-amber-300 hover:bg-slate-800'
+                          }`}
+                        >
+                          <span className="truncate">{spot.name}</span>
+                          {myLiveRecord?.locationName === spot.name && (
+                            <Check className="w-3.5 h-3.5 text-slate-950 stroke-[3] shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 🚨 SOS Alert Button */}
+                <button
+                  type="button"
+                  onClick={handleToggleSOS}
+                  className={`px-2.5 py-1 rounded-xl text-[11px] font-bold flex items-center gap-1 transition-all active:scale-95 shadow-sm cursor-pointer ${
+                    myLiveRecord?.needHelp
+                      ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/60 hover:bg-emerald-500/35'
+                      : 'bg-rose-500/20 text-rose-300 border border-rose-500/50 hover:bg-rose-500/30 animate-pulse'
+                  }`}
+                  title={myLiveRecord?.needHelp ? 'ចុចដើម្បីបិទ SOS' : 'ចុចដើម្បីហៅជំនួយបន្ទាន់ពី Admin / ក្រុមការងារ'}
+                >
+                  <span>{myLiveRecord?.needHelp ? '✅ ដក SOS' : '🚨 ហៅជំនួយ'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Team Member Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 pt-0.5">
+              {zoneTeamMembers.length === 0 ? (
+                <div className="text-[11px] text-slate-500 italic p-1">
+                  មិនទាន់មានសមាជិកកំណត់ក្នុងផែននេះនៅឡើយទេ
+                </div>
+              ) : (
+                zoneTeamMembers.map((member) => {
+                  const isSelf = member.id === currentUser?.id || (member.email && member.email === currentUser?.email);
+                  const isSos = Boolean(member.needHelp);
+                  return (
+                    <div
+                      key={member.id}
+                      className={`p-2 rounded-xl border flex items-center justify-between gap-2 transition-all ${
+                        isSos
+                          ? 'bg-rose-950/40 border-rose-500/70 ring-1 ring-rose-500/40'
+                          : 'bg-slate-950/80 border-slate-800/90'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div
+                          className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-sm ${
+                            isSos
+                              ? 'bg-rose-500 text-slate-950 animate-bounce'
+                              : member.role === 'admin'
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                              : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
+                          }`}
+                        >
+                          {isSos ? '🚨' : member.name ? member.name.slice(0, 1) : 'U'}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="text-xs font-bold text-slate-200 truncate font-kantumruy">
+                              {member.name}
+                            </span>
+                            {isSelf && (
+                              <span className="text-[8px] bg-slate-800 text-slate-400 border border-slate-700 px-1 py-0.2 rounded">
+                                ខ្ញុំ
+                              </span>
+                            )}
+                            <span className={`text-[8px] px-1 py-0.2 rounded font-bold ${
+                              member.role === 'admin' ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'
+                            }`}>
+                              {member.role === 'admin' ? 'Admin' : 'Assistant'}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-amber-400/90 truncate flex items-center gap-1 mt-0.5">
+                            <MapPin className="w-2.5 h-2.5 text-amber-400 shrink-0" />
+                            <span>{member.locationName || 'មិនទាន់កំណត់ទីតាំង'}</span>
+                            {isSos && <span className="text-rose-400 font-bold ml-1 animate-pulse">🚨 ត្រូវការជំនួយ!</span>}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {member.phone && (
+                          <a
+                            href={`tel:${member.phone}`}
+                            className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 border border-emerald-500/40 flex items-center justify-center transition-all shadow-sm"
+                            title={`ខលទៅកាន់ ${member.name} (${member.phone})`}
+                          >
+                            <PhoneCall className="w-3 h-3" />
+                          </a>
+                        )}
+                        {onOpenTempleMap && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onClose();
+                              onOpenTempleMap({
+                                name: member.locationName || effectiveActiveZone,
+                                x: member.x || 16.15,
+                                y: member.y || 44.31
+                              });
+                            }}
+                            className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-300 hover:bg-sky-500 hover:text-slate-950 border border-sky-500/40 flex items-center justify-center transition-all cursor-pointer shadow-sm"
+                            title="រកទីតាំងសមាជិកលើ Map"
+                          >
+                            <MapIcon className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
         </div>
 
         {/* ════════ STATS COUNTER BAR ════════ */}

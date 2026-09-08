@@ -48,7 +48,9 @@ import {
   subscribeToFirebaseTab3Locations,
   saveTab3LocationsToFirebase as rawSaveTab3LocationsToFirebase,
   subscribeToGroupSettings,
-  saveGroupSettingsToFirebase as rawSaveGroupSettingsToFirebase
+  saveGroupSettingsToFirebase as rawSaveGroupSettingsToFirebase,
+  subscribeToTeamLiveLocations,
+  clearTeamSOSAlert
 } from '../utils/firebase';
 import { getTempleCustomMapImage, saveTempleCustomMapImage, compressImage } from '../utils/templeStorage';
 import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName, formatTagRanges } from '../utils/khmerSearch';
@@ -834,6 +836,16 @@ export default function TempleMapModal({
     }
   }, [currentTempleId, isKhemavan]);
 
+  // 👥 Team Live Tracker State
+  const [teamLiveLocations, setTeamLiveLocations] = useState([]);
+  const [showTeamTracker, setShowTeamTracker] = useState(true);
+  const [selectedTeamMember, setSelectedTeamMember] = useState(null);
+
+  useEffect(() => {
+    const unsub = subscribeToTeamLiveLocations(setTeamLiveLocations, currentTempleId);
+    return () => unsub();
+  }, [currentTempleId]);
+
   // Group tags by person name for dropdown selector & pins
   const groupedAllTags = useMemo(() => {
     return groupTagsByName(allTags);
@@ -1419,12 +1431,23 @@ export default function TempleMapModal({
 
       if (typeof highlightLocationName === 'object' && highlightLocationName !== null) {
         const tagObj = highlightLocationName;
+        // Direct coordinates from Team Tracker (e.g. { name: ..., x: ..., y: ... })
+        if (tagObj.x != null && tagObj.y != null) {
+          targetLoc = {
+            id: 'team-member-focus',
+            name: tagObj.name || 'ទីតាំងក្រុមការងារ',
+            x: Number(tagObj.x),
+            y: Number(tagObj.y),
+            category: '👥 ទីតាំងក្រុមការងារ'
+          };
+        }
         const tagNoStr = String(tagObj.tagNumber || '').trim();
         const tagDispStr = String(tagObj.tagNumberDisplay || '').trim();
         const tagLocStr = String(tagObj.baseLocation || tagObj.location || '').trim().toLowerCase();
 
         // Search by Tag Pin
-        targetLoc = effectiveTab3Locations.find((l) => {
+        if (!targetLoc) {
+          targetLoc = effectiveTab3Locations.find((l) => {
           if (!l.isTagPin && !l.tagNumber && !l.tagNumberDisplay) return false;
           const lNumStr = String(l.tagNumber || '').trim();
           const lDispStr = String(l.tagNumberDisplay || '').trim();
@@ -1445,6 +1468,7 @@ export default function TempleMapModal({
             const lName = String(l.name || '').toLowerCase().trim();
             return lName === tagLocStr || lName.includes(tagLocStr) || tagLocStr.includes(lName);
           });
+        }
         }
       } else {
         const searchTarget = String(highlightLocationName).toLowerCase().trim();
@@ -3107,6 +3131,21 @@ export default function TempleMapModal({
               )}
             </button>
 
+            {/* Toggle Team Live Tracker Layer Button */}
+            <button
+              type="button"
+              onClick={() => setShowTeamTracker(!showTeamTracker)}
+              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                showTeamTracker
+                  ? 'bg-emerald-500/25 border border-emerald-500/60 text-emerald-300 shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200 border border-slate-800'
+              }`}
+              title={showTeamTracker ? 'លាក់ទីតាំងក្រុមការងារ' : 'បង្ហាញទីតាំងក្រុមការងារលើ Map'}
+            >
+              <Users className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+              <span className="hidden sm:inline font-kantumruy">👥 ក្រុមការងារ ({westernToKhmerDigits(teamLiveLocations.length)})</span>
+            </button>
+
             <div className="h-4 w-px bg-slate-800 mx-0.5 shrink-0"></div>
 
             {/* Undo Button (Ctrl+Z) */}
@@ -3177,7 +3216,7 @@ export default function TempleMapModal({
                     <span className="font-sans-en font-black text-amber-300">
                       {selectedSizeGroup === 'all'
                         ? `${pinSizePx}px`
-                        : `${groupPinSizes[selectedSizeGroup] || pinSizePx}px`}
+                  : `${groupPinSizes[selectedSizeGroup] || pinSizePx}px`}
                     </span>
                   </span>
 
@@ -3366,6 +3405,59 @@ export default function TempleMapModal({
                           />
                         );
                       })}
+
+                      {/* 👥 Live Team Tracker Pins on the Temple Map */}
+                      {showTeamTracker && teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((member) => {
+                        const isSos = Boolean(member.needHelp);
+                        const roleGradient = member.role === 'admin'
+                          ? 'from-amber-400 via-amber-500 to-amber-600 text-slate-950'
+                          : 'from-sky-400 via-blue-500 to-indigo-600 text-white';
+                        const initials = member.userName ? member.userName.slice(0, 1) : 'U';
+
+                        return (
+                          <div
+                            key={`team-${member.userId}`}
+                            style={{
+                              position: 'absolute',
+                              left: `${member.x}%`,
+                              top: `${member.y}%`,
+                              zIndex: isSos ? 99 : 45
+                            }}
+                            className="pointer-events-auto -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTeamMember(member);
+                            }}
+                          >
+                            {/* Flashing Ping Beacon if SOS */}
+                            {isSos && (
+                              <div className="absolute -inset-4 rounded-full bg-rose-500/70 animate-ping pointer-events-none" />
+                            )}
+
+                            <div className={`relative flex items-center justify-center rounded-full p-0.5 shadow-2xl transition-transform hover:scale-125 ${
+                              isSos
+                                ? 'ring-4 ring-rose-500 ring-offset-2 ring-offset-slate-950 animate-bounce'
+                                : 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-950'
+                            }`}>
+                              <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${
+                                isSos ? 'from-rose-500 to-red-700 text-white' : roleGradient
+                              } flex items-center justify-center font-bold text-xs shadow-lg border border-white/80`}>
+                                {isSos ? '🚨' : initials}
+                              </div>
+                            </div>
+
+                            {/* Label Card under avatar */}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-0.5 rounded-lg bg-slate-950/95 border border-slate-700 text-slate-100 text-[10px] whitespace-nowrap font-bold shadow-xl pointer-events-none flex items-center gap-1 font-kantumruy">
+                              <span>{member.userName || member.name}</span>
+                              {isSos ? (
+                                <span className="text-rose-400 font-extrabold animate-pulse">🚨 SOS!</span>
+                              ) : (
+                                <span className="text-emerald-400 text-[9px]">📍 {member.locationName || 'ទីតាំង'}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -3400,6 +3492,83 @@ export default function TempleMapModal({
                 </div>
               )}
             </div>
+
+            {/* Selected Team Member Banner Popover */}
+            {selectedTeamMember && (
+              <div className="absolute top-3 left-3 max-w-[290px] sm:max-w-sm bg-slate-950/95 border-2 border-emerald-500/80 rounded-2xl p-3 shadow-2xl backdrop-blur-md z-50 animate-in fade-in slide-in-from-top-2 font-kantumruy">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className={`w-9 h-9 rounded-2xl flex items-center justify-center font-bold text-sm shadow-md shrink-0 ${
+                      selectedTeamMember.needHelp
+                        ? 'bg-rose-500 text-white animate-bounce'
+                        : selectedTeamMember.role === 'admin'
+                        ? 'bg-amber-500 text-slate-950'
+                        : 'bg-sky-500 text-white'
+                    }`}>
+                      {selectedTeamMember.needHelp ? '🚨' : (selectedTeamMember.userName || 'U').slice(0, 1)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-xs text-amber-300 font-bold font-moul truncate">
+                          {selectedTeamMember.userName || selectedTeamMember.name}
+                        </span>
+                        <span className={`text-[8px] px-1.5 py-0.2 rounded font-bold ${
+                          selectedTeamMember.role === 'admin' ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'
+                        }`}>
+                          {selectedTeamMember.role === 'admin' ? 'Admin ផែន' : 'Assistant ផែន'}
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-slate-300 truncate mt-0.5 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
+                        <span>{selectedTeamMember.locationName || selectedTeamMember.assignedZone || 'ទីតាំងលើ Map'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedTeamMember(null)}
+                    className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 shrink-0 cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {selectedTeamMember.needHelp && (
+                  <div className="mt-2 p-2 bg-rose-950/60 border border-rose-500/60 rounded-xl text-rose-300 text-xs font-bold flex items-center gap-1.5 animate-pulse">
+                    <span>🚨</span>
+                    <span>{selectedTeamMember.helpMessage || 'ត្រូវការជំនួយបន្ទាន់!'}</span>
+                  </div>
+                )}
+
+                <div className="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between gap-1.5">
+                  <div className="text-[10px] text-slate-400 truncate">
+                    {selectedTeamMember.assignedZone && <span>{selectedTeamMember.assignedZone}</span>}
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {selectedTeamMember.phone && (
+                      <a
+                        href={`tel:${selectedTeamMember.phone}`}
+                        className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1 shadow-md transition-all cursor-pointer"
+                      >
+                        <PhoneCall className="w-3.5 h-3.5" />
+                        <span>ខល</span>
+                      </a>
+                    )}
+                    {selectedTeamMember.needHelp && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          await clearTeamSOSAlert(selectedTeamMember.userId, selectedTeamMember, currentTempleId);
+                          setSelectedTeamMember((prev) => prev ? { ...prev, needHelp: false } : null);
+                        }}
+                        className="px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs flex items-center gap-1 transition-all cursor-pointer"
+                      >
+                        ដក SOS
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Selected Location Banner Popover */}
             {selectedLocation && (
