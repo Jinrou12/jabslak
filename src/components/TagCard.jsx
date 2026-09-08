@@ -73,7 +73,7 @@ export default function TagCard({ tag, searchQuery = '', onSelectTag, onViewOnMa
 
           {tag.stationArrived && (
             <div className="flex items-center justify-center sm:justify-start gap-1 text-[8px] sm:text-[9.5px] text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-1.5 py-0.2 rounded mt-0.5 w-fit font-kantumruy font-bold">
-              <span>📍 បានមកចាំទីតាំង</span>
+              <span>🏷️ បានយកស្លាក</span>
             </div>
           )}
 

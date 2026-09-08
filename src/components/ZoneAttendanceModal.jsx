@@ -200,14 +200,14 @@ export default function ZoneAttendanceModal({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm sm:text-base font-bold font-moul text-amber-400 truncate">
-                  កត់ត្រាវត្តមានចាំទីតាំង (រូបទី១)
+                  កត់ត្រាការយកស្លាកលេខ (រូបទី១)
                 </h2>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.2 rounded-full font-bold shrink-0">
                   📱 Phone
                 </span>
               </div>
               <p className="text-[11px] text-slate-400 truncate mt-0.5">
-                {currentUser?.name ? `អ្នកទទួលបន្ទុក ៖ ${currentUser.name}` : 'ផ្ទាំងកត់ត្រាវត្តមានអ្នកមកចាំទីតាំង'}
+                {currentUser?.name ? `អ្នកទទួលបន្ទុក ៖ ${currentUser.name}` : 'ផ្ទាំងកត់ត្រាអ្នកបានយកស្លាកលេខតាមទីតាំង'}
                 {isZoneRestricted && <span className="text-amber-300 font-bold ml-1">({userAssignedZone})</span>}
               </p>
             </div>
@@ -314,14 +314,14 @@ export default function ZoneAttendanceModal({
           </div>
 
           <div className="bg-emerald-950/30 border border-emerald-500/40 rounded-xl p-2">
-            <div className="text-[10px] text-emerald-400 font-bold">បានមកចាំទីតាំង</div>
+            <div className="text-[10px] text-emerald-400 font-bold">បានយកស្លាក</div>
             <div className="text-base sm:text-lg font-black text-emerald-400 font-moul">
               {westernToKhmerDigits(arrivedInZone)} <span className="text-[10px] font-normal text-emerald-300 font-kantumruy">({arrivedPercentage}%)</span>
             </div>
           </div>
 
           <div className="bg-amber-950/30 border border-amber-500/40 rounded-xl p-2">
-            <div className="text-[10px] text-amber-400 font-bold">មិនទាន់មកចាំ</div>
+            <div className="text-[10px] text-amber-400 font-bold">មិនទាន់យកស្លាក</div>
             <div className="text-base sm:text-lg font-black text-amber-400 font-moul">
               {westernToKhmerDigits(notArrivedInZone)} <span className="text-[10px] font-normal text-amber-300 font-kantumruy">ស្លាក</span>
             </div>
@@ -369,7 +369,7 @@ export default function ZoneAttendanceModal({
                   : 'bg-slate-900 text-emerald-400 border-slate-800 hover:border-emerald-500/40'
               }`}
             >
-              ✅ បានមកចាំទីតាំង ({westernToKhmerDigits(arrivedInZone)})
+              ✅ បានយកស្លាក ({westernToKhmerDigits(arrivedInZone)})
             </button>
 
             <button
@@ -380,7 +380,7 @@ export default function ZoneAttendanceModal({
                   : 'bg-slate-900 text-amber-400 border-slate-800 hover:border-amber-500/40'
               }`}
             >
-              ⏳ មិនទាន់មកចាំ ({westernToKhmerDigits(notArrivedInZone)})
+              ⏳ មិនទាន់យកស្លាក ({westernToKhmerDigits(notArrivedInZone)})
             </button>
           </div>
         </div>
@@ -480,7 +480,7 @@ export default function ZoneAttendanceModal({
                     </div>
                   </div>
 
-                  {/* BOTTOM ROW: INDEPENDENT TOUCH BUTTON TO MARK "បានមកចាំទីតាំង" (រូបទី១) */}
+                  {/* BOTTOM ROW: INDEPENDENT TOUCH BUTTON TO MARK "បានយកស្លាក" (រូបទី១) */}
                   <div className="pt-2 border-t border-slate-800/80">
                     <button
                       type="button"
@@ -506,7 +506,7 @@ export default function ZoneAttendanceModal({
                           {isStationArrived && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                         </div>
                         <span className="font-moul text-[11px] sm:text-xs">
-                          {isStationArrived ? '✅ បានមកចាំទីតាំងរួចរាល់' : '⏳ មិនទាន់មកចាំទីតាំង (ចុចដើម្បីគ្រីស)'}
+                          {isStationArrived ? '✅ បានយកស្លាករួចរាល់' : '⏳ មិនទាន់យកស្លាក (ចុចដើម្បីគ្រីស)'}
                         </span>
                       </div>
 

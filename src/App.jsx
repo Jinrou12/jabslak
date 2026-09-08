@@ -761,12 +761,12 @@ export default function App() {
 
     const tagDisplay = tagToToggle.tagNumberDisplay || westernToKhmerDigits(tagToToggle.tagNumber);
     if (updatedStatus) {
-      showToast(`📍 បានកត់ត្រាស្លាកលេខ #${tagDisplay} មកចាំទីតាំងរួចរាល់! ✔️`);
+      showToast(`🏷️ បានកត់ត្រាស្លាកលេខ #${tagDisplay} បានយកស្លាករួចរាល់! ✔️`);
       try {
         confetti({ particleCount: 25, spread: 45, origin: { y: 0.6 } });
       } catch {}
     } else {
-      showToast(`បានដកការកត់ត្រាមកចាំទីតាំងស្លាកលេខ #${tagDisplay}!`);
+      showToast(`បានដកការកត់ត្រា មិនទាន់យកស្លាកលេខ #${tagDisplay}!`);
     }
   };
 
