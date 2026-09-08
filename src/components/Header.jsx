@@ -36,6 +36,14 @@ export default function Header({
     if (isOwner) return { text: 'ប្រធាន (Owner)', color: 'bg-amber-500/20 text-amber-300 border-amber-500/40', icon: Crown };
     if (isAdmin) return { text: 'អ្នកគ្រប់គ្រង (Admin)', color: 'bg-purple-500/20 text-purple-300 border-purple-500/40', icon: Shield };
     if (isAssistant) return { text: 'ជំនួយការ (Assistant)', color: 'bg-blue-500/20 text-blue-300 border-blue-500/40', icon: UserCog };
+    if (currentUser?.isRestricted) {
+      const origRoleName = currentUser.originalRole === 'admin' ? 'Admin' : 'Assistant';
+      return {
+        text: `អ្នកមើល (${origRoleName} វត្តផ្សេង)`,
+        color: 'bg-amber-500/15 text-amber-300 border-amber-500/40',
+        icon: Eye
+      };
+    }
     return { text: 'អ្នកមើល (Guest)', color: 'bg-slate-500/20 text-slate-300 border-slate-500/40', icon: Eye };
   };
 
@@ -162,8 +170,8 @@ export default function Header({
               {React.createElement(getRoleBadge().icon, { className: 'w-4 h-4' })}
             </button>
 
-            {/* Role Management (Owner only) */}
-            {isOwner && (
+            {/* Role Management (Owner or Temple Admin) */}
+            {(isOwner || isAdmin) && (
               <button
                 onClick={onOpenRoleManagement}
                 className="p-1.5 sm:p-2 rounded-xl bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 active:scale-95 transition-all"
@@ -174,11 +182,12 @@ export default function Header({
             )}
 
             {/* 2. Login / Logout Icon */}
-            {currentUser?.role && currentUser.role !== 'guest' ? (
+            {(currentUser?.role && currentUser.role !== 'guest') || currentUser?.originalRole ? (
               <button
+                type="button"
                 onClick={onLogout}
-                className="p-1.5 sm:p-2 bg-slate-900/90 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-800 rounded-xl transition-all active:scale-95"
-                title="ចាកចេញ (Logout)"
+                className="p-1.5 sm:p-2 rounded-xl bg-slate-800/80 hover:bg-rose-950/40 text-slate-400 hover:text-rose-400 border border-slate-700/60 hover:border-rose-800/60 active:scale-95 transition-all cursor-pointer shadow-sm"
+                title={`ចាកចេញពីគណនី (${currentUser?.email || currentUser?.name})`}
               >
                 <LogOut className="w-4 h-4" />
               </button>

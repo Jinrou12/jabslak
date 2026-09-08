@@ -22,7 +22,7 @@ import TempleSelectModal from './components/TempleSelectModal';
 import InstallAppModal from './components/InstallAppModal';
 import SplashScreen from './components/SplashScreen';
 import { searchTags, westernToKhmerDigits, khmerToWesternDigits, getKhmerPhoneticSuggestions } from './utils/khmerSearch';
-import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER } from './utils/storage';
+import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER, getEffectiveUser } from './utils/storage';
 import {
   DEFAULT_TEMPLES,
   getSavedTemples,
@@ -94,6 +94,11 @@ export default function App() {
   const [currentUser, setCurrentUser] = useState(getCurrentUser());
   const [isRoleManagementOpen, setIsRoleManagementOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+
+  // Contextual Effective User & Permissions (Per-Temple Isolation)
+  const effectiveUser = useMemo(() => {
+    return getEffectiveUser(currentUser, currentTemple?.id);
+  }, [currentUser, currentTemple]);
 
   // Modals state
   const [selectedTag, setSelectedTag] = useState(null);
@@ -603,7 +608,7 @@ export default function App() {
 
   // Attendance Toggle Handler ("គ្រីសអ្នកបានមកដល់")
   const handleToggleAttendance = async (tagToToggle) => {
-    if (currentUser?.role === 'guest') {
+    if (effectiveUser?.role === 'guest') {
       alert('សិទ្ធិ Guest អាចមើល និងស្វែងរកប៉ុណ្ណោះ! មិនអាចគ្រីសមកដល់បានទេ (សម្រាប់តែក្រុមការងារ)');
       return;
     }
@@ -620,7 +625,7 @@ export default function App() {
     // 🔒 If user is trying to UNCHECK / UNDO arrival (updatedStatus === false):
     let isUnlockingByAdmin = false;
     if (!updatedStatus) {
-      const permission = checkAttendanceTogglePermission(tagToToggle, currentUser);
+      const permission = checkAttendanceTogglePermission(tagToToggle, effectiveUser);
       if (!permission.canToggle) {
         alert(permission.reason);
         return;
@@ -707,7 +712,7 @@ export default function App() {
       } catch {}
     } else {
       if (isUnlockingByAdmin) {
-        showToast(`🔓 Admin (${currentUser?.name || 'Admin'}) បានដោះការគ្រីសស្លាកលេខ #${tagDisplay} រួចរាល់!`);
+        showToast(`🔓 Admin (${effectiveUser?.name || 'Admin'}) បានដោះការគ្រីសស្លាកលេខ #${tagDisplay} រួចរាល់!`);
       } else {
         showToast(`បានដកការគ្រីសវត្តមានស្លាកលេខ ${tagDisplay}!`);
       }
@@ -965,10 +970,10 @@ export default function App() {
           totalCount={yearTags.length}
           filteredCount={filteredTags.length}
           arrivedCount={arrivedCount}
-          currentUser={currentUser}
+          currentUser={effectiveUser}
           currentTemple={currentTemple}
           onOpenTempleSelectModal={() => {
-            if (currentUser?.role === 'owner') {
+            if (effectiveUser?.role === 'owner') {
               setIsTempleSelectOpen(true);
             }
           }}
@@ -1030,7 +1035,7 @@ export default function App() {
           <div className="pb-12">
             <TempleMapModal
               allTags={yearTags}
-              currentUser={currentUser}
+              currentUser={effectiveUser}
               currentTemple={currentTemple}
               onUpdateTempleMap={handleUpdateTempleMap}
               highlightLocationName={templeMapTargetLoc}
@@ -1044,7 +1049,7 @@ export default function App() {
                 showToast(`បានច្រោះបញ្ជីស្លាកលេខតាម៖ ${locName}`);
               }}
               onAddTagForLocation={(locName) => {
-                if (currentUser?.role === 'assistant' || currentUser?.role === 'guest') {
+                if (effectiveUser?.role === 'assistant' || effectiveUser?.role === 'guest') {
                   alert('សិទ្ធិ Assistant និង Guest មិនអាចបន្ថែមស្លាកលេខថ្មីបានទេ!');
                   return;
                 }
@@ -1063,7 +1068,7 @@ export default function App() {
           <div className="pb-12">
             <AttendanceReportView
               allTags={yearTags}
-              currentUser={currentUser}
+              currentUser={effectiveUser}
               uncheckingTagId={uncheckingTagId}
               onToggleAttendance={handleToggleAttendance}
               onCloseView={() => setViewMode('grid')}
@@ -1081,7 +1086,7 @@ export default function App() {
                   key={tag.id}
                   tag={tag}
                   searchQuery={searchQuery}
-                  currentUser={currentUser}
+                  currentUser={effectiveUser}
                   uncheckingTagId={uncheckingTagId}
                   onSelectTag={(t) => setSelectedTag(t)}
                   onViewOnMap={handleOpenMapWithLocation}
@@ -1094,7 +1099,7 @@ export default function App() {
               <TagTableView
                 tags={filteredTags}
                 searchQuery={searchQuery}
-                currentUser={currentUser}
+                currentUser={effectiveUser}
                 uncheckingTagId={uncheckingTagId}
                 onSelectTag={(t) => setSelectedTag(t)}
                 onViewOnMap={handleOpenMapWithLocation}
@@ -1172,7 +1177,7 @@ export default function App() {
       {selectedTag && (
         <TagDetailModal
           tag={selectedTag}
-          currentUser={currentUser}
+          currentUser={effectiveUser}
           uncheckingTagId={uncheckingTagId}
           onClose={() => setSelectedTag(null)}
           onEdit={(t) => {
@@ -1258,7 +1263,7 @@ export default function App() {
       {isTempleMapOpen && (
         <TempleMapModal
           allTags={yearTags}
-          currentUser={currentUser}
+          currentUser={effectiveUser}
           currentTemple={currentTemple}
           onUpdateTempleMap={handleUpdateTempleMap}
           highlightLocationName={templeMapTargetLoc}
@@ -1271,7 +1276,7 @@ export default function App() {
             showToast(`បានច្រោះបញ្ជីស្លាកលេខតាម៖ ${locName}`);
           }}
           onAddTagForLocation={(locName) => {
-            if (currentUser?.role === 'assistant' || currentUser?.role === 'guest') {
+            if (effectiveUser?.role === 'assistant' || effectiveUser?.role === 'guest') {
               alert('សិទ្ធិ Assistant និង Guest មិនអាចបន្ថែមស្លាកលេខថ្មីបានទេ!');
               return;
             }
@@ -1287,11 +1292,11 @@ export default function App() {
       )}
 
       {/* 🏛️ Temple Directory & Switcher Modal (FOR OWNER ONLY) */}
-      {isTempleSelectOpen && currentUser?.role === 'owner' && (
+      {isTempleSelectOpen && effectiveUser?.role === 'owner' && (
         <TempleSelectModal
           currentTemple={currentTemple}
           temples={temples}
-          currentUser={currentUser}
+          currentUser={effectiveUser}
           onClose={() => setIsTempleSelectOpen(false)}
           onSelectTemple={handleSelectTemple}
           onAddTemple={handleAddTemple}
@@ -1304,8 +1309,10 @@ export default function App() {
       {/* 👑 Role & User Management Modal */}
       {isRoleManagementOpen && (
         <RoleManagementModal
-          currentUser={currentUser}
+          currentUser={effectiveUser}
           users={users}
+          currentTemple={currentTemple}
+          temples={temples}
           onClose={() => setIsRoleManagementOpen(false)}
           onSaveUser={handleSaveUser}
           onDeleteUser={handleDeleteUser}
@@ -1340,7 +1347,7 @@ export default function App() {
         <button
           type="button"
           onClick={() => {
-            if (currentUser?.role === 'assistant' || currentUser?.role === 'guest') {
+            if (effectiveUser?.role === 'assistant' || effectiveUser?.role === 'guest') {
               alert('សិទ្ធិ Assistant និង Guest មិនអាចបន្ថែមស្លាកលេខថ្មីបានទេ!');
               return;
             }

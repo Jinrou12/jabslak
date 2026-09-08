@@ -40,16 +40,17 @@ export const GUEST_USER = {
   id: 'u-guest',
   name: 'អ្នកមើលធម្មតា (Guest)',
   role: 'guest',
+  templeId: 'ALL',
   email: '',
   phone: '',
   pin: ''
 };
 
 export const DEFAULT_USERS = [
-  { id: 'u-owner', name: 'លោកប្រធាន (Owner)', email: 'owner@gmail.com', altEmail: 'thonvisal12@gmail.com', role: 'owner', phone: '012345678', pin: '123' },
-  { id: 'u-admin', name: 'អ្នកគ្រប់គ្រង (Admin)', email: 'admin@gmail.com', role: 'admin', phone: '098765432', pin: '123' },
-  { id: 'u-assistant', name: 'អ្នកជំនួយការ (Assistant)', email: 'assistant@gmail.com', role: 'assistant', phone: '011223344', pin: '123' },
-  { id: 'u-assistant2', name: 'អ្នកជំនួយការ (Assistion)', email: 'assistion@gmail.com', role: 'assistant', phone: '011223344', pin: '123' }
+  { id: 'u-owner', name: 'លោកប្រធាន (Owner)', email: 'owner@gmail.com', altEmail: 'thonvisal12@gmail.com', role: 'owner', templeId: 'ALL', phone: '012345678', pin: '123' },
+  { id: 'u-admin', name: 'អ្នកគ្រប់គ្រង (Admin - ខេមវ័ន)', email: 'admin@gmail.com', role: 'admin', templeId: 'khemavan', phone: '098765432', pin: '123' },
+  { id: 'u-assistant', name: 'អ្នកជំនួយការ (Assistant - ខេមវ័ន)', email: 'assistant@gmail.com', role: 'assistant', templeId: 'khemavan', phone: '011223344', pin: '123' },
+  { id: 'u-assistant2', name: 'អ្នកជំនួយការ (Assistion - ខេមវ័ន)', email: 'assistion@gmail.com', role: 'assistant', templeId: 'khemavan', phone: '011223344', pin: '123' }
 ];
 
 export function getSavedUsers() {
@@ -60,18 +61,25 @@ export function getSavedUsers() {
       if (Array.isArray(parsed) && parsed.length > 0) {
         let changed = false;
         const migrated = parsed.map((u) => {
-          if (u.role === 'owner') {
-            if (u.email !== 'owner@gmail.com' || !u.altEmail) {
+          const updated = { ...u };
+          if (updated.role === 'owner') {
+            if (updated.email !== 'owner@gmail.com' || !updated.altEmail) {
               changed = true;
-              return {
-                ...u,
-                email: 'owner@gmail.com',
-                altEmail: u.email && u.email !== 'owner@gmail.com' ? u.email : 'thonvisal12@gmail.com',
-                pin: u.pin || '123'
-              };
+              updated.email = 'owner@gmail.com';
+              updated.altEmail = updated.email && updated.email !== 'owner@gmail.com' ? updated.email : 'thonvisal12@gmail.com';
+              updated.pin = updated.pin || '123';
+            }
+            if (updated.templeId !== 'ALL') {
+              changed = true;
+              updated.templeId = 'ALL';
+            }
+          } else {
+            if (!updated.templeId) {
+              changed = true;
+              updated.templeId = 'khemavan';
             }
           }
-          return u;
+          return updated;
         });
         if (changed) {
           saveUsers(migrated);
@@ -118,5 +126,44 @@ export function saveCurrentUser(user) {
   }
 }
 
+/**
+ * Computes user's effective permissions for the current temple.
+ * - Owner: always full Owner permissions everywhere ('ALL').
+ * - Admin/Assistant: full permissions if templeId matches currentTempleId (or 'ALL');
+ *   otherwise downgraded to 'guest' in foreign temples.
+ */
+export function getEffectiveUser(user, currentTempleId = 'khemavan') {
+  if (!user || user.role === 'guest' || user.id === 'u-guest') {
+    return { ...GUEST_USER, ...(user || {}) };
+  }
 
+  // Owner is global Super Admin
+  if (user.role === 'owner' || user.templeId === 'ALL') {
+    return {
+      ...user,
+      effectiveRole: user.role,
+      isRestricted: false
+    };
+  }
 
+  const assignedTempleId = user.templeId || 'khemavan';
+  const isMatch = assignedTempleId === currentTempleId;
+
+  if (isMatch) {
+    return {
+      ...user,
+      effectiveRole: user.role,
+      isRestricted: false
+    };
+  }
+
+  // Foreign temple -> Downgrade to Guest (view-only)
+  return {
+    ...user,
+    role: 'guest',
+    effectiveRole: 'guest',
+    originalRole: user.role,
+    assignedTempleId: assignedTempleId,
+    isRestricted: true
+  };
+}

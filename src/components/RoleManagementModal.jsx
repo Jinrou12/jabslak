@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { X, Shield, Crown, UserCheck, Plus, Trash2, Edit2, Key, Phone, User, AlertCircle, CheckCircle2, Lock } from 'lucide-react';
+import { X, Shield, Crown, UserCheck, Plus, Trash2, Edit2, Key, Phone, User, AlertCircle, CheckCircle2, Lock, Building2 } from 'lucide-react';
 
 export default function RoleManagementModal({
   currentUser,
   users,
+  currentTemple,
+  temples = [],
   onClose,
   onSaveUser,
   onDeleteUser
@@ -17,14 +19,30 @@ export default function RoleManagementModal({
     name: '',
     email: '',
     role: 'assistant',
+    templeId: currentTemple?.id || 'khemavan',
     phone: '',
     pin: '1234'
   });
   const [errorMessage, setErrorMessage] = useState('');
 
+  const getTempleName = (tId) => {
+    if (tId === 'ALL') return 'គ្រប់វត្តទាំងអស់ (Global)';
+    const found = temples.find((t) => t.id === tId);
+    if (found) return found.name;
+    if (tId === 'khemavan') return 'វត្តខេមវ័ន';
+    return tId ? `វត្ត (${tId})` : 'វត្តខេមវ័ន';
+  };
+
   const handleOpenAdd = () => {
     setEditingUser(null);
-    setFormData({ name: '', email: '', role: 'assistant', phone: '', pin: '1234' });
+    setFormData({
+      name: '',
+      email: '',
+      role: 'assistant',
+      templeId: isOwner ? (currentTemple?.id || 'khemavan') : (currentUser?.templeId || currentTemple?.id || 'khemavan'),
+      phone: '',
+      pin: '1234'
+    });
     setErrorMessage('');
     setIsAddFormOpen(true);
   };
@@ -34,11 +52,16 @@ export default function RoleManagementModal({
       setErrorMessage('Admin គ្មានសិទ្ធិកែប្រែ ឬដកតំណែង Owner ឡើយ!');
       return;
     }
+    if (isAdmin && u.templeId && u.templeId !== (currentUser?.templeId || currentTemple?.id)) {
+      setErrorMessage('Admin អាចកែប្រែបានតែគណនីក្នុងវត្តរបស់ខ្លួនប៉ុណ្ណោះ!');
+      return;
+    }
     setEditingUser(u);
     setFormData({
       name: u.name,
       email: u.email || '',
       role: u.role,
+      templeId: u.role === 'owner' ? 'ALL' : (u.templeId || currentTemple?.id || 'khemavan'),
       phone: u.phone || '',
       pin: u.pin || '1234'
     });
@@ -58,11 +81,16 @@ export default function RoleManagementModal({
       return;
     }
 
+    const assignedTempleId = formData.role === 'owner' 
+      ? 'ALL' 
+      : (formData.templeId || currentTemple?.id || 'khemavan');
+
     const userData = {
       id: editingUser ? editingUser.id : `u-${Date.now()}`,
       name: formData.name.trim(),
       email: formData.email.trim().toLowerCase(),
       role: formData.role,
+      templeId: assignedTempleId,
       phone: formData.phone.trim(),
       pin: formData.pin.trim() || '1234'
     };
@@ -75,6 +103,10 @@ export default function RoleManagementModal({
   const handleDelete = (u) => {
     if (u.role === 'owner') {
       alert('មិនអាចលុបគណនី Owner បានទេ! (ត្រូវផ្ទេរ Owner ទៅអ្នកផ្សេងជាមុនសិន)');
+      return;
+    }
+    if (isAdmin && u.templeId && u.templeId !== (currentUser?.templeId || currentTemple?.id)) {
+      alert('Admin អាចលុបបានតែគណនីក្នុងវត្តរបស់ខ្លួនប៉ុណ្ណោះ!');
       return;
     }
     if (window.confirm(`តើអ្នកពិតជាចង់លុបគណនី ${u.name} (${u.role}) មែនទេ?`)) {
@@ -214,6 +246,36 @@ export default function RoleManagementModal({
                 </div>
 
                 <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                    <Building2 className="w-3.5 h-3.5 text-amber-400" />
+                    <span>វត្តសាមី (Assigned Temple) *</span>
+                  </label>
+                  {formData.role === 'owner' ? (
+                    <div className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-amber-400 font-bold flex items-center gap-1.5">
+                      <Crown className="w-3.5 h-3.5 text-amber-400" />
+                      <span>គ្រប់វត្តទាំងអស់ (Global Super Admin)</span>
+                    </div>
+                  ) : isOwner ? (
+                    <select
+                      value={formData.templeId}
+                      onChange={(e) => setFormData({ ...formData, templeId: e.target.value })}
+                      className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:border-amber-500 focus:outline-none font-kantumruy"
+                    >
+                      {temples.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} {t.shortName ? `(${t.shortName})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <div className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 flex items-center justify-between font-kantumruy">
+                      <span>{getTempleName(currentTemple?.id)}</span>
+                      <span className="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded">វត្តរបស់អ្នក</span>
+                    </div>
+                  )}
+                </div>
+
+                <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">លេខទូរស័ព្ទ (Phone)</label>
                   <input
                     type="text"
@@ -263,7 +325,7 @@ export default function RoleManagementModal({
             <div className="space-y-2">
               {users.map((u) => {
                 const isTargetOwner = u.role === 'owner';
-                const canModifyThisUser = isOwner || (isAdmin && !isTargetOwner);
+                const canModifyThisUser = isOwner || (isAdmin && !isTargetOwner && u.templeId === (currentUser?.templeId || currentTemple?.id));
 
                 return (
                   <div
@@ -280,11 +342,15 @@ export default function RoleManagementModal({
                       </div>
 
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h4 className="text-sm font-bold text-slate-100 font-kantumruy">{u.name}</h4>
                           {getRoleBadge(u.role)}
+                          <span className="inline-flex items-center gap-1 bg-slate-800/90 text-amber-300/90 border border-slate-700 px-2 py-0.5 rounded-full text-[10px] font-kantumruy">
+                            <Building2 className="w-3 h-3 text-amber-400 shrink-0" />
+                            <span>{getTempleName(u.templeId)}</span>
+                          </span>
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 mt-0.5 font-sans-en">
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 mt-1 font-sans-en">
                           {isTargetOwner && !isOwner ? (
                             <span className="text-slate-500 italic font-kantumruy flex items-center gap-1">
                               <Lock className="w-3 h-3 text-slate-500 shrink-0" />
@@ -340,9 +406,10 @@ export default function RoleManagementModal({
           <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl p-4 space-y-2 text-xs text-slate-300">
             <h4 className="font-bold text-amber-400 font-moul">💡 កម្រិតសិទ្ធិនីមួយៗ (Permission Matrix) ៖</h4>
             <ul className="space-y-1.5 list-disc list-inside text-slate-400 leading-relaxed font-kantumruy">
-              <li><strong className="text-amber-300 font-semibold">Owner 👑</strong> ៖ មានសិទ្ធិគ្រប់យ៉ាងក្នុង Web អាចផ្ទេរតំណែង Owner ឬតម្លើង/ដក Admin & Assistant បាន។</li>
-              <li><strong className="text-emerald-300 font-semibold">Admin 🛡️</strong> ៖ មានសិទ្ធិដូច Owner (បន្ថែម កែប្រែ លុប Excel) ប៉ុន្តែ **គ្មានសិទ្ធិមើល Email/PIN, កែប្រែ ឬលុប Owner ឡើយ**។</li>
-              <li><strong className="text-sky-300 font-semibold">Assistant 📋</strong> ៖ មានសិទ្ធិ **មើលព័ត៌មាន និងទីតាំងប៉ុណ្ណោះ** (មិនអាចបន្ថែម កែប្រែ ឬលុបទិន្នន័យឡើយ)។</li>
+              <li><strong className="text-amber-300 font-semibold">Owner 👑</strong> ៖ មានសិទ្ធិគ្រប់យ៉ាងក្នុង Web គ្រប់វត្តទាំងអស់ អាចផ្ទេរតំណែង Owner ឬតម្លើង/ដក Admin & Assistant បាន។</li>
+              <li><strong className="text-emerald-300 font-semibold">Admin 🛡️</strong> ៖ មានសិទ្ធិគ្រប់គ្រងពេញលេញ (បន្ថែម កែប្រែ លុប Excel) លើ **វត្តសាមីរបស់ខ្លួន** ប៉ុន្តែ **គ្មានសិទ្ធិកែប្រែ Owner ឬវត្តដទៃឡើយ**។</li>
+              <li><strong className="text-sky-300 font-semibold">Assistant 📋</strong> ៖ មានសិទ្ធិ **គ្រីសវត្តមាន និងមើលទីតាំង** ក្នុងវត្តសាមីរបស់ខ្លួន។</li>
+              <li><strong className="text-amber-400 font-semibold">សិទ្ធិតាមវត្ត (Per-Temple Isolation) 🏛️</strong> ៖ Admin និង Assistant ពេលចូលទស្សនាវត្តផ្សេង នឹងប្រែជា **User ធម្មតា (Guest)** ដោយស្វ័យប្រវត្តិ (ការពារទិន្នន័យវត្តដទៃ ១០០%)។</li>
             </ul>
           </div>
 
