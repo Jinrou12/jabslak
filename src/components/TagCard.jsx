@@ -71,6 +71,12 @@ export default function TagCard({ tag, searchQuery = '', onSelectTag, onViewOnMa
             {tag.name ? highlightKhmerText(tag.name, searchQuery) : <span className="text-slate-400 font-normal italic text-[10px] sm:text-sm">(គ្មានឈ្មោះ)</span>}
           </h3>
 
+          {tag.stationArrived && (
+            <div className="flex items-center justify-center sm:justify-start gap-1 text-[8px] sm:text-[9.5px] text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-1.5 py-0.2 rounded mt-0.5 w-fit font-kantumruy font-bold">
+              <span>📍 បានមកចាំទីតាំង</span>
+            </div>
+          )}
+
           {isArrived && isUncheckingThis && (
             <div className="flex items-center justify-center gap-0.5 text-[7px] sm:text-[9px] text-rose-300 bg-rose-500/20 border border-rose-500/40 px-1 py-0.2 rounded mt-0.5 w-fit font-kantumruy font-bold animate-pulse">
               <span>⚠️ ២ Click</span>

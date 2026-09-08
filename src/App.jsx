@@ -730,6 +730,46 @@ export default function App() {
     }
   };
 
+  // 📍 Zone / Station Arrival Toggle (រូបទី១ - SEPARATE from main reception arrival!)
+  const handleToggleStationArrival = async (tagToToggle) => {
+    if (!tagToToggle) return;
+    const now = new Date().toISOString();
+    const currentVal = Boolean(tagToToggle.stationArrived);
+    const updatedStatus = !currentVal;
+
+    const updatedTags = tags.map((t) => {
+      if (t.id === tagToToggle.id || Number(t.tagNumber) === Number(tagToToggle.tagNumber)) {
+        return {
+          ...t,
+          stationArrived: updatedStatus,
+          stationArrivedAt: updatedStatus ? now : null
+        };
+      }
+      return t;
+    });
+
+    setTags(updatedTags);
+    saveTagsForTemple(currentTemple.id, updatedTags);
+
+    if (currentTemple.id === 'khemavan') {
+      pushTagsToCloud(updatedTags);
+    }
+    const updatedTagObj = updatedTags.find((t) => t.id === tagToToggle.id);
+    if (updatedTagObj) {
+      await saveTagToFirebase(updatedTagObj, currentTemple.id);
+    }
+
+    const tagDisplay = tagToToggle.tagNumberDisplay || westernToKhmerDigits(tagToToggle.tagNumber);
+    if (updatedStatus) {
+      showToast(`📍 បានកត់ត្រាស្លាកលេខ #${tagDisplay} មកចាំទីតាំងរួចរាល់! ✔️`);
+      try {
+        confetti({ particleCount: 25, spread: 45, origin: { y: 0.6 } });
+      } catch {}
+    } else {
+      showToast(`បានដកការកត់ត្រាមកចាំទីតាំងស្លាកលេខ #${tagDisplay}!`);
+    }
+  };
+
   // User & Role Management Handlers
   const handleSaveUser = (userData) => {
     const exists = users.find((u) => u.id === userData.id);
@@ -1358,7 +1398,7 @@ export default function App() {
           allTags={yearTags}
           currentUser={effectiveUser}
           currentTemple={currentTemple}
-          onToggleAttendance={handleToggleAttendance}
+          onToggleStationArrival={handleToggleStationArrival}
           onSelectTag={(t) => {
             setSelectedTag(t);
             setIsZoneAttendanceModalOpen(false);

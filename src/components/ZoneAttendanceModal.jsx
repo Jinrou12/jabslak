@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   X,
   MapPin,
@@ -14,9 +14,12 @@ import {
   ExternalLink,
   Map as MapIcon,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  Lock
 } from 'lucide-react';
 import { westernToKhmerDigits, khmerToWesternDigits } from '../utils/khmerSearch';
+import { getSavedTab3Locations } from '../data/templeLocations';
+import { subscribeToFirebaseTab3Locations } from '../utils/firebase';
 
 const KHEMAVAN_CORE_ZONES = [
   'ផែន១ ៖ ធម្មសភា',
@@ -53,36 +56,99 @@ export default function ZoneAttendanceModal({
   allTags = [],
   currentUser,
   currentTemple,
-  onToggleAttendance,
+  onToggleStationArrival,
   onSelectTag,
   onOpenTempleMap
 }) {
   const isOwner = currentUser?.role === 'owner';
+  const templeId = currentTemple?.id || 'khemavan';
+
+  // Check if current user is restricted to a specific zone (e.g. annkle@gmail.com -> ផែន១)
   const userAssignedZone = currentUser?.assignedZone && currentUser.assignedZone !== 'ALL'
     ? normalizeZoneName(currentUser.assignedZone)
     : '';
 
-  // Active selected zone (defaults to user's assigned zone if present, else Zone 1)
+  // Zone Admin is strictly restricted to their assigned zone!
+  const isZoneRestricted = Boolean(userAssignedZone) && !isOwner;
+
+  // Active selected zone (fixed to assigned zone if restricted, else defaults to assigned or Zone 1)
   const [selectedZone, setSelectedZone] = useState(() => {
     if (userAssignedZone) return userAssignedZone;
     return 'ផែន១ ៖ ធម្មសភា';
   });
 
+  // Subscribe to Tab 3 map pins so tags are linked to their actual pinned zone
+  const [tab3Pins, setTab3Pins] = useState(() => getSavedTab3Locations(templeId));
+
+  useEffect(() => {
+    const unsub = subscribeToFirebaseTab3Locations(
+      (pins) => {
+        if (Array.isArray(pins) && pins.length > 0) {
+          setTab3Pins(pins);
+        }
+      },
+      null,
+      templeId
+    );
+    return () => unsub();
+  }, [templeId]);
+
+  // Pre-compute tagNumber -> Pin lookup for O(1) matching
+  const pinByTag = useMemo(() => {
+    const map = new Map();
+    tab3Pins.forEach((p) => {
+      if (p.tagNumber) {
+        map.set(String(p.tagNumber).trim(), p);
+      }
+      if (p.tagNumbers && Array.isArray(p.tagNumbers)) {
+        p.tagNumbers.forEach((n) => map.set(String(n).trim(), p));
+      }
+    });
+    return map;
+  }, [tab3Pins]);
+
+  // Helper to determine exact zone of any tag
+  const getTagZone = (tag) => {
+    const tagNo = String(tag.tagNumber || '').trim();
+    if (tagNo && pinByTag.has(tagNo)) {
+      const pin = pinByTag.get(tagNo);
+      return normalizeZoneName(pin.category);
+    }
+    const loc = String(tag.baseLocation || tag.location || '').trim();
+    if (loc && loc !== 'មើលទីកន្លែង' && loc !== 'មិនទាន់ដៅលើ Map' && loc !== 'ទីតាំងមិនទាន់កំណត់') {
+      return normalizeZoneName(loc);
+    }
+    return '';
+  };
+
+  // Helper to get spot name on map
+  const getTagSpotName = (tag) => {
+    const tagNo = String(tag.tagNumber || '').trim();
+    if (tagNo && pinByTag.has(tagNo)) {
+      const pin = pinByTag.get(tagNo);
+      return pin.name || pin.displayName || '';
+    }
+    return tag.location || tag.baseLocation || '';
+  };
+
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all'); // 'all' | 'arrived' | 'notArrived'
 
+  // Active target zone to filter
+  const effectiveActiveZone = isZoneRestricted ? userAssignedZone : selectedZone;
+
   // Filter tags strictly belonging to the currently selected zone
   const zoneTags = useMemo(() => {
-    const targetNorm = normalizeZoneName(selectedZone);
+    const targetNorm = normalizeZoneName(effectiveActiveZone);
     return allTags.filter((tag) => {
-      const tagBase = normalizeZoneName(tag.baseLocation || tag.location || '');
-      return tagBase === targetNorm || tagBase.includes(targetNorm) || targetNorm.includes(tagBase);
+      const tagZone = getTagZone(tag);
+      return tagZone === targetNorm || tagZone.includes(targetNorm) || targetNorm.includes(tagZone);
     });
-  }, [allTags, selectedZone]);
+  }, [allTags, effectiveActiveZone, pinByTag]);
 
-  // Compute stats for this zone
+  // Compute stats for station waiting (រូបទី១) — SEPARATE from reception arrival (រូបទី២)!
   const totalInZone = zoneTags.length;
-  const arrivedInZone = useMemo(() => zoneTags.filter((t) => !!t.arrived).length, [zoneTags]);
+  const arrivedInZone = useMemo(() => zoneTags.filter((t) => !!t.stationArrived).length, [zoneTags]);
   const notArrivedInZone = totalInZone - arrivedInZone;
   const arrivedPercentage = totalInZone > 0 ? Math.round((arrivedInZone / totalInZone) * 100) : 0;
 
@@ -91,9 +157,9 @@ export default function ZoneAttendanceModal({
     let list = zoneTags;
 
     if (filterStatus === 'arrived') {
-      list = list.filter((t) => !!t.arrived);
+      list = list.filter((t) => !!t.stationArrived);
     } else if (filterStatus === 'notArrived') {
-      list = list.filter((t) => !t.arrived);
+      list = list.filter((t) => !t.stationArrived);
     }
 
     if (searchQuery.trim()) {
@@ -105,19 +171,21 @@ export default function ZoneAttendanceModal({
         const tagDisp = String(t.tagNumberDisplay || '');
         const nameStr = String(t.name || '').toLowerCase();
         const phoneStr = String(t.phone || '').toLowerCase();
+        const spotStr = String(getTagSpotName(t) || '').toLowerCase();
         return (
           tagNoStr.includes(q) ||
           tagNoStr.includes(qWest) ||
           tagDisp.includes(q) ||
           tagDisp.includes(qKhmer) ||
           nameStr.includes(q) ||
-          phoneStr.includes(q)
+          phoneStr.includes(q) ||
+          spotStr.includes(q)
         );
       });
     }
 
     return list;
-  }, [zoneTags, filterStatus, searchQuery]);
+  }, [zoneTags, filterStatus, searchQuery, pinByTag]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/90 backdrop-blur-md animate-in fade-in duration-200">
@@ -132,75 +200,114 @@ export default function ZoneAttendanceModal({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm sm:text-base font-bold font-moul text-amber-400 truncate">
-                  គ្រប់គ្រងវត្តមានតាមទីតាំង
+                  កត់ត្រាវត្តមានចាំទីតាំង (រូបទី១)
                 </h2>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.2 rounded-full font-bold shrink-0">
-                  📱 សម្រាប់ Phone
+                  📱 Phone
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400 truncate">
+              <p className="text-[11px] text-slate-400 truncate mt-0.5">
                 {currentUser?.name ? `អ្នកទទួលបន្ទុក ៖ ${currentUser.name}` : 'ផ្ទាំងកត់ត្រាវត្តមានអ្នកមកចាំទីតាំង'}
+                {isZoneRestricted && <span className="text-amber-300 font-bold ml-1">({userAssignedZone})</span>}
               </p>
             </div>
           </div>
 
           <button
             onClick={onClose}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors shrink-0"
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-colors shrink-0 cursor-pointer"
             title="បិទ"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* ════════ ZONE SELECTOR & SWITCHER ════════ */}
+        {/* ════════ ZONE SELECTOR / RESTRICTED BADGE ════════ */}
         <div className="px-3.5 py-2.5 bg-slate-950/80 border-b border-slate-800/80 shrink-0">
-          <div className="flex items-center justify-between gap-2 mb-1.5">
-            <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-              <span>📍 ជ្រើសរើសផែន / ទីតាំង ៖</span>
-            </label>
-            {userAssignedZone && (
-              <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full font-bold">
-                ផែនរបស់អ្នក ៖ {userAssignedZone}
-              </span>
-            )}
-          </div>
+          {isZoneRestricted ? (
+            /* Locked Zone Display for Zone Admin (annkle@gmail.com) */
+            <div className="flex items-center justify-between gap-2 bg-gradient-to-r from-amber-500/15 via-amber-500/25 to-amber-500/10 border border-amber-500/40 rounded-2xl p-2.5 shadow-sm">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center font-bold shrink-0">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[10px] text-slate-400 block font-sans-en uppercase tracking-wider">
+                    ទទួលបន្ទុកផ្តាច់មុខ (Assigned Zone)
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold text-amber-300 font-moul truncate block">
+                    {userAssignedZone}
+                  </span>
+                </div>
+              </div>
 
-          {/* Zone Selector Dropdown */}
-          <div className="flex items-center gap-2">
-            <select
-              value={selectedZone}
-              onChange={(e) => setSelectedZone(e.target.value)}
-              className="flex-1 bg-slate-900 border border-amber-500/50 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:outline-none focus:border-amber-400"
-            >
-              {KHEMAVAN_CORE_ZONES.map((zone) => (
-                <option key={zone} value={zone}>
-                  {zone}
-                </option>
-              ))}
-            </select>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold font-moul">
+                  {westernToKhmerDigits(totalInZone)} ស្លាក
+                </span>
+                {onOpenTempleMap && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenTempleMap(userAssignedZone);
+                    }}
+                    className="p-2 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 rounded-xl text-xs font-bold transition-all shrink-0"
+                    title="មើលផែនទីវត្ត"
+                  >
+                    <MapIcon className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* Dropdown Selector for Owner / General Admin */
+            <>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                  <span>📍 ជ្រើសរើសផែន / ទីតាំង ៖</span>
+                </label>
+                <span className="text-[10px] bg-slate-800 text-slate-300 border border-slate-700 px-2 py-0.5 rounded-full font-bold">
+                  សិទ្ធិមើលគ្រប់ផែន
+                </span>
+              </div>
 
-            {onOpenTempleMap && (
-              <button
-                type="button"
-                onClick={() => {
-                  onClose();
-                  onOpenTempleMap();
-                }}
-                className="px-3 py-2 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shrink-0"
-                title="មើលផែនទីវត្ត"
-              >
-                <MapIcon className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">មើលប្លង់ Map</span>
-              </button>
-            )}
-          </div>
+              <div className="flex items-center gap-2">
+                <select
+                  value={selectedZone}
+                  onChange={(e) => setSelectedZone(e.target.value)}
+                  className="flex-1 bg-slate-900 border border-amber-500/50 rounded-xl px-3 py-2 text-xs text-slate-100 font-bold focus:outline-none focus:border-amber-400 font-kantumruy"
+                >
+                  {KHEMAVAN_CORE_ZONES.map((zone) => (
+                    <option key={zone} value={zone}>
+                      {zone}
+                    </option>
+                  ))}
+                </select>
+
+                {onOpenTempleMap && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenTempleMap(selectedZone);
+                    }}
+                    className="px-3 py-2 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shrink-0"
+                    title="មើលផែនទីវត្ត"
+                  >
+                    <MapIcon className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">មើលប្លង់ Map</span>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
         </div>
 
         {/* ════════ STATS COUNTER BAR ════════ */}
         <div className="grid grid-cols-3 gap-2 px-3.5 py-2 bg-slate-900/60 border-b border-slate-800 shrink-0 text-center">
           <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-2">
-            <div className="text-[10px] text-slate-400 font-bold">សរុបក្នុងផែននេះ</div>
+            <div className="text-[10px] text-slate-400 font-bold">សរុបក្នុងផែន</div>
             <div className="text-base sm:text-lg font-black text-slate-100 font-moul">
               {westernToKhmerDigits(totalInZone)} <span className="text-[10px] font-normal text-slate-400 font-kantumruy">ស្លាក</span>
             </div>
@@ -229,7 +336,7 @@ export default function ZoneAttendanceModal({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="ស្វែងរកតាមលេខស្លាក ឬ ឈ្មោះក្នុងផែននេះ..."
+              placeholder="ស្វែងរកតាមលេខស្លាក ឬ ឈ្មោះម្ចាស់ស្លាក..."
               className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-kantumruy"
             />
             {searchQuery && (
@@ -273,7 +380,7 @@ export default function ZoneAttendanceModal({
                   : 'bg-slate-900 text-amber-400 border-slate-800 hover:border-amber-500/40'
               }`}
             >
-              ⏳ មិនទាន់មក ({westernToKhmerDigits(notArrivedInZone)})
+              ⏳ មិនទាន់មកចាំ ({westernToKhmerDigits(notArrivedInZone)})
             </button>
           </div>
         </div>
@@ -286,7 +393,7 @@ export default function ZoneAttendanceModal({
                 <Search className="w-6 h-6" />
               </div>
               <h3 className="text-sm font-bold text-slate-300 mb-1">
-                មិនមានស្លាកលេខក្នុង «{selectedZone}» ឡើយ
+                មិនមានស្លាកលេខក្នុង «{effectiveActiveZone}» ឡើយ
               </h3>
               <p className="text-xs text-slate-500 max-w-sm">
                 {searchQuery
@@ -296,20 +403,22 @@ export default function ZoneAttendanceModal({
             </div>
           ) : (
             displayedTags.map((tag) => {
-              const isArrived = !!tag.arrived;
+              const isStationArrived = Boolean(tag.stationArrived);
+              const isReceptionArrived = Boolean(tag.arrived);
               const tagDisp = tag.tagNumberDisplay || (tag.tagNumber ? westernToKhmerDigits(tag.tagNumber) : String(tag.id));
               const cleanOwner = String(tag.name || '').replace(/^ស្លាកលេខ\s*\S+\s*៖\s*/, '').trim() || 'គ្មានឈ្មោះ';
+              const spotName = getTagSpotName(tag);
 
               return (
                 <div
                   key={tag.id}
                   className={`rounded-2xl border p-3.5 transition-all shadow-md ${
-                    isArrived
+                    isStationArrived
                       ? 'bg-slate-900/95 border-emerald-500/40 shadow-emerald-500/5 ring-1 ring-emerald-500/20'
                       : 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
                   }`}
                 >
-                  {/* Top row: Tag Badge, Name & Phone */}
+                  {/* Top row: Tag Badge, Name & Actions */}
                   <div className="flex items-start justify-between gap-2.5 mb-2.5">
                     <div className="flex items-start gap-2.5 min-w-0">
                       {/* Tag Number Badge */}
@@ -319,17 +428,30 @@ export default function ZoneAttendanceModal({
 
                       {/* Name & Specific Location */}
                       <div className="min-w-0">
-                        <h4 className="text-sm font-bold text-slate-100 truncate font-kantumruy flex items-center gap-1.5">
-                          <span>{cleanOwner}</span>
-                        </h4>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h4 className="text-sm font-bold text-slate-100 truncate font-kantumruy">
+                            {cleanOwner}
+                          </h4>
+                          {/* Reception arrival status badge */}
+                          {isReceptionArrived ? (
+                            <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.2 rounded-full font-bold">
+                              ✓ ដល់វត្ត
+                            </span>
+                          ) : (
+                            <span className="text-[9px] bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.2 rounded-full">
+                              មិនទាន់ដល់វត្ត
+                            </span>
+                          )}
+                        </div>
+
                         <p className="text-[11px] text-amber-300/90 truncate flex items-center gap-1 mt-0.5 font-sans-en">
                           <MapPin className="w-3 h-3 shrink-0 text-amber-400" />
-                          <span>{tag.location || tag.baseLocation || selectedZone}</span>
+                          <span>{spotName || effectiveActiveZone}</span>
                         </p>
                       </div>
                     </div>
 
-                    {/* Quick Action: Phone Call & Details */}
+                    {/* Quick Actions: Phone Call & Details */}
                     <div className="flex items-center gap-1 shrink-0">
                       {tag.phone && (
                         <a
@@ -358,17 +480,17 @@ export default function ZoneAttendanceModal({
                     </div>
                   </div>
 
-                  {/* BOTTOM ROW: BIG TOUCH BUTTON TO MARK "បានមកចាំទីតាំង" */}
+                  {/* BOTTOM ROW: INDEPENDENT TOUCH BUTTON TO MARK "បានមកចាំទីតាំង" (រូបទី១) */}
                   <div className="pt-2 border-t border-slate-800/80">
                     <button
                       type="button"
                       onClick={() => {
-                        if (onToggleAttendance) {
-                          onToggleAttendance(tag);
+                        if (onToggleStationArrival) {
+                          onToggleStationArrival(tag);
                         }
                       }}
-                      className={`w-full py-2.5 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center justify-between gap-2 shadow-sm ${
-                        isArrived
+                      className={`w-full py-2.5 px-3.5 rounded-xl font-bold text-xs transition-all flex items-center justify-between gap-2 shadow-sm cursor-pointer ${
+                        isStationArrived
                           ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/60 hover:bg-emerald-500/30'
                           : 'bg-slate-800/90 text-slate-300 border border-slate-700 hover:bg-amber-500/20 hover:text-amber-300 hover:border-amber-500/50 active:scale-[0.98]'
                       }`}
@@ -376,20 +498,22 @@ export default function ZoneAttendanceModal({
                       <div className="flex items-center gap-2">
                         <div
                           className={`w-5 h-5 rounded-lg flex items-center justify-center border transition-all ${
-                            isArrived
+                            isStationArrived
                               ? 'bg-emerald-500 border-emerald-400 text-slate-950 shadow-sm'
                               : 'border-slate-600 bg-slate-900'
                           }`}
                         >
-                          {isArrived && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                          {isStationArrived && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                         </div>
-                        <span>{isArrived ? '✅ បានមកចាំទីតាំងរួចរាល់' : '⏳ មិនទាន់មកចាំទីតាំង (ចុចដើម្បីគ្រីស)'}</span>
+                        <span className="font-moul text-[11px] sm:text-xs">
+                          {isStationArrived ? '✅ បានមកចាំទីតាំងរួចរាល់' : '⏳ មិនទាន់មកចាំទីតាំង (ចុចដើម្បីគ្រីស)'}
+                        </span>
                       </div>
 
-                      {tag.arrivedAt && isArrived && (
+                      {tag.stationArrivedAt && isStationArrived && (
                         <span className="text-[10px] text-emerald-400/90 flex items-center gap-1 font-sans-en">
                           <Clock className="w-3 h-3" />
-                          <span>{new Date(tag.arrivedAt).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })}</span>
+                          <span>{new Date(tag.stationArrivedAt).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })}</span>
                         </span>
                       )}
                     </button>
@@ -409,7 +533,7 @@ export default function ZoneAttendanceModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all"
+            className="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
           >
             បិទផ្ទាំង
           </button>
