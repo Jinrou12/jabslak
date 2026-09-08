@@ -21,6 +21,7 @@ export default function Header({
   onOpenLoginModal,
   onLogout,
   onOpenAttendanceReport,
+  onOpenZoneAttendance,
   isCloudSyncing,
   selectedYear = '2026',
   onToggleYear,
@@ -72,15 +73,24 @@ export default function Header({
         {/* Top Bar: Title & Stats */}
         <div className="flex items-center justify-between gap-2 border-b border-slate-800/60 pb-2">
           
-          {/* Logo & Title */}
+          {/* Logo & Title (Clickable Logo opens Zone Attendance Checklist) */}
           <div className="flex items-center gap-2 min-w-0">
-            <div className="relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center rounded-full border-2 border-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.5)] ring-2 ring-amber-500/30 overflow-hidden bg-slate-950 p-0.5 transition-all hover:scale-105 duration-300">
+            <button
+              type="button"
+              onClick={onOpenZoneAttendance}
+              className="relative w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 shrink-0 flex items-center justify-center rounded-full border-2 border-amber-400/80 shadow-[0_0_20px_rgba(245,158,11,0.5)] ring-2 ring-amber-500/30 overflow-hidden bg-slate-950 p-0.5 transition-all hover:scale-105 active:scale-95 duration-300 cursor-pointer group"
+              title="👆 ចុចលើ Logo ដើម្បីបើកផ្ទាំងគ្រប់គ្រងវត្តមានតាមផែន / ទីតាំង"
+            >
               <img
                 src="/app_logo.png"
                 alt="ចាប់ស្លាកលេខ"
-                className="w-full h-full object-cover rounded-full filter drop-shadow-[0_2px_8px_rgba(245,158,11,0.4)]"
+                className="w-full h-full object-cover rounded-full filter drop-shadow-[0_2px_8px_rgba(245,158,11,0.4)] group-hover:brightness-110"
               />
-            </div>
+              {/* Badge indicating phone zone checklist trigger */}
+              <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 border-2 border-slate-950 rounded-full flex items-center justify-center text-[8px] text-slate-950 font-bold shadow-md" title="ចុចលើ Logo ដើម្បីបើកផ្ទាំងកត់ត្រាវត្តមានតាមផែន">
+                📍
+              </span>
+            </button>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="text-sm sm:text-lg md:text-xl font-black text-amber-400 font-moul tracking-wide truncate">
@@ -112,6 +122,20 @@ export default function Header({
                     <span className="truncate max-w-[130px] sm:max-w-none">{currentTemple?.name || 'វត្តខេមវ័ន'}</span>
                   </div>
                 )}
+
+                {/* Assigned Zone Quick Badge for Zone Admin (e.g. Bhikkhu Annkly) */}
+                {currentUser?.assignedZone && currentUser.assignedZone !== 'ALL' && (
+                  <button
+                    type="button"
+                    onClick={onOpenZoneAttendance}
+                    className="px-2 py-0.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-[10px] sm:text-xs font-bold font-kantumruy flex items-center gap-1 active:scale-95 transition-all shadow-sm cursor-pointer"
+                    title="ចុចដើម្បីបើកផ្ទាំងគ្រប់គ្រងផែនរបស់អ្នក"
+                  >
+                    <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                    <span className="truncate max-w-[110px] sm:max-w-none">{currentUser.assignedZone}</span>
+                  </button>
+                )}
+
                 <span className="text-slate-600">•</span>
                 <span className="text-[10px] sm:text-xs text-amber-300 font-bold shrink-0">{westernToKhmerDigits(totalCount)} ស្លាក</span>
               </div>
@@ -298,6 +322,19 @@ export default function Header({
           >
             <UserCheck className="w-4 h-4 text-emerald-200 shrink-0" />
             <span className="whitespace-nowrap font-bold">របាយការណ៍</span>
+          </button>
+
+          {/* 📍 Zone Attendance Button (Direct button alongside Logo click) */}
+          <button
+            type="button"
+            onClick={onOpenZoneAttendance}
+            className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-400/20 to-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 shadow-md active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
+            title="គ្រប់គ្រងវត្តមានតាមផែន / ទីតាំង (Zone Attendance Checklist)"
+          >
+            <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="whitespace-nowrap font-bold">
+              {currentUser?.assignedZone && currentUser.assignedZone !== 'ALL' ? `ចាំ ${currentUser.assignedZone}` : 'ចាំតាមផែន'}
+            </span>
           </button>
 
           {/* Excel Import / Export (PC/Desktop only - HIDDEN on Mobile phones) */}

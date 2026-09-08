@@ -20,6 +20,7 @@ import RoleManagementModal from './components/RoleManagementModal';
 import LoginModal from './components/LoginModal';
 import TempleSelectModal from './components/TempleSelectModal';
 import InstallAppModal from './components/InstallAppModal';
+import ZoneAttendanceModal from './components/ZoneAttendanceModal';
 import SplashScreen from './components/SplashScreen';
 import { searchTags, westernToKhmerDigits, khmerToWesternDigits, getKhmerPhoneticSuggestions } from './utils/khmerSearch';
 import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER, getEffectiveUser } from './utils/storage';
@@ -112,6 +113,7 @@ export default function App() {
   const [isMobileConnectOpen, setIsMobileConnectOpen] = useState(false);
   const [isTempleMapOpen, setIsTempleMapOpen] = useState(false);
   const [templeMapTargetLoc, setTempleMapTargetLoc] = useState(null);
+  const [isZoneAttendanceModalOpen, setIsZoneAttendanceModalOpen] = useState(false);
   
   // PWA Install State
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
@@ -972,6 +974,7 @@ export default function App() {
           arrivedCount={arrivedCount}
           currentUser={effectiveUser}
           currentTemple={currentTemple}
+          onOpenZoneAttendance={() => setIsZoneAttendanceModalOpen(true)}
           onOpenTempleSelectModal={() => {
             if (effectiveUser?.role === 'owner') {
               setIsTempleSelectOpen(true);
@@ -1336,6 +1339,26 @@ export default function App() {
           onClose={() => setIsInstallModalOpen(false)}
           onInstall={handleInstallApp}
           deferredPrompt={deferredPrompt}
+        />
+      )}
+
+      {/* 📍 Zone Attendance Modal (Phone & Station Management) */}
+      {isZoneAttendanceModalOpen && (
+        <ZoneAttendanceModal
+          onClose={() => setIsZoneAttendanceModalOpen(false)}
+          allTags={yearTags}
+          currentUser={effectiveUser}
+          currentTemple={currentTemple}
+          onToggleAttendance={handleToggleAttendance}
+          onSelectTag={(t) => {
+            setSelectedTag(t);
+            setIsZoneAttendanceModalOpen(false);
+          }}
+          onOpenTempleMap={(locName) => {
+            setTempleMapTargetLoc(locName || null);
+            setIsZoneAttendanceModalOpen(false);
+            setIsTempleMapOpen(true);
+          }}
         />
       )}
 

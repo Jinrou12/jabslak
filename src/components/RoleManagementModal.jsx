@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Shield, Crown, UserCheck, Plus, Trash2, Edit2, Key, Phone, User, AlertCircle, CheckCircle2, Lock, Building2 } from 'lucide-react';
+import { X, Shield, Crown, UserCheck, Plus, Trash2, Edit2, Key, Phone, User, AlertCircle, CheckCircle2, Lock, Building2, MapPin } from 'lucide-react';
 
 export default function RoleManagementModal({
   currentUser,
@@ -20,6 +20,7 @@ export default function RoleManagementModal({
     email: '',
     role: 'assistant',
     templeId: currentTemple?.id || 'khemavan',
+    assignedZone: 'ALL',
     phone: '',
     pin: '1234'
   });
@@ -40,6 +41,7 @@ export default function RoleManagementModal({
       email: '',
       role: 'assistant',
       templeId: isOwner ? (currentTemple?.id || 'khemavan') : (currentUser?.templeId || currentTemple?.id || 'khemavan'),
+      assignedZone: 'ALL',
       phone: '',
       pin: '1234'
     });
@@ -62,6 +64,7 @@ export default function RoleManagementModal({
       email: u.email || '',
       role: u.role,
       templeId: u.role === 'owner' ? 'ALL' : (u.templeId || currentTemple?.id || 'khemavan'),
+      assignedZone: u.assignedZone || 'ALL',
       phone: u.phone || '',
       pin: u.pin || '1234'
     });
@@ -91,6 +94,7 @@ export default function RoleManagementModal({
       email: formData.email.trim().toLowerCase(),
       role: formData.role,
       templeId: assignedTempleId,
+      assignedZone: formData.assignedZone || 'ALL',
       phone: formData.phone.trim(),
       pin: formData.pin.trim() || '1234'
     };
@@ -276,6 +280,30 @@ export default function RoleManagementModal({
                 </div>
 
                 <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1 flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-amber-400" />
+                    <span>ផែនទទួលបន្ទុក / ទីតាំងគ្រប់គ្រង (Assigned Zone)</span>
+                  </label>
+                  <select
+                    value={formData.assignedZone || 'ALL'}
+                    onChange={(e) => setFormData({ ...formData, assignedZone: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-100 focus:border-amber-500 focus:outline-none font-kantumruy"
+                  >
+                    <option value="ALL">🌐 គ្រប់ផែនទាំងអស់ (Admin ទូទៅ)</option>
+                    <option value="ផែន១ ៖ ធម្មសភា">🟢 ផែន១ ៖ ធម្មសភា</option>
+                    <option value="ផែន២ ៖ សាលាឆាន់ចាស់">🔵 ផែន២ ៖ សាលាឆាន់ចាស់</option>
+                    <option value="ផែន៣ ៖ មុខសាលាឆាន់ចាស់">🟣 ផែន៣ ៖ មុខសាលាឆាន់ចាស់</option>
+                    <option value="ផែន៤ ៖ ព្រះបរិនិព្វាន">🔴 ផែន៤ ៖ ព្រះបរិនិព្វាន</option>
+                    <option value="ផែន៥ ៖ បណ្ណាល័យ">🟣 ផែន៥ ៖ បណ្ណាល័យ</option>
+                    <option value="ផែន៦ ៖ ព្រះផ្ទម">🌸 ផែន៦ ៖ ព្រះផ្ទម</option>
+                    <option value="ផែន៧ ៖ តាមកុដិ">🍏 ផែន៧ ៖ តាមកុដិ</option>
+                    <option value="ផែន៨ ៖ សាលារៀន">🔮 ផែន៨ ៖ សាលារៀន</option>
+                    <option value="⛩️ ក្រុមខ្លោងទ្វារវត្ត">⛩️ ក្រុមខ្លោងទ្វារវត្ត</option>
+                    <option value="🏢 ក្រុមអគារ និង កុដិ">🏢 ក្រុមអគារ និង កុដិ</option>
+                  </select>
+                </div>
+
+                <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1">លេខទូរស័ព្ទ (Phone)</label>
                   <input
                     type="text"
@@ -349,6 +377,16 @@ export default function RoleManagementModal({
                             <Building2 className="w-3 h-3 text-amber-400 shrink-0" />
                             <span>{getTempleName(u.templeId)}</span>
                           </span>
+                          {u.assignedZone && u.assignedZone !== 'ALL' ? (
+                            <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-full text-[10px] font-bold font-kantumruy">
+                              <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
+                              <span>{u.assignedZone}</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 bg-slate-800 text-slate-400 border border-slate-700 px-2 py-0.5 rounded-full text-[10px] font-kantumruy">
+                              <span>គ្រប់ផែនទាំងអស់</span>
+                            </span>
+                          )}
                         </div>
                         <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 mt-1 font-sans-en">
                           {isTargetOwner && !isOwner ? (
