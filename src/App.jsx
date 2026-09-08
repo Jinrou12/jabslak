@@ -31,7 +31,8 @@ import {
   setTempleUrl,
   getTempleShareUrl,
   getSavedTagsForTemple,
-  saveTagsForTemple
+  saveTagsForTemple,
+  migrateTempleData
 } from './utils/templeStorage';
 import { checkAttendanceTogglePermission } from './utils/attendanceLock';
 import {
@@ -40,7 +41,8 @@ import {
   deleteTagFromFirebase,
   seedFirebaseData,
   subscribeToFirebaseTemples,
-  saveTemplesToFirebase
+  saveTemplesToFirebase,
+  migrateTempleFirebaseData
 } from './utils/firebase';
 import { pushTagsToCloud, subscribeToCloudTags } from './utils/cloudSync';
 
@@ -476,13 +478,19 @@ export default function App() {
     setTempleUrl(newTemple.id);
   };
 
-  const handleUpdateTemple = (updatedTemple) => {
-    const updated = temples.map((t) => (t.id === updatedTemple.id ? updatedTemple : t));
+  const handleUpdateTemple = (updatedTemple, oldId = null) => {
+    const targetId = oldId || updatedTemple.id;
+    if (oldId && oldId !== updatedTemple.id) {
+      migrateTempleData(oldId, updatedTemple.id);
+      migrateTempleFirebaseData(oldId, updatedTemple.id);
+    }
+    const updated = temples.map((t) => (t.id === targetId ? updatedTemple : t));
     setTemples(updated);
     saveTemples(updated);
     saveTemplesToFirebase(updated);
-    if (currentTemple?.id === updatedTemple.id) {
+    if (currentTemple?.id === targetId) {
       setCurrentTemple(updatedTemple);
+      setTempleUrl(updatedTemple.id);
     }
   };
 

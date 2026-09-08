@@ -463,5 +463,28 @@ export async function saveTemplesToFirebase(temples) {
   }
 }
 
+/**
+ * Migrate temple data on Firebase when a temple ID/slug changes
+ */
+export async function migrateTempleFirebaseData(oldId, newId) {
+  if (!db || !oldId || !newId || oldId === newId) return false;
+  if (oldId === 'khemavan') return false; // Wat Khemavan uses root paths
+  try {
+    const oldRef = ref(db, `temples/${oldId}`);
+    const snap = await get(oldRef);
+    if (snap.exists()) {
+      const data = snap.val();
+      const newRef = ref(db, `temples/${newId}`);
+      await set(newRef, data);
+      await remove(oldRef);
+    }
+    return true;
+  } catch (err) {
+    console.error(`Error migrating Firebase data from ${oldId} to ${newId}:`, err);
+    return false;
+  }
+}
+
 export { db, isConnected };
+
 

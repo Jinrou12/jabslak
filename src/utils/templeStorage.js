@@ -102,6 +102,123 @@ export function setTempleUrl(templeId) {
 }
 
 /**
+ * Format a string into a clean URL-friendly slug
+ * Allows a-z, 0-9, and hyphen/underscore
+ */
+export function formatTempleSlug(input) {
+  if (!input) return '';
+  return input
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-') // replace spaces with hyphens
+    .replace(/[^a-z0-9\-_]/g, '') // remove invalid characters
+    .replace(/-+/g, '-') // collapse multiple hyphens
+    .replace(/^-+|-+$/g, ''); // trim hyphens from ends
+}
+
+/**
+ * Suggest a readable English/Latin slug from Khmer temple name
+ */
+export function suggestSlugFromTempleName(name) {
+  if (!name) return `wat-${Date.now().toString(36)}`;
+
+  let clean = name.trim().replace(/^វត្ត\s*/, '');
+
+  const dict = [
+    [/មុនីរង្សី/g, 'muni-reangsey'],
+    [/មុនី/g, 'muni'],
+    [/រង្សី/g, 'reangsey'],
+    [/បទុមវតី/g, 'botum-vatey'],
+    [/បទុម/g, 'botum'],
+    [/ឧណ្ណាលោម/g, 'ounalom'],
+    [/ខេមវ័ន/g, 'khemavan'],
+    [/ភ្នំពេញ/g, 'phnom-penh'],
+    [/ភ្នំប្រុស/g, 'phnom-pros'],
+    [/ភ្នំស្រី/g, 'phnom-srey'],
+    [/ភ្នំ/g, 'phnom'],
+    [/ស្វាយ/g, 'svay'],
+    [/ព្រែក/g, 'prek'],
+    [/កោះ/g, 'koh'],
+    [/ពោធិព្រឹក្ស/g, 'bodhipruk'],
+    [/ពោធិ/g, 'bodhi'],
+    [/ចាស់/g, 'chas'],
+    [/ថ្មី/g, 'thmey'],
+    [/កំពង់ចាម/g, 'kampong-cham'],
+    [/កំពង់ធំ/g, 'kampong-thom'],
+    [/សៀមរាប/g, 'siem-reap'],
+    [/កណ្តាល/g, 'kandal'],
+    [/បាត់ដំបង/g, 'battambang'],
+    [/ព្រះវិហារ/g, 'preah-vihear']
+  ];
+
+  let converted = clean;
+  for (const [pattern, rep] of dict) {
+    converted = converted.replace(pattern, `-${rep}-`);
+  }
+
+  let slug = formatTempleSlug(converted);
+  if (!slug || slug.length < 2) {
+    slug = `wat-${Date.now().toString(36)}`;
+  } else if (!slug.startsWith('wat-')) {
+    slug = `wat-${slug}`;
+  }
+  return slug;
+}
+
+/**
+ * Migrate all LocalStorage data when a temple slug/ID changes
+ */
+export function migrateTempleData(oldId, newId) {
+  if (!oldId || !newId || oldId === newId) return;
+  try {
+    // 1. Tags
+    const oldTagsKey = getTempleTagsStorageKey(oldId);
+    const newTagsKey = getTempleTagsStorageKey(newId);
+    const tagsData = localStorage.getItem(oldTagsKey);
+    if (tagsData !== null) {
+      localStorage.setItem(newTagsKey, tagsData);
+      localStorage.removeItem(oldTagsKey);
+    }
+
+    // 2. Locations Tab 1 & Tab 2
+    const oldLocKey = getTempleLocationsStorageKey(oldId);
+    const newLocKey = getTempleLocationsStorageKey(newId);
+    const locData = localStorage.getItem(oldLocKey);
+    if (locData !== null) {
+      localStorage.setItem(newLocKey, locData);
+      localStorage.removeItem(oldLocKey);
+    }
+
+    // 3. Locations Tab 3
+    const oldTab3Key = `TEMPLE_MAP_LOCATIONS_TAB3_WAT_${oldId.toUpperCase()}`;
+    const newTab3Key = `TEMPLE_MAP_LOCATIONS_TAB3_WAT_${newId.toUpperCase()}`;
+    const tab3Data = localStorage.getItem(oldTab3Key);
+    if (tab3Data !== null) {
+      localStorage.setItem(newTab3Key, tab3Data);
+      localStorage.removeItem(oldTab3Key);
+    }
+
+    // 4. Custom Map Image
+    const oldMapKey = `TEMPLE_CUSTOM_MAP_${oldId}`;
+    const newMapKey = `TEMPLE_CUSTOM_MAP_${newId}`;
+    const mapData = localStorage.getItem(oldMapKey);
+    if (mapData !== null) {
+      localStorage.setItem(newMapKey, mapData);
+      localStorage.removeItem(oldMapKey);
+    }
+
+    // 5. Current Temple ID in localStorage
+    const currentActive = localStorage.getItem(CURRENT_TEMPLE_ID_KEY);
+    if (currentActive === oldId) {
+      localStorage.setItem(CURRENT_TEMPLE_ID_KEY, newId);
+    }
+  } catch (err) {
+    console.error('Error migrating temple data in localStorage:', err);
+  }
+}
+
+/**
  * Generate a clean shareable link to copy and send via Telegram
  */
 export function getTempleShareUrl(templeId) {

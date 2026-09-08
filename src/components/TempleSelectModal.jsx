@@ -1,6 +1,28 @@
 import React, { useState } from 'react';
-import { X, Building2, Plus, Copy, Check, ExternalLink, Trash2, Edit2, Shield, MapPin, Sparkles, AlertCircle, Upload, Image as ImageIcon } from 'lucide-react';
-import { getTempleShareUrl, compressImage } from '../utils/templeStorage';
+import { 
+  X, 
+  Building2, 
+  Plus, 
+  Copy, 
+  Check, 
+  ExternalLink, 
+  Trash2, 
+  Edit2, 
+  Shield, 
+  MapPin, 
+  Sparkles, 
+  AlertCircle, 
+  Upload, 
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Globe
+} from 'lucide-react';
+import { 
+  getTempleShareUrl, 
+  compressImage, 
+  formatTempleSlug, 
+  suggestSlugFromTempleName 
+} from '../utils/templeStorage';
 
 export default function TempleSelectModal({
   currentTemple,
@@ -20,6 +42,8 @@ export default function TempleSelectModal({
   const [editingTemple, setEditingTemple] = useState(null);
 
   const [templeName, setTempleName] = useState('');
+  const [templeSlug, setTempleSlug] = useState('');
+  const [slugTouched, setSlugTouched] = useState(false);
   const [templeLocation, setTempleLocation] = useState('');
   const [templeDesc, setTempleDesc] = useState('');
   const [templeMapImage, setTempleMapImage] = useState(null);
@@ -29,6 +53,8 @@ export default function TempleSelectModal({
   const handleOpenAdd = () => {
     setEditingTemple(null);
     setTempleName('');
+    setTempleSlug('');
+    setSlugTouched(false);
     setTempleLocation('');
     setTempleDesc('');
     setTempleMapImage(null);
@@ -39,6 +65,8 @@ export default function TempleSelectModal({
   const handleOpenEdit = (t) => {
     setEditingTemple(t);
     setTempleName(t.name);
+    setTempleSlug(t.id);
+    setSlugTouched(true);
     setTempleLocation(t.location || '');
     setTempleDesc(t.description || '');
     const cleanImg = (t.id !== 'khemavan' && t.mapImage === '/temple_map/map_new_latest.jpg') ? null : (t.mapImage || null);
@@ -57,20 +85,41 @@ export default function TempleSelectModal({
       return;
     }
 
+    const rawSlug = templeSlug.trim() || suggestSlugFromTempleName(trimmedName);
+    const cleanSlug = formatTempleSlug(rawSlug);
+    if (!cleanSlug) {
+      setErrorMsg('សូមបញ្ចូលកូដ Link (Slug) សម្រាប់វត្ត!');
+      return;
+    }
+
+    // Check duplicate slug among other temples
+    const duplicate = temples.find(
+      (t) => t.id.toLowerCase() === cleanSlug.toLowerCase() && t.id !== editingTemple?.id
+    );
+    if (duplicate) {
+      setErrorMsg(`កូដ Link «${cleanSlug}» នេះមានវត្ត «${duplicate.name}» ប្រើប្រាស់រួចហើយ! សូមជ្រើសរើសកូដផ្សេង។`);
+      return;
+    }
+
     if (editingTemple) {
+      if (editingTemple.isDefault && cleanSlug !== editingTemple.id) {
+        setErrorMsg('មិនអាចប្តូរ Link របស់វត្តដើម (វត្តខេមវ័ន) បានទេ!');
+        return;
+      }
+
       onUpdateTemple({
         ...editingTemple,
+        id: cleanSlug,
         name: trimmedName,
-        location: templeLocation.trim(),
+        shortName: trimmedName.replace(/^វត្ត\s*/, ''),
+        location: templeLocation.trim() || 'ប្រទេសកម្ពុជា',
         description: templeDesc.trim(),
         mapImage: templeMapImage || (editingTemple.id === 'khemavan' ? '/temple_map/map_new_latest.jpg' : null)
-      });
-      showToast?.(`បានកែប្រែព័ត៌មាន «${trimmedName}» រួចរាល់!`);
+      }, editingTemple.id);
+      showToast?.(`បានកែប្រែព័ត៌មាន និង Link វត្ត «${trimmedName}» រួចរាល់!`);
     } else {
-      // Generate clean slug ID from name or timestamp
-      const slug = `wat-${Date.now().toString(36)}`;
       const newTemple = {
-        id: slug,
+        id: cleanSlug,
         name: trimmedName,
         shortName: trimmedName.replace(/^វត្ត\s*/, ''),
         location: templeLocation.trim() || 'ប្រទេសកម្ពុជា',
@@ -80,7 +129,7 @@ export default function TempleSelectModal({
         isDefault: false
       };
       onAddTemple(newTemple);
-      showToast?.(`បានបន្ថែមវត្តថ្មី «${trimmedName}» រួចរាល់!`);
+      showToast?.(`បានបន្ថែមវត្តថ្មី «${trimmedName}» ជាមួយ Link ផ្ទាល់ខ្លួនរួចរាល់!`);
     }
 
     setIsAddFormOpen(false);
@@ -186,10 +235,81 @@ export default function TempleSelectModal({
                   type="text"
                   required
                   value={templeName}
-                  onChange={(e) => setTempleName(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setTempleName(val);
+                    if (!slugTouched && !editingTemple) {
+                      setTempleSlug(suggestSlugFromTempleName(val));
+                    }
+                  }}
                   placeholder="ឧ. វត្តបទុមវតី ឬ វត្តឧណ្ណាលោម"
                   className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none"
                 />
+              </div>
+
+              {/* Custom Link / Slug Field */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                    <LinkIcon className="w-3.5 h-3.5 text-amber-400" />
+                    <span>កូដ Link ផ្ទាល់ខ្លួន (Custom URL Slug) * ៖</span>
+                  </label>
+                  {(!editingTemple || !editingTemple.isDefault) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const auto = suggestSlugFromTempleName(templeName);
+                        setTempleSlug(auto);
+                        setSlugTouched(true);
+                      }}
+                      className="text-[10px] text-amber-400 hover:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                      title="បង្កើតកូដ Link ស្វ័យប្រវត្តិតាមឈ្មោះវត្ត"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                      <span>⚡ បង្កើតស្វ័យប្រវត្តិ</span>
+                    </button>
+                  )}
+                </div>
+
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    disabled={editingTemple?.isDefault}
+                    value={templeSlug}
+                    onChange={(e) => {
+                      setTempleSlug(formatTempleSlug(e.target.value));
+                      setSlugTouched(true);
+                    }}
+                    placeholder="ឧ. munireangsey ឬ wat-botum"
+                    className={`w-full bg-slate-950 border font-mono rounded-xl px-3 py-2 text-xs placeholder:text-slate-600 focus:outline-none transition-all ${
+                      editingTemple?.isDefault
+                        ? 'text-slate-400 border-slate-800 cursor-not-allowed bg-slate-900/50'
+                        : 'text-amber-200 border-slate-700 focus:border-amber-400'
+                    }`}
+                  />
+                </div>
+
+                {/* Live Link Preview */}
+                <div className="mt-1.5 p-2.5 bg-slate-950/80 rounded-xl border border-slate-800 text-[11px] flex flex-col gap-1 shadow-inner">
+                  <div className="text-[10px] text-slate-400 flex items-center justify-between">
+                    <span className="flex items-center gap-1">
+                      <Globe className="w-3 h-3 text-sky-400" />
+                      <span>🌐 Live Link Preview (តំណភ្ជាប់ដែលត្រូវ Copy ផ្ញើ) ៖</span>
+                    </span>
+                    {templeSlug && !editingTemple?.isDefault && (
+                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded font-bold">✓ ត្រឹមត្រូវ</span>
+                    )}
+                  </div>
+                  <div className="font-mono text-amber-400 break-all select-all font-bold text-xs bg-slate-900/90 p-1.5 rounded-lg border border-slate-800/80">
+                    {getTempleShareUrl(templeSlug || 'your-slug')}
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    {editingTemple?.isDefault 
+                      ? 'ℹ️ វត្តខេមវ័ន (វត្តដើម) ប្រើប្រាស់តំណភ្ជាប់មេមិនប្តូរឡើយ'
+                      : 'ℹ️ អាចវាយជាអក្សរអង់គ្លេសតូច លេខ និងសញ្ញាដាច់ (ឧ. wat-munireangsey)'}
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -374,6 +494,19 @@ export default function TempleSelectModal({
                           </>
                         )}
                       </div>
+
+                      {/* Share Link Pill with One-Click Copy */}
+                      <div 
+                        onClick={(e) => handleCopyLink(t, e)}
+                        className="flex items-center gap-1.5 mt-2 text-[11px] font-mono text-amber-300/90 bg-slate-950/80 hover:bg-slate-950 border border-slate-800 hover:border-amber-500/50 px-2.5 py-1 rounded-xl w-fit max-w-full transition-all group/link"
+                        title="ចុចដើម្បី Copy Link វត្តនេះ"
+                      >
+                        <LinkIcon className="w-3 h-3 text-amber-400 shrink-0 group-hover/link:scale-110 transition-transform" />
+                        <span className="truncate select-all">{getTempleShareUrl(t.id)}</span>
+                        <span className="text-[10px] text-slate-500 group-hover/link:text-amber-300 ml-1 font-sans shrink-0 font-bold">
+                          {isCopied ? '✓ បាន Copy' : '📋 Copy'}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -404,7 +537,7 @@ export default function TempleSelectModal({
                     </button>
 
                     {/* Owner Edit / Delete */}
-                    {isOwner && !t.isDefault && (
+                    {isOwner && (
                       <>
                         <button
                           type="button"
@@ -413,19 +546,21 @@ export default function TempleSelectModal({
                             handleOpenEdit(t);
                           }}
                           className="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-amber-300 border border-slate-700 rounded-xl transition-all"
-                          title="កែប្រែព័ត៌មាន"
+                          title="កែប្រែព័ត៌មាន និង Link វត្ត"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
                         </button>
 
-                        <button
-                          type="button"
-                          onClick={(e) => handleDelete(t, e)}
-                          className="p-1.5 bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-700 rounded-xl transition-all"
-                          title="លុបវត្តនេះ"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {!t.isDefault && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleDelete(t, e)}
+                            className="p-1.5 bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 border border-slate-700 rounded-xl transition-all"
+                            title="លុបវត្តនេះ"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </>
                     )}
 
