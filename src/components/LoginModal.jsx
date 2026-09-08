@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, LogIn, Key, AlertCircle, Crown, Shield, UserCog, User, ArrowRight } from 'lucide-react';
+import { X, Mail, LogIn, Key, AlertCircle } from 'lucide-react';
 import { GUEST_USER, DEFAULT_USERS } from '../utils/storage';
 
 export default function LoginModal({
@@ -8,26 +8,9 @@ export default function LoginModal({
   onClose,
   onLoginUser
 }) {
-  const [emailInput, setEmailInput] = useState('owner@gmail.com');
-  const [passwordInput, setPasswordInput] = useState('123');
+  const [emailInput, setEmailInput] = useState('');
+  const [passwordInput, setPasswordInput] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
-
-  // Quick direct 1-click login
-  const handleDirectLogin = (roleName, email, defaultPin = '123') => {
-    const userPool = Array.isArray(users) && users.length > 0 ? [...users, ...DEFAULT_USERS] : DEFAULT_USERS;
-    const targetUser = userPool.find((u) => u.role === roleName) || DEFAULT_USERS.find((u) => u.role === roleName);
-    if (targetUser) {
-      onLoginUser(targetUser);
-      onClose();
-    }
-  };
-
-  // Quick select helper to autofill
-  const handleQuickSelect = (accountEmail, defaultPin = '123') => {
-    setEmailInput(accountEmail);
-    setPasswordInput(defaultPin);
-    setErrorMessage('');
-  };
 
   const handleLoginSubmit = (e) => {
     e.preventDefault();
@@ -101,7 +84,7 @@ export default function LoginModal({
       onClose();
     } else {
       if (trimmedPass) {
-        setErrorMessage(`រកមិនឃើញគណនី "${trimmedEmail}" ឡើយ! សូមចុចជ្រើសរើស Owner ឬ Admin ខាងលើ។`);
+        setErrorMessage(`រកមិនឃើញគណនី "${trimmedEmail}" ឡើយ! សូមពិនិត្យ Email របស់អ្នកឡើងវិញ។`);
         return;
       }
       // Unpromoted Email without password -> Log in as Guest
@@ -141,63 +124,6 @@ export default function LoginModal({
           >
             <X className="w-5 h-5" />
           </button>
-        </div>
-
-        {/* Quick Account Selection Shortcuts */}
-        <div className="mb-4 bg-slate-900/70 border border-slate-800 rounded-2xl p-3">
-          <div className="text-[11px] font-bold text-slate-400 mb-2 flex items-center justify-between">
-            <span>ចុចរើសគណនីរហ័ស (Quick Select) ៖</span>
-            <span className="text-amber-400/80 text-[10px]">PIN ដើម: 123</span>
-          </div>
-          <div className="grid grid-cols-3 gap-1.5">
-            <button
-              type="button"
-              onClick={() => handleQuickSelect('owner@gmail.com', '123')}
-              className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center gap-1 border transition-all active:scale-95 ${
-                emailInput === 'owner@gmail.com'
-                  ? 'bg-amber-500/30 border-amber-400 text-amber-200 shadow-md shadow-amber-500/20'
-                  : 'bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/30 text-amber-300'
-              }`}
-            >
-              <div className="flex items-center gap-1">
-                <Crown className="w-3.5 h-3.5 text-amber-400" />
-                <span className="font-moul text-[11px]">Owner</span>
-              </div>
-              <span className="text-[9px] font-sans-en text-slate-400 truncate w-full text-center">owner@gmail.com</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickSelect('admin@gmail.com', '123')}
-              className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center gap-1 border transition-all active:scale-95 ${
-                emailInput === 'admin@gmail.com'
-                  ? 'bg-purple-500/30 border-purple-400 text-purple-200 shadow-md shadow-purple-500/20'
-                  : 'bg-purple-500/10 hover:bg-purple-500/20 border-purple-500/30 text-purple-300'
-              }`}
-            >
-              <div className="flex items-center gap-1">
-                <Shield className="w-3.5 h-3.5 text-purple-400" />
-                <span className="font-moul text-[11px]">Admin</span>
-              </div>
-              <span className="text-[9px] font-sans-en text-slate-400 truncate w-full text-center">admin@gmail.com</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickSelect('assistant@gmail.com', '123')}
-              className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center gap-1 border transition-all active:scale-95 ${
-                emailInput === 'assistant@gmail.com'
-                  ? 'bg-sky-500/30 border-sky-400 text-sky-200 shadow-md shadow-sky-500/20'
-                  : 'bg-sky-500/10 hover:bg-sky-500/20 border-sky-500/30 text-sky-300'
-              }`}
-            >
-              <div className="flex items-center gap-1">
-                <UserCog className="w-3.5 h-3.5 text-sky-400" />
-                <span className="font-moul text-[10px]">Assistant</span>
-              </div>
-              <span className="text-[9px] font-sans-en text-slate-400 truncate w-full text-center">assistant@gmail</span>
-            </button>
-          </div>
         </div>
 
         {/* Login Form */}
