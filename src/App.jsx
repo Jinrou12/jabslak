@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef, startTransition, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { Plus, AlertCircle, CheckCircle2, Map as MapIcon, ArrowLeft, Volume2 } from 'lucide-react';
+import { Plus, AlertCircle, CheckCircle2, Map as MapIcon, ArrowLeft, Volume2, PhoneCall, MapPin } from 'lucide-react';
 import Header from './components/Header';
 import SearchBar from './components/SearchBar';
 import TagCard from './components/TagCard';

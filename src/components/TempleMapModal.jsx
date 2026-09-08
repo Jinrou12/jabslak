@@ -30,7 +30,8 @@ import {
   Map as MapIcon,
   Move,
   Tag,
-  ArrowLeft
+  ArrowLeft,
+  PhoneCall
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
