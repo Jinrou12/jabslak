@@ -138,7 +138,7 @@ export default function LoginModal({
                 type="text"
                 value={emailInput}
                 onChange={(e) => setEmailInput(e.target.value)}
-                placeholder="owner@gmail.com"
+                placeholder="user@gmail.com"
                 className="w-full bg-slate-950 border border-slate-700 focus:border-amber-500 rounded-xl pl-9 pr-3 py-2.5 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none font-sans-en"
               />
             </div>
