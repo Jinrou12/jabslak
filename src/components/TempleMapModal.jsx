@@ -3280,6 +3280,73 @@ export default function TempleMapModal({
         {/* ═══════════════ MAIN CONTENT BODY (MAP & LEGEND) ═══════════════ */}
         <div ref={modalBodyRef} className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3">
           
+          {/* 👥 Live Team Tracker Bar */}
+          <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl text-xs font-kantumruy flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap min-w-0">
+              <button
+                type="button"
+                onClick={() => setShowTeamTracker(!showTeamTracker)}
+                className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+                  showTeamTracker
+                    ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/20'
+                    : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                }`}
+                title={showTeamTracker ? 'ចុចដើម្បីលាក់ Pin ក្រុមការងារ' : 'ចុចដើម្បីបង្ហាញ Pin ក្រុមការងារ'}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>{showTeamTracker ? '👥 ក្រុមការងារ (បើក)' : '👥 ក្រុមការងារ (បិទ)'}</span>
+              </button>
+
+              {/* Live count summary */}
+              {showTeamTracker && teamLiveLocations.length > 0 && (
+                <div className="flex items-center gap-2 text-[11px] text-slate-300 flex-wrap">
+                  <span className="flex items-center gap-1 text-emerald-400 font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>🚶‍♂️ {teamLiveLocations.filter((m) => m.activity === 'walking').length} កំពុងដើរ</span>
+                  </span>
+                  <span className="text-slate-600">•</span>
+                  <span className="flex items-center gap-1 text-amber-400 font-bold">
+                    <span>🧍 {teamLiveLocations.filter((m) => m.activity !== 'walking').length} នៅស្ងៀម</span>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Quick Member Spotlight Chips */}
+            {showTeamTracker && teamLiveLocations.length > 0 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto max-w-full py-0.5">
+                {teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((m) => {
+                  const isWalking = m.activity === 'walking';
+                  return (
+                    <button
+                      key={`quick-${m.userId}`}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTeamMember(m);
+                        highlightLocationName({
+                          name: m.locationName || m.userName,
+                          x: m.x,
+                          y: m.y
+                        });
+                      }}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 whitespace-nowrap transition-all cursor-pointer ${
+                        m.needHelp
+                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/60 animate-pulse'
+                          : isWalking
+                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                      }`}
+                    >
+                      <span>{isWalking ? '🚶‍♂️' : '🧍'}</span>
+                      <span className="truncate max-w-[80px]">{m.userName || 'U'}</span>
+                      {isWalking && <span className="text-emerald-400 text-[9px]">({m.speedKmh || 3.2}គ.ម)</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
           {/* MAP CANVAS CONTAINER */}
           <div className="relative rounded-2xl border-2 border-slate-700 bg-white overflow-hidden shadow-inner">
             
@@ -3435,25 +3502,51 @@ export default function TempleMapModal({
                               <div className="absolute -inset-4 rounded-full bg-rose-500/70 animate-ping pointer-events-none" />
                             )}
 
+                            {/* Walking footstep waves if walking */}
+                            {member.activity === 'walking' && !isSos && (
+                              <>
+                                <div className="absolute -inset-3 rounded-full bg-emerald-400/30 animate-ping pointer-events-none" />
+                                <div className="absolute -inset-1.5 rounded-full border-2 border-emerald-400/80 animate-pulse pointer-events-none" />
+                              </>
+                            )}
+
                             <div className={`relative flex items-center justify-center rounded-full p-0.5 shadow-2xl transition-transform hover:scale-125 ${
                               isSos
                                 ? 'ring-4 ring-rose-500 ring-offset-2 ring-offset-slate-950 animate-bounce'
+                                : member.activity === 'walking'
+                                ? 'ring-3 ring-emerald-400 ring-offset-1 ring-offset-slate-950'
                                 : 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-950'
                             }`}>
                               <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${
-                                isSos ? 'from-rose-500 to-red-700 text-white' : roleGradient
+                                isSos
+                                  ? 'from-rose-500 to-red-700 text-white'
+                                  : member.activity === 'walking'
+                                  ? 'from-emerald-400 via-teal-500 to-emerald-600 text-slate-950 font-black'
+                                  : roleGradient
                               } flex items-center justify-center font-bold text-xs shadow-lg border border-white/80`}>
-                                {isSos ? '🚨' : initials}
+                                {isSos ? '🚨' : member.activity === 'walking' ? '🚶‍♂️' : initials}
                               </div>
                             </div>
 
                             {/* Label Card under avatar */}
-                            <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-0.5 rounded-lg bg-slate-950/95 border border-slate-700 text-slate-100 text-[10px] whitespace-nowrap font-bold shadow-xl pointer-events-none flex items-center gap-1 font-kantumruy">
+                            <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-0.5 rounded-lg border text-[10px] whitespace-nowrap font-bold shadow-xl pointer-events-none flex items-center gap-1 font-kantumruy ${
+                              isSos
+                                ? 'bg-rose-950/95 border-rose-500/90 text-rose-200'
+                                : member.activity === 'walking'
+                                ? 'bg-emerald-950/95 border-emerald-500/80 text-emerald-200'
+                                : 'bg-slate-950/95 border-slate-700 text-slate-100'
+                            }`}>
                               <span>{member.userName || member.name}</span>
                               {isSos ? (
                                 <span className="text-rose-400 font-extrabold animate-pulse">🚨 SOS!</span>
+                              ) : member.activity === 'walking' ? (
+                                <span className="text-emerald-400 font-bold animate-pulse">
+                                  🚶‍♂️ កំពុងដើរ {member.speedKmh ? `(${member.speedKmh} គ.ម/ម៉)` : ''}
+                                </span>
                               ) : (
-                                <span className="text-emerald-400 text-[9px]">📍 {member.locationName || 'ទីតាំង'}</span>
+                                <span className="text-amber-400/90 text-[9px]">
+                                  🧍 នៅស្ងៀម {member.stationaryMinutes > 0 ? `(${member.stationaryMinutes}ន)` : ''}
+                                </span>
                               )}
                             </div>
                           </div>
@@ -3502,11 +3595,13 @@ export default function TempleMapModal({
                     <div className={`w-9 h-9 rounded-2xl flex items-center justify-center font-bold text-sm shadow-md shrink-0 ${
                       selectedTeamMember.needHelp
                         ? 'bg-rose-500 text-white animate-bounce'
+                        : selectedTeamMember.activity === 'walking'
+                        ? 'bg-emerald-500 text-slate-950 animate-pulse'
                         : selectedTeamMember.role === 'admin'
                         ? 'bg-amber-500 text-slate-950'
                         : 'bg-sky-500 text-white'
                     }`}>
-                      {selectedTeamMember.needHelp ? '🚨' : (selectedTeamMember.userName || 'U').slice(0, 1)}
+                      {selectedTeamMember.needHelp ? '🚨' : selectedTeamMember.activity === 'walking' ? '🚶‍♂️' : (selectedTeamMember.userName || 'U').slice(0, 1)}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -3522,6 +3617,26 @@ export default function TempleMapModal({
                       <div className="text-[11px] text-slate-300 truncate mt-0.5 flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
                         <span>{selectedTeamMember.locationName || selectedTeamMember.assignedZone || 'ទីតាំងលើ Map'}</span>
+                      </div>
+
+                      {/* Live Motion Status Chip in Popover */}
+                      <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                        {selectedTeamMember.activity === 'walking' ? (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold flex items-center gap-1 animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                            <span>🚶‍♂️ កំពុងដើរ {selectedTeamMember.speedKmh ? `(ល្បឿន ${selectedTeamMember.speedKmh} គ.ម/ម៉)` : ''}</span>
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                            <span>🧍 នៅស្ងៀម {selectedTeamMember.stationaryMinutes > 0 ? `(ឈរស្ងៀម ${selectedTeamMember.stationaryMinutes} នាទី)` : ''}</span>
+                          </span>
+                        )}
+                        {selectedTeamMember.accuracy && (
+                          <span className="text-[9px] text-slate-400">
+                            GPS ±{Math.round(selectedTeamMember.accuracy)}m
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

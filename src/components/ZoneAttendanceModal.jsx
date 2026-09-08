@@ -32,6 +32,7 @@ import {
   clearTeamSOSAlert
 } from '../utils/firebase';
 import { getSavedUsers } from '../utils/storage';
+import { phoneTracker } from '../utils/phoneTracker';
 
 const KHEMAVAN_CORE_ZONES = [
   'ផែន១ ៖ ធម្មសភា',
@@ -167,6 +168,11 @@ export default function ZoneAttendanceModal({
   // ════════ TEAM LIVE LOCATIONS & SOS ALERT SYSTEM ════════
   const [teamLiveLocations, setTeamLiveLocations] = useState([]);
   const [isSpotPickerOpen, setIsSpotPickerOpen] = useState(false);
+  const [trackerState, setTrackerState] = useState(() => phoneTracker.getState());
+
+  useEffect(() => {
+    return phoneTracker.subscribe(setTrackerState);
+  }, []);
 
   useEffect(() => {
     const unsub = subscribeToTeamLiveLocations(setTeamLiveLocations, templeId);
@@ -196,7 +202,12 @@ export default function ZoneAttendanceModal({
         helpMessage: live?.helpMessage || '',
         updatedAt: live?.updatedAt || null,
         x: live?.x || 16.15,
-        y: live?.y || 44.31
+        y: live?.y || 44.31,
+        activity: live?.activity || 'stationary',
+        activityText: live?.activityText || 'នៅស្ងៀម',
+        speedKmh: live?.speedKmh || 0,
+        stationaryMinutes: live?.stationaryMinutes || 0,
+        accuracy: live?.accuracy || null
       };
     });
   }, [allUsers, teamLiveLocations, effectiveActiveZone]);
@@ -238,6 +249,7 @@ export default function ZoneAttendanceModal({
   const handleSetMyLocation = async (spot) => {
     if (!currentUser?.id) return;
     setIsSpotPickerOpen(false);
+    phoneTracker.setCurrentSpot(spot);
     await saveUserLiveLocation({
       userId: currentUser.id,
       userName: currentUser.name || 'ក្រុមការងារ',
@@ -249,6 +261,11 @@ export default function ZoneAttendanceModal({
       x: spot.x,
       y: spot.y,
       status: 'active',
+      activity: trackerState?.activity || 'stationary',
+      activityText: trackerState?.activityText || 'នៅស្ងៀម',
+      speedKmh: trackerState?.speedKmh || 0,
+      stationaryMinutes: trackerState?.stationaryMinutes || 0,
+      accuracy: trackerState?.accuracy || null,
       needHelp: myLiveRecord?.needHelp || false
     }, templeId);
   };
@@ -481,6 +498,87 @@ export default function ZoneAttendanceModal({
             </div>
           )}
 
+          {/* ════════ PHONE LIVE GPS & MOTION DETECTION BAR ════════ */}
+          <div className="bg-gradient-to-r from-slate-900 via-slate-900/95 to-slate-950 border border-slate-800 rounded-2xl p-2.5 shadow-sm space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-7 h-7 rounded-xl bg-sky-500/20 text-sky-400 border border-sky-500/40 flex items-center justify-center shrink-0 shadow-sm">
+                  <Radio className="w-3.5 h-3.5 animate-pulse" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[11px] font-bold text-slate-200 flex items-center gap-1.5">
+                    <span>🛰️ ចាប់ទីតាំង & ចលនា Phone (Auto GPS)</span>
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 truncate">
+                    ដឹងស្វ័យប្រវត្តថាកំពុងដើរ ឬនៅស្ងៀម តាម Sensor ទូរស័ព្ទ
+                  </p>
+                </div>
+              </div>
+
+              {/* Live Status Chip */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                {trackerState?.activity === 'walking' ? (
+                  <div className="px-2.5 py-1 rounded-xl bg-emerald-500/25 border border-emerald-500/60 text-emerald-300 text-xs font-bold flex items-center gap-1.5 shadow-sm animate-pulse">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-bounce"></span>
+                    <span>🚶‍♂️ កំពុងដើរ ({trackerState.speedKmh || 3.2} គ.ម/ម៉)</span>
+                  </div>
+                ) : (
+                  <div className="px-2.5 py-1 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-300 text-xs font-bold flex items-center gap-1.5 shadow-sm">
+                    <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span>🧍 នៅស្ងៀម {trackerState?.stationaryMinutes > 0 ? `(${westernToKhmerDigits(trackerState.stationaryMinutes)} នាទី)` : ''}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Quick Testing / Simulator Buttons */}
+            <div className="pt-1.5 border-t border-slate-800/80 flex items-center justify-between gap-1 flex-wrap text-[10px]">
+              <div className="text-slate-500 flex items-center gap-1">
+                <span>GPS ៖ ±{trackerState?.accuracy ? Math.round(trackerState.accuracy) + 'm' : 'ស្វ័យប្រវត្តិ'}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500 mr-1 hidden sm:inline">តេស្តសាកល្បង ៖</span>
+                <button
+                  type="button"
+                  onClick={() => phoneTracker.setManualOverride('walking')}
+                  className={`px-2 py-0.5 rounded-lg font-bold border transition-all cursor-pointer ${
+                    trackerState?.activity === 'walking' && trackerState?.isManualOverride
+                      ? 'bg-emerald-500 text-slate-950 border-emerald-400'
+                      : 'bg-slate-800/80 hover:bg-slate-700 text-emerald-300 border-emerald-500/30'
+                  }`}
+                  title="តេស្តសាកល្បងដើរ"
+                >
+                  🚶‍♂️ ដើរ
+                </button>
+                <button
+                  type="button"
+                  onClick={() => phoneTracker.setManualOverride('stationary')}
+                  className={`px-2 py-0.5 rounded-lg font-bold border transition-all cursor-pointer ${
+                    trackerState?.activity === 'stationary' && trackerState?.isManualOverride
+                      ? 'bg-amber-500 text-slate-950 border-amber-400'
+                      : 'bg-slate-800/80 hover:bg-slate-700 text-amber-300 border-amber-500/30'
+                  }`}
+                  title="តេស្តសាកល្បងនៅស្ងៀម"
+                >
+                  🧍 ស្ងៀម
+                </button>
+                <button
+                  type="button"
+                  onClick={() => phoneTracker.resetToAutoGps()}
+                  className={`px-2 py-0.5 rounded-lg font-bold border transition-all cursor-pointer ${
+                    !trackerState?.isManualOverride
+                      ? 'bg-sky-500 text-slate-950 border-sky-400'
+                      : 'bg-slate-800/80 hover:bg-slate-700 text-sky-300 border-sky-500/30'
+                  }`}
+                  title="កំណត់មកប្រើ GPS & Sensor ស្វ័យប្រវត្ត"
+                >
+                  🛰️ Auto GPS
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Team Members Strip */}
           <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-2.5 shadow-sm space-y-2">
             <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -579,12 +677,14 @@ export default function ZoneAttendanceModal({
                           className={`w-7 h-7 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 shadow-sm ${
                             isSos
                               ? 'bg-rose-500 text-slate-950 animate-bounce'
+                              : member.activity === 'walking'
+                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/50 animate-pulse'
                               : member.role === 'admin'
                               ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                               : 'bg-sky-500/20 text-sky-300 border border-sky-500/40'
                           }`}
                         >
-                          {isSos ? '🚨' : member.name ? member.name.slice(0, 1) : 'U'}
+                          {isSos ? '🚨' : member.activity === 'walking' ? '🚶‍♂️' : (member.name ? member.name.slice(0, 1) : 'U')}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1 flex-wrap">
@@ -606,6 +706,26 @@ export default function ZoneAttendanceModal({
                             <MapPin className="w-2.5 h-2.5 text-amber-400 shrink-0" />
                             <span>{member.locationName || 'មិនទាន់កំណត់ទីតាំង'}</span>
                             {isSos && <span className="text-rose-400 font-bold ml-1 animate-pulse">🚨 ត្រូវការជំនួយ!</span>}
+                          </div>
+
+                          {/* Motion & Activity Badge */}
+                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                            {member.activity === 'walking' ? (
+                              <span className="px-1.5 py-0.2 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[9px] font-bold flex items-center gap-1 animate-pulse">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                                <span>🚶‍♂️ កំពុងដើរ {member.speedKmh ? `(${member.speedKmh} គ.ម/ម៉)` : ''}</span>
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.2 rounded-md bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[9px] font-bold flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                                <span>🧍 នៅស្ងៀម {member.stationaryMinutes > 0 ? `(${westernToKhmerDigits(member.stationaryMinutes)} នាទី)` : ''}</span>
+                              </span>
+                            )}
+                            {member.accuracy && (
+                              <span className="text-[8px] text-slate-500">
+                                GPS ±{Math.round(member.accuracy)}m
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>

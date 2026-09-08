@@ -49,6 +49,7 @@ import {
   clearTeamSOSAlert
 } from './utils/firebase';
 import { pushTagsToCloud, subscribeToCloudTags } from './utils/cloudSync';
+import { phoneTracker } from './utils/phoneTracker';
 
 export default function App() {
   const [tags, setTags] = useState([]);
@@ -137,6 +138,21 @@ export default function App() {
     const unsub = subscribeToTeamLiveLocations(setTeamLocations, currentTemple.id);
     return () => unsub();
   }, [currentTemple.id]);
+
+  // 🛰️ Live Phone Location & Motion Tracking for Logged-in Team Members
+  useEffect(() => {
+    if (effectiveUser && effectiveUser.role !== 'guest') {
+      phoneTracker.start({
+        user: effectiveUser,
+        templeId: currentTemple?.id || 'khemavan'
+      });
+    } else {
+      phoneTracker.stop();
+    }
+    return () => {
+      phoneTracker.stop();
+    };
+  }, [effectiveUser, currentTemple?.id]);
 
   const activeGlobalSOS = useMemo(() => {
     return teamLocations.find((m) => Boolean(m.needHelp));
