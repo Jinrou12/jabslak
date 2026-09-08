@@ -31,7 +31,9 @@ import {
   Move,
   Tag,
   ArrowLeft,
-  PhoneCall
+  PhoneCall,
+  Settings,
+  Radio
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
@@ -53,9 +55,12 @@ import {
   subscribeToTeamLiveLocations,
   saveUserLiveLocation,
   sendTeamSOSAlert,
-  clearTeamSOSAlert
+  clearTeamSOSAlert,
+  subscribeToGpsCalibration,
+  saveGpsCalibrationToFirebase
 } from '../utils/firebase';
 import { phoneTracker } from '../utils/phoneTracker';
+import { DEFAULT_KHEMAVAN_CALIBRATION, gpsToMapCoords, getNearestLandmark } from '../utils/geoCalibrator.js';
 import { getTempleCustomMapImage, saveTempleCustomMapImage, compressImage } from '../utils/templeStorage';
 import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName, formatTagRanges } from '../utils/khmerSearch';
 
@@ -928,6 +933,65 @@ export default function TempleMapModal({
 
     setSelectedTeamMember(updatedRecord);
     setUndoToast(`📍 បានផ្លាស់ប្តូរទីតាំងទៅ «${spot.name}» ជោគជ័យ!`);
+    setTimeout(() => setUndoToast(''), 4000);
+  };
+
+  // 🛰️ GPS Georeferencing Calibration State & Handlers
+  const [isCalibrationModalOpen, setIsCalibrationModalOpen] = useState(false);
+  const [gpsCalibration, setGpsCalibration] = useState(DEFAULT_KHEMAVAN_CALIBRATION);
+  const [trackerState, setTrackerState] = useState(() => phoneTracker.getState());
+
+  useEffect(() => {
+    return phoneTracker.subscribe(setTrackerState);
+  }, []);
+
+  useEffect(() => {
+    const unsub = subscribeToGpsCalibration((cal) => {
+      if (cal) setGpsCalibration(cal);
+    }, currentTempleId);
+    return () => unsub();
+  }, [currentTempleId]);
+
+  const handleResetToAutoGps = async () => {
+    phoneTracker.resetToAutoGps();
+    setUndoToast('🛰️ បានប្តូរទៅប្រើប្រាស់ Real-Time Auto GPS ជោគជ័យ!');
+    setTimeout(() => setUndoToast(''), 4000);
+  };
+
+  const handleCaptureCalibrationPoint = (pointKey) => {
+    const currentLat = trackerState.latitude;
+    const currentLon = trackerState.longitude;
+    if (currentLat == null || currentLon == null) {
+      alert('⚠️ មិនទាន់ចាប់បានសញ្ញា GPS ពីទូរស័ព្ទនៅឡើយទេ។ សូមពិនិត្យមើលថាតើបាន Allow Location និងបើក GPS ទូរស័ព្ទហើយឬនៅ!');
+      return;
+    }
+
+    setGpsCalibration((prev) => ({
+      ...prev,
+      [pointKey]: {
+        ...prev[pointKey],
+        lat: currentLat,
+        lon: currentLon
+      }
+    }));
+    const pName = gpsCalibration[pointKey]?.name || (pointKey === 'p1' ? 'ចំណុចទី១' : 'ចំណុចទី២');
+    setUndoToast(`✅ បានកត់ត្រា GPS សម្រាប់ «${pName}» (Lat: ${currentLat.toFixed(6)}, Lon: ${currentLon.toFixed(6)})`);
+    setTimeout(() => setUndoToast(''), 4000);
+  };
+
+  const handleSaveCalibration = async () => {
+    await saveGpsCalibrationToFirebase(gpsCalibration, currentTempleId);
+    phoneTracker.setGpsCalibration(gpsCalibration);
+    setIsCalibrationModalOpen(false);
+    setUndoToast('💾 បានរក្សាទុក Calibration ចូល Cloud Firebase ជោគជ័យ! គ្រប់ទូរស័ព្ទទាំងអស់នឹងដំណើរការ Auto-GPS តាមខ្នាតនេះ។');
+    setTimeout(() => setUndoToast(''), 5000);
+  };
+
+  const handleResetCalibration = async () => {
+    setGpsCalibration(DEFAULT_KHEMAVAN_CALIBRATION);
+    await saveGpsCalibrationToFirebase(DEFAULT_KHEMAVAN_CALIBRATION, currentTempleId);
+    phoneTracker.setGpsCalibration(DEFAULT_KHEMAVAN_CALIBRATION);
+    setUndoToast('🔄 បានកំណត់ Calibration ទៅលំនាំដើមវត្តខេមវ័នជោគជ័យ!');
     setTimeout(() => setUndoToast(''), 4000);
   };
 
@@ -3992,6 +4056,30 @@ export default function TempleMapModal({
                     )}
                   </div>
 
+                  {/* Calibrate GPS Button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsCalibrationModalOpen(true)}
+                    className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-amber-300 border border-amber-500/40 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                    title="កំណត់ចំណុចយោង GPS ជាមួយប្លង់វត្ត"
+                  >
+                    <Settings className="w-3.5 h-3.5 text-amber-400" />
+                    <span>⚙️ Calibrate GPS</span>
+                  </button>
+
+                  {/* Switch back to Auto GPS if manual mode is active */}
+                  {trackerState.isManualOverride && (
+                    <button
+                      type="button"
+                      onClick={handleResetToAutoGps}
+                      className="px-3 py-2 bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/60 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md animate-pulse"
+                      title="ត្រឡប់ទៅប្រើប្រាស់ Auto GPS តាមជំហានជើងពិត"
+                    >
+                      <Radio className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>🛰️ ប្រើ Auto GPS</span>
+                    </button>
+                  )}
+
                   {/* SOS Quick Button for Current User */}
                   {(() => {
                     const myId = currentUser?.id || 'u-self';
@@ -4096,20 +4184,33 @@ export default function TempleMapModal({
                               </div>
                             </div>
 
-                            {/* Status pill */}
-                            {isSos ? (
-                              <span className="px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black animate-pulse shrink-0">
-                                🚨 SOS
-                              </span>
-                            ) : member.activity === 'walking' ? (
-                              <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold shrink-0">
-                                🚶‍♂️ កំពុងដើរ
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold shrink-0">
-                                🧍 នៅស្ងៀម
-                              </span>
-                            )}
+                            {/* Status pill & GPS source badge */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              {member.isAutoGps ? (
+                                <span className="px-1.5 py-0.5 rounded bg-sky-950/80 border border-sky-500/50 text-sky-300 text-[10px] font-bold flex items-center gap-0.5" title="ទីតាំងមកពី GPS ផ្កាយរណបទូរស័ព្ទផ្ទាល់">
+                                  <Radio className="w-2.5 h-2.5 text-sky-400 animate-pulse" />
+                                  <span>Auto GPS</span>
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 text-[10px]" title="ទីតាំងដៅលើ Map ដោយដៃ">
+                                  📍 ដៅដោយដៃ
+                                </span>
+                              )}
+
+                              {isSos ? (
+                                <span className="px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black animate-pulse">
+                                  🚨 SOS
+                                </span>
+                              ) : member.activity === 'walking' ? (
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">
+                                  🚶‍♂️ កំពុងដើរ
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">
+                                  🧍 នៅស្ងៀម
+                                </span>
+                              )}
+                            </div>
                           </div>
 
                           {/* Middle row: Location Name + Coordinates */}
@@ -4125,7 +4226,7 @@ export default function TempleMapModal({
                             </span>
                           </div>
 
-                          {/* Action Buttons: Find on Map + Call */}
+                          {/* Action Buttons: Find on Map + Call + Switch to Auto GPS */}
                           <div className="flex items-center gap-2 pt-1 border-t border-slate-800/60">
                             <button
                               type="button"
@@ -4139,6 +4240,18 @@ export default function TempleMapModal({
                               <Search className="w-3 h-3" />
                               <span>🔍 រកលើ Map</span>
                             </button>
+
+                            {member.userId === currentUser?.id && !member.isAutoGps && (
+                              <button
+                                type="button"
+                                onClick={handleResetToAutoGps}
+                                className="px-2 py-1.5 bg-sky-950 hover:bg-sky-900 border border-sky-500/50 text-sky-300 font-bold text-[11px] rounded-lg transition-all flex items-center gap-1 cursor-pointer shrink-0"
+                                title="ប្តូរមកប្រើប្រាស់ Auto GPS វិញ"
+                              >
+                                <Radio className="w-3 h-3 text-sky-400" />
+                                <span>Auto GPS</span>
+                              </button>
+                            )}
 
                             {member.phone && (
                               <a
@@ -4645,6 +4758,206 @@ export default function TempleMapModal({
           </div>
           )}
         </div>
+
+        {/* ═══════════════ MODAL: GPS GEOREFERENCING CALIBRATION ═══════════════ */}
+        {isCalibrationModalOpen && (
+          <div
+            className="fixed inset-0 z-60 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in"
+            onClick={() => setIsCalibrationModalOpen(false)}
+          >
+            <div
+              className="w-full max-w-xl bg-slate-900 border-2 border-amber-500/50 rounded-3xl p-4 sm:p-6 shadow-2xl text-slate-100 font-kantumruy max-h-[90vh] overflow-y-auto space-y-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-start justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/40 shadow-inner shrink-0">
+                    <Settings className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-moul text-sm sm:text-base text-amber-400">
+                      ⚙️ កំណត់ចំណុចយោង GPS ជាមួយប្លង់ JPEG
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      ភ្ជាប់កូអរដោនេ GPS ផ្កាយរណបពិត (Lat/Lng) ជាមួយទីតាំងអគារលើរូបភាពប្លង់វត្ត
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCalibrationModalOpen(false)}
+                  className="p-1.5 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Live Phone GPS Signal Banner */}
+              <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Radio className={`w-4 h-4 shrink-0 ${trackerState.latitude ? 'text-emerald-400 animate-pulse' : 'text-slate-500'}`} />
+                  <div className="min-w-0 text-xs">
+                    <div className="font-bold text-slate-200">ស្ថានភាពសញ្ញា GPS ទូរស័ព្ទ ៖</div>
+                    {trackerState.latitude ? (
+                      <div className="text-emerald-400 text-[11px] font-mono truncate">
+                        Lat: {trackerState.latitude.toFixed(6)}, Lon: {trackerState.longitude.toFixed(6)}
+                        {trackerState.accuracy ? ` (កម្រិតសុក្រឹត ±${Math.round(trackerState.accuracy)}m)` : ''}
+                      </div>
+                    ) : (
+                      <div className="text-amber-400 text-[11px]">
+                        ⚠️ មិនទាន់ចាប់បាន GPS (សូម Allow Location លើ Browser)
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {trackerState.latitude && (
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold shrink-0">
+                    GPS Active
+                  </span>
+                )}
+              </div>
+
+              {/* Instructions */}
+              <div className="text-xs text-slate-300 bg-amber-500/10 border border-amber-500/30 rounded-2xl p-3 space-y-1">
+                <div className="font-bold text-amber-300 flex items-center gap-1.5">
+                  <span>💡 របៀប Calibrate ឱ្យដើរតាមជើងសុក្រឹត ១០០% ៖</span>
+                </div>
+                <ol className="list-decimal list-inside text-[11px] text-slate-300 space-y-1 leading-relaxed pl-1">
+                  <li>កាន់ទូរស័ព្ទដើរទៅឈរនៅមុខ <b>ចំណុចទី១</b> (ឧ. ធម្មសភា) រួចចុច <b>«📍 ចាប់យក GPS ទីនេះ»</b>។</li>
+                  <li>ដើរទៅឈរនៅមុខ <b>ចំណុចទី២</b> (ឧ. ព្រះវិហារ) រួចចុច <b>«📍 ចាប់យក GPS ទីនេះ»</b>។</li>
+                  <li>ចុច <b>«💾 រក្សាទុក និងដំណើរការ Auto-GPS»</b> នោះគ្រប់ទូរស័ព្ទទាំងអស់នឹងដើរតាមជើងស្វ័យប្រវត្ត!</li>
+                </ol>
+              </div>
+
+              {/* 2 Calibration Points Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {/* Point 1 */}
+                <div className="p-3.5 rounded-2xl bg-slate-950 border border-emerald-500/40 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-400 font-moul">
+                      📍 ចំណុចយោងទី១ (Ref Point 1)
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold">
+                      X: {gpsCalibration.p1?.x}%, Y: {gpsCalibration.p1?.y}%
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">រើសទីតាំងអគារលើប្លង់ ៖</label>
+                    <select
+                      value={gpsCalibration.p1?.name || 'ធម្មសាលាសភា'}
+                      onChange={(e) => {
+                        const loc = INITIAL_TEMPLE_LOCATIONS.find((b) => b.name === e.target.value);
+                        if (loc) {
+                          setGpsCalibration((prev) => ({
+                            ...prev,
+                            p1: { ...prev.p1, name: loc.name, x: loc.x, y: loc.y }
+                          }));
+                        }
+                      }}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-400"
+                    >
+                      {INITIAL_TEMPLE_LOCATIONS.map((b) => (
+                        <option key={`p1-${b.id}`} value={b.name}>{b.name} ({b.x}%, {b.y}%)</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="text-[11px] text-slate-300 font-mono bg-slate-900 p-2 rounded-xl border border-slate-800">
+                    <div>Lat: {gpsCalibration.p1?.lat?.toFixed(6)}</div>
+                    <div>Lon: {gpsCalibration.p1?.lon?.toFixed(6)}</div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCaptureCalibrationPoint('p1')}
+                    className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>📍 កត់ត្រា GPS បច្ចុប្បន្ននៅចំណុចទី១</span>
+                  </button>
+                </div>
+
+                {/* Point 2 */}
+                <div className="p-3.5 rounded-2xl bg-slate-950 border border-amber-500/40 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-400 font-moul">
+                      📍 ចំណុចយោងទី២ (Ref Point 2)
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">
+                      X: {gpsCalibration.p2?.x}%, Y: {gpsCalibration.p2?.y}%
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] text-slate-400 block mb-1">រើសទីតាំងអគារលើប្លង់ ៖</label>
+                    <select
+                      value={gpsCalibration.p2?.name || 'ព្រះវិហារ'}
+                      onChange={(e) => {
+                        const loc = INITIAL_TEMPLE_LOCATIONS.find((b) => b.name === e.target.value);
+                        if (loc) {
+                          setGpsCalibration((prev) => ({
+                            ...prev,
+                            p2: { ...prev.p2, name: loc.name, x: loc.x, y: loc.y }
+                          }));
+                        }
+                      }}
+                      className="w-full bg-slate-900 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-amber-400"
+                    >
+                      {INITIAL_TEMPLE_LOCATIONS.map((b) => (
+                        <option key={`p2-${b.id}`} value={b.name}>{b.name} ({b.x}%, {b.y}%)</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="text-[11px] text-slate-300 font-mono bg-slate-900 p-2 rounded-xl border border-slate-800">
+                    <div>Lat: {gpsCalibration.p2?.lat?.toFixed(6)}</div>
+                    <div>Lon: {gpsCalibration.p2?.lon?.toFixed(6)}</div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleCaptureCalibrationPoint('p2')}
+                    className="w-full py-2 bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-xs rounded-xl shadow transition-all flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>📍 កត់ត្រា GPS បច្ចុប្បន្ននៅចំណុចទី២</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Bottom action buttons */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={handleResetCalibration}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                >
+                  🔄 ដាក់តម្លៃដើមវិញ (Reset)
+                </button>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsCalibrationModalOpen(false)}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+                  >
+                    បោះបង់
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveCalibration}
+                    className="px-5 py-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 rounded-xl text-xs font-black shadow-lg shadow-emerald-500/30 transition-all flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>💾 រក្សាទុក និងដំណើរការ Auto-GPS</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ═══════════════ MODAL: ADD / EDIT LOCATION ═══════════════ */}
         {isEditModalOpen && (

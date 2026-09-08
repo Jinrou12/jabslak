@@ -857,4 +857,79 @@ export async function clearTeamSOSAlert(userId, currentData = {}, templeId = 'kh
   }, templeId);
 }
 
+/**
+ * Subscribe to Temple GPS Calibration
+ */
+export function subscribeToGpsCalibration(onDataReceived, templeId = 'khemavan') {
+  const isKhemavan = !templeId || templeId === 'khemavan';
+  const path = isKhemavan
+    ? 'temple_gps_calibration'
+    : `temples/${templeId}/temple_gps_calibration`;
+
+  let isSubscribed = true;
+  let lastCalibrationJson = '';
+
+  const processCalibration = (val) => {
+    if (val && val.p1 && val.p2) {
+      const jsonStr = JSON.stringify(val);
+      if (jsonStr !== lastCalibrationJson) {
+        lastCalibrationJson = jsonStr;
+        onDataReceived(val);
+      }
+    }
+  };
+
+  const fetchRest = async () => {
+    if (!isSubscribed) return;
+    const data = await restGet(path);
+    if (data) processCalibration(data);
+  };
+
+  fetchRest();
+  const pollInterval = setInterval(fetchRest, 6000);
+
+  let unsubscribeDb = () => {};
+  if (db) {
+    try {
+      const calRef = ref(db, path);
+      unsubscribeDb = onValue(calRef, (snapshot) => {
+        const val = snapshot.val();
+        if (val) processCalibration(val);
+      });
+    } catch (e) {}
+  }
+
+  return () => {
+    isSubscribed = false;
+    clearInterval(pollInterval);
+    unsubscribeDb();
+  };
+}
+
+/**
+ * Save Temple GPS Calibration to Firebase Realtime Database
+ */
+export async function saveGpsCalibrationToFirebase(calibrationData, templeId = 'khemavan') {
+  if (!calibrationData || !calibrationData.p1 || !calibrationData.p2) return false;
+  const isKhemavan = !templeId || templeId === 'khemavan';
+  const path = isKhemavan
+    ? 'temple_gps_calibration'
+    : `temples/${templeId}/temple_gps_calibration`;
+
+  const payload = {
+    ...calibrationData,
+    updatedAt: new Date().toISOString()
+  };
+
+  restPut(path, payload).catch(() => {});
+  if (db) {
+    try {
+      const itemRef = ref(db, path);
+      await set(itemRef, payload);
+    } catch (e) {}
+  }
+  return true;
+}
+
 export { db, isConnected };
+

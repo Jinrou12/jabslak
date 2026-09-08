@@ -1,12 +1,17 @@
 /**
- * Phone Live GPS & Motion Detection Tracker
- * Automatically detects whether the logged-in user is:
+ * Phone Live GPS & Motion Detection Tracker with 2-Point JPEG Georeferencing
+ * 
+ * Automatically detects:
  * - "🚶‍♂️ កំពុងដើរ" (Walking / Moving)
  * - "🧍 នៅស្ងៀម" (Stationary / Standing still)
- * Using HTML5 Geolocation API, Accelerometer Motion Sensors, and real-time Firebase sync.
+ * 
+ * Real-time Georeferencing:
+ * Converts satellite GPS (Latitude, Longitude) into percentage coordinates (X%, Y%)
+ * on the static aerial JPEG temple map, while preserving manual spot positioning (Hybrid).
  */
 
-import { saveUserLiveLocation } from './firebase';
+import { saveUserLiveLocation, subscribeToGpsCalibration } from './firebase';
+import { gpsToMapCoords, getNearestLandmark, DEFAULT_KHEMAVAN_CALIBRATION } from './geoCalibrator.js';
 
 // Haversine formula to compute distance between two GPS coordinates in meters
 function getHaversineDistanceMeters(lat1, lon1, lat2, lon2) {
@@ -30,11 +35,14 @@ class PhoneTrackerManager {
     this.watchId = null;
     this.motionListener = null;
     this.syncIntervalId = null;
+    this.calibrationUnsub = null;
     this.listeners = new Set();
 
     this.currentUser = null;
     this.currentTempleId = 'khemavan';
-    this.currentSpot = null; // { name, x, y }
+    this.manualSpot = null; // { name, x, y } (when user manually sets spot)
+    this.currentGpsSpot = null; // { name, x, y } (auto-calculated from GPS)
+    this.gpsCalibration = DEFAULT_KHEMAVAN_CALIBRATION;
 
     // State
     this.state = {
@@ -45,6 +53,9 @@ class PhoneTrackerManager {
       latitude: null,
       longitude: null,
       accuracy: null,
+      x: 16.15,
+      y: 44.31,
+      locationName: 'ធម្មសភា',
       stationarySince: Date.now(),
       lastMovedAt: Date.now(),
       motionVariance: 0,
@@ -95,7 +106,34 @@ class PhoneTrackerManager {
     this.currentUser = user;
     this.currentTempleId = templeId;
     if (defaultSpot) {
-      this.currentSpot = defaultSpot;
+      this.manualSpot = defaultSpot;
+      this.state.isManualOverride = true;
+      this.state.x = defaultSpot.x;
+      this.state.y = defaultSpot.y;
+      this.state.locationName = defaultSpot.name;
+    }
+
+    // Subscribe to temple GPS calibration from Firebase
+    if (!this.calibrationUnsub) {
+      this.calibrationUnsub = subscribeToGpsCalibration((cal) => {
+        if (cal && cal.p1 && cal.p2) {
+          this.gpsCalibration = cal;
+          // Re-project if we already have GPS coordinates
+          if (this.state.latitude != null && this.state.longitude != null) {
+            const mapped = gpsToMapCoords(this.state.latitude, this.state.longitude, this.gpsCalibration);
+            if (mapped) {
+              const landmark = getNearestLandmark(mapped.x, mapped.y);
+              this.currentGpsSpot = { x: mapped.x, y: mapped.y, name: landmark.name };
+              if (!this.manualSpot) {
+                this.state.x = mapped.x;
+                this.state.y = mapped.y;
+                this.state.locationName = landmark.name;
+              }
+              this.notify();
+            }
+          }
+        }
+      }, templeId);
     }
 
     if (this.isActive) {
@@ -107,7 +145,7 @@ class PhoneTrackerManager {
     this.state.isTracking = true;
     this.state.error = null;
 
-    // 1. Geolocation watch
+    // 1. Geolocation watch (Satellite GPS)
     if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
       try {
         this.watchId = navigator.geolocation.watchPosition(
@@ -172,15 +210,69 @@ class PhoneTrackerManager {
       this.syncIntervalId = null;
     }
 
+    if (this.calibrationUnsub) {
+      this.calibrationUnsub();
+      this.calibrationUnsub = null;
+    }
+
     this.notify();
   }
 
   /**
-   * Set user assigned spot or location name
+   * Set user assigned spot manually (click on map or choose building)
    */
   setCurrentSpot(spot) {
-    this.currentSpot = spot;
+    this.manualSpot = spot;
+    this.state.isManualOverride = true;
+    if (spot) {
+      this.state.x = spot.x;
+      this.state.y = spot.y;
+      this.state.locationName = spot.name;
+    }
+    this.notify();
     this.syncToFirebase(true);
+  }
+
+  /**
+   * Switch back to Auto-GPS mode
+   */
+  resetToAutoGps() {
+    this.manualSpot = null;
+    this.state.isManualOverride = false;
+    if (this.state.latitude != null && this.state.longitude != null) {
+      const mapped = gpsToMapCoords(this.state.latitude, this.state.longitude, this.gpsCalibration);
+      if (mapped) {
+        const landmark = getNearestLandmark(mapped.x, mapped.y);
+        this.currentGpsSpot = { x: mapped.x, y: mapped.y, name: landmark.name };
+        this.state.x = mapped.x;
+        this.state.y = mapped.y;
+        this.state.locationName = landmark.name;
+      }
+    }
+    this.notify();
+    this.syncToFirebase(true);
+  }
+
+  /**
+   * Update active GPS calibration
+   */
+  setGpsCalibration(cal) {
+    if (!cal) return;
+    this.gpsCalibration = cal;
+    if (this.state.latitude != null && this.state.longitude != null) {
+      const mapped = gpsToMapCoords(this.state.latitude, this.state.longitude, this.gpsCalibration);
+      if (mapped) {
+        const landmark = getNearestLandmark(mapped.x, mapped.y);
+        this.currentGpsSpot = { x: mapped.x, y: mapped.y, name: landmark.name };
+        if (!this.manualSpot) {
+          this.state.x = mapped.x;
+          this.state.y = mapped.y;
+          this.state.locationName = landmark.name;
+        }
+        this.notify();
+        this.syncToFirebase(true);
+      }
+    }
   }
 
   /**
@@ -211,7 +303,6 @@ class PhoneTrackerManager {
       if (timeSec > 1) {
         const estSpeedMs = distMeters / timeSec;
         calculatedSpeedKmh = estSpeedMs * 3.6;
-        // If moved > 2.5 meters in a few seconds, user is walking
         if (distMeters > 2.5 && calculatedSpeedKmh > 1.2 && calculatedSpeedKmh < 25) {
           hasMoved = true;
         }
@@ -219,6 +310,18 @@ class PhoneTrackerManager {
     }
 
     this.prevPosition = { latitude, longitude, time: now };
+
+    // 🛰️ Georeferencing: Map real GPS (lat, lon) -> JPEG map percentage (x%, y%)
+    const mapped = gpsToMapCoords(latitude, longitude, this.gpsCalibration);
+    if (mapped) {
+      const landmark = getNearestLandmark(mapped.x, mapped.y);
+      this.currentGpsSpot = { x: mapped.x, y: mapped.y, name: landmark.name };
+      if (!this.manualSpot) {
+        this.state.x = mapped.x;
+        this.state.y = mapped.y;
+        this.state.locationName = landmark.name;
+      }
+    }
 
     if (!this.state.isManualOverride) {
       const isWalking = hasMoved || this.checkMotionSensorWalking();
@@ -244,12 +347,10 @@ class PhoneTrackerManager {
     const magnitude = Math.sqrt(x * x + y * y + z * z);
     this.recentAccelerations.push({ mag: magnitude, time: Date.now() });
 
-    // Keep last 30 samples (~1-2 seconds of motion)
     if (this.recentAccelerations.length > 30) {
       this.recentAccelerations.shift();
     }
 
-    // Compute variance
     if (this.recentAccelerations.length >= 10) {
       const avg = this.recentAccelerations.reduce((s, a) => s + a.mag, 0) / this.recentAccelerations.length;
       const variance = this.recentAccelerations.reduce((s, a) => s + Math.pow(a.mag - avg, 2), 0) / this.recentAccelerations.length;
@@ -258,7 +359,6 @@ class PhoneTrackerManager {
   }
 
   checkMotionSensorWalking() {
-    // Normal walking variance is usually > 0.8
     return this.state.motionVariance > 0.85;
   }
 
@@ -280,7 +380,6 @@ class PhoneTrackerManager {
       this.state.lastMovedAt = now;
       this.state.stationarySince = now;
     } else {
-      // Stationary: check if was walking previously
       if (prevActivity === 'walking') {
         this.state.stationarySince = now;
       }
@@ -291,7 +390,7 @@ class PhoneTrackerManager {
 
     this.notify();
 
-    // Trigger fast sync on state transition
+    // Fast sync on state transition
     if (prevActivity !== this.state.activity) {
       this.syncToFirebase(true);
     }
@@ -314,15 +413,9 @@ class PhoneTrackerManager {
       this.state.activity = 'stationary';
       this.state.activityText = 'នៅស្ងៀម';
       this.state.speedKmh = 0;
-      this.state.stationarySince = now - 180000; // pretend standing still for 3 min
+      this.state.stationarySince = now - 180000;
     }
 
-    this.notify();
-    this.syncToFirebase(true);
-  }
-
-  resetToAutoGps() {
-    this.state.isManualOverride = false;
     this.notify();
     this.syncToFirebase(true);
   }
@@ -334,7 +427,13 @@ class PhoneTrackerManager {
     if (!this.currentUser || !this.currentUser.id) return;
 
     const now = Date.now();
-    const spot = this.currentSpot || {};
+    const isManual = Boolean(this.manualSpot);
+    const activeSpot = this.manualSpot || this.currentGpsSpot || {
+      name: this.currentUser.assignedZone || 'ធម្មសភា',
+      x: 16.15,
+      y: 44.31
+    };
+
     const stationaryMinutes = this.state.activity === 'stationary'
       ? Math.max(0, Math.floor((now - this.state.stationarySince) / 60000))
       : 0;
@@ -345,9 +444,9 @@ class PhoneTrackerManager {
       role: this.currentUser.role || 'assistant',
       phone: this.currentUser.phone || '',
       assignedZone: this.currentUser.assignedZone || 'ផែន១ ៖ ធម្មសភា',
-      locationName: spot.name || this.currentUser.assignedZone || 'ធម្មសភា',
-      x: spot.x != null ? spot.x : 16.15,
-      y: spot.y != null ? spot.y : 44.31,
+      locationName: activeSpot.name || this.currentUser.assignedZone || 'ធម្មសភា',
+      x: activeSpot.x != null ? activeSpot.x : 16.15,
+      y: activeSpot.y != null ? activeSpot.y : 44.31,
       activity: this.state.activity,
       activityText: this.state.activityText,
       speedKmh: this.state.speedKmh,
@@ -355,11 +454,10 @@ class PhoneTrackerManager {
       latitude: this.state.latitude,
       longitude: this.state.longitude,
       accuracy: this.state.accuracy,
-      isAutoGps: !this.state.isManualOverride,
+      isAutoGps: !isManual,
       lastSyncAt: new Date().toISOString()
     };
 
-    // Deduplicate identical payloads unless forced
     const json = JSON.stringify({
       u: payload.userId,
       act: payload.activity,
@@ -367,7 +465,9 @@ class PhoneTrackerManager {
       min: payload.stationaryMinutes,
       loc: payload.locationName,
       x: payload.x,
-      y: payload.y
+      y: payload.y,
+      lat: payload.latitude,
+      lon: payload.longitude
     });
 
     if (!force && json === this.lastSyncPayloadJson) {
