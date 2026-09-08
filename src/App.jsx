@@ -43,7 +43,8 @@ import {
   seedFirebaseData,
   subscribeToFirebaseTemples,
   saveTemplesToFirebase,
-  migrateTempleFirebaseData
+  migrateTempleFirebaseData,
+  subscribeToFirebaseTab3Locations
 } from './utils/firebase';
 import { pushTagsToCloud, subscribeToCloudTags } from './utils/cloudSync';
 
@@ -564,9 +565,17 @@ export default function App() {
       currentTemple.id
     );
 
+    // 4. Preload & Prime Tab 3 Map Locations into localStorage cache
+    const unsubscribeTab3 = subscribeToFirebaseTab3Locations(
+      () => {},
+      () => {},
+      currentTemple.id
+    );
+
     return () => {
       unsubscribeCloud();
       unsubscribeFirebase();
+      unsubscribeTab3();
       clearTimeout(cloudSyncTimerRef.current);
     };
   }, [currentTemple.id]);
