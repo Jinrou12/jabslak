@@ -324,19 +324,6 @@ export default function Header({
             <span className="whitespace-nowrap font-bold">របាយការណ៍</span>
           </button>
 
-          {/* 📍 Zone Attendance Button (Direct button alongside Logo click) */}
-          <button
-            type="button"
-            onClick={onOpenZoneAttendance}
-            className="px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500/20 via-amber-400/20 to-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 shadow-md active:scale-95 transition-all shrink-0 font-kantumruy cursor-pointer"
-            title="គ្រប់គ្រងវត្តមានតាមផែន / ទីតាំង (Zone Attendance Checklist)"
-          >
-            <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
-            <span className="whitespace-nowrap font-bold">
-              {currentUser?.assignedZone && currentUser.assignedZone !== 'ALL' ? `ចាំ ${currentUser.assignedZone}` : 'ចាំតាមផែន'}
-            </span>
-          </button>
-
           {/* Excel Import / Export (PC/Desktop only - HIDDEN on Mobile phones) */}
           {(isOwner || isAdmin) && (
             <button
