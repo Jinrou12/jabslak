@@ -240,7 +240,7 @@ function getGroupColorKey(groupName, locationsList = []) {
   }
 
   // 2. Zone-based default fallback colors for standard zones (1 to 8)
-  const zoneMatch = cleanCat.match(/^(?:ផែន|zone)\s*([១២៣៤៥៦៧៨1-8])/i);
+  const zoneMatch = cleanCat.match(/^(?:ផែន|ដែន|zone)\s*([១២៣៤៥៦៧៨1-8])/i);
   if (zoneMatch) {
     const digit = parseInt(khmerToWesternDigits(zoneMatch[1]), 10);
     const zoneColorMap = {
@@ -661,35 +661,66 @@ const categoryMigrationMap = {
   'ធម្មសភា': 'ផែន១ ៖ ធម្មសភា',
   'សាលាធម្មសភា': 'ផែន១ ៖ ធម្មសភា',
   'ធម្មសាលាសភា': 'ផែន១ ៖ ធម្មសភា',
+  'ដែន១ ៖ ធម្មសភា': 'ផែន១ ៖ ធម្មសភា',
+  'ដែន១': 'ផែន១ ៖ ធម្មសភា',
+  'ផែន១': 'ផែន១ ៖ ធម្មសភា',
   'សាលាឆាន់': 'ផែន២ ៖ សាលាឆាន់ចាស់',
   'សាលាឆាន់ចាស់': 'ផែន២ ៖ សាលាឆាន់ចាស់',
+  'ដែន២ ៖ សាលាឆាន់ចាស់': 'ផែន២ ៖ សាលាឆាន់ចាស់',
+  'ដែន២': 'ផែន២ ៖ សាលាឆាន់ចាស់',
+  'ផែន២': 'ផែន២ ៖ សាលាឆាន់ចាស់',
   'មុខសាលាឆាន់ចាស់': 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់',
+  'ដែន៣ ៖ មុខសាលាឆាន់ចាស់': 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់',
+  'ដែន៣': 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់',
+  'ផែន៣': 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់',
   'ព្រះបរិនិព្វាន': 'ផែន៤ ៖ ព្រះបរិនិព្វាន',
+  'ដែន៤ ៖ ព្រះបរិនិព្វាន': 'ផែន៤ ៖ ព្រះបរិនិព្វាន',
+  'ដែន៤': 'ផែន៤ ៖ ព្រះបរិនិព្វាន',
+  'ផែន៤': 'ផែន៤ ៖ ព្រះបរិនិព្វាន',
   'បណ្ណាល័យ': 'ផែន៥ ៖ បណ្ណាល័យ',
+  'ដែន៥ ៖ បណ្ណាល័យ': 'ផែន៥ ៖ បណ្ណាល័យ',
+  'ដែន៥': 'ផែន៥ ៖ បណ្ណាល័យ',
+  'ផែន៥': 'ផែន៥ ៖ បណ្ណាល័យ',
   'ព្រះផ្ទម': 'ផែន៦ ៖ ព្រះផ្ទម',
+  'ព្រះផ្ទំ': 'ផែន៦ ៖ ព្រះផ្ទម',
+  'ដែន៦ ៖ ព្រះផ្ទម': 'ផែន៦ ៖ ព្រះផ្ទម',
+  'ដែន៦': 'ផែន៦ ៖ ព្រះផ្ទម',
+  'ផែន៦': 'ផែន៦ ៖ ព្រះផ្ទម',
   'តាមកុដិ': 'ផែន៧ ៖ តាមកុដិ',
   'កុដិ': 'ផែន៧ ៖ តាមកុដិ',
   'កុដិព្រះសង្ឃ': 'ផែន៧ ៖ តាមកុដិ',
-  'សាលារៀន': 'ផែន៨ ៖ សាលារៀន'
+  'ដែន៧ ៖ តាមកុដិ': 'ផែន៧ ៖ តាមកុដិ',
+  'ដែន៧': 'ផែន៧ ៖ តាមកុដិ',
+  'ផែន៧': 'ផែន៧ ៖ តាមកុដិ',
+  'សាលារៀន': 'ផែន៨ ៖ សាលារៀន',
+  'ដែន៨ ៖ សាលារៀន': 'ផែន៨ ៖ សាលារៀន',
+  'ដែន៨': 'ផែន៨ ៖ សាលារៀន',
+  'ផែន៨': 'ផែន៨ ៖ សាលារៀន'
 };
 
 function autoMigrateCategory(cat, locName = '', locId = '') {
-  const locStr = String(locName || '').replace(/[\u200B\uFEFF]|\u200C|\u200D/g, '').trim().normalize('NFC');
+  const locStr = String(locName || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
   const idStr = String(locId || '').trim();
 
   // 1. If location is specifically ធម្មសាលាសភា or ID 1 or contains ធម្មសភា / សាលាធម្មសភា and has no valid category or old category, assign to ផែន១ ៖ ធម្មសភា
-  if ((locStr.includes('ធម្មសភា') || locStr.includes('ធម្មសាលាសភា') || idStr === '១' || idStr === '1') && (!cat || cat === 'ដើម' || cat === 'ធម្មសភា' || cat === 'សាលាធម្មសភា')) {
+  if ((locStr.includes('ធម្មសភា') || locStr.includes('ធម្មសាលាសភា') || idStr === '១' || idStr === '1') && (!cat || cat === 'ដើម' || cat === 'ធម្មសភា' || cat === 'សាលាធម្មសភា' || cat === 'ដែន១ ៖ ធម្មសភា' || cat === 'ដែន១')) {
     return 'ផែន១ ៖ ធម្មសភា';
   }
 
   if (!cat) return cat;
-  const norm = String(cat).replace(/[\u200B\uFEFF]|\u200C|\u200D/g, '').trim().normalize('NFC');
+  let norm = String(cat).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
+  
+  // Normalize ដែន -> ផែន
+  if (norm.startsWith('ដែន')) {
+    norm = 'ផែន' + norm.slice(3);
+  }
+
   for (const [oldKey, newName] of Object.entries(categoryMigrationMap)) {
-    if (String(oldKey).replace(/[\u200B\uFEFF]|\u200C|\u200D/g, '').trim().normalize('NFC') === norm) {
+    if (String(oldKey).replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC') === norm) {
       return newName;
     }
   }
-  return cat;
+  return norm;
 }
 
 export default function TempleMapModal({
@@ -766,12 +797,27 @@ export default function TempleMapModal({
   // Tab 1 & Tab 2 share this state (scoped to current temple)
   const [locations, setLocations] = useState(() => getSavedTempleLocations(currentTempleId));
   // Tab 3 has its own INDEPENDENT state (scoped to current temple: starts EMPTY [] for other temples)
-  const [tab3Locations, setTab3Locations] = useState(() => getSavedTab3Locations(currentTempleId));
+  const [tab3Locations, setTab3Locations] = useState(() => {
+    const raw = getSavedTab3Locations(currentTempleId);
+    if (isKhemavan && Array.isArray(raw)) {
+      const existingIds = new Set(raw.map((l) => String(l.id || '').trim()));
+      const missing = INITIAL_TEMPLE_LOCATIONS.filter((b) => !existingIds.has(String(b.id).trim()));
+      if (missing.length > 0) return [...raw, ...missing];
+    }
+    return raw;
+  });
   const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ នៅស្លាកលើ Map)
 
   useEffect(() => {
     setLocations(getSavedTempleLocations(currentTempleId));
-    setTab3Locations(getSavedTab3Locations(currentTempleId));
+    const raw3 = getSavedTab3Locations(currentTempleId);
+    if (isKhemavan && Array.isArray(raw3)) {
+      const existingIds = new Set(raw3.map((l) => String(l.id || '').trim()));
+      const missing = INITIAL_TEMPLE_LOCATIONS.filter((b) => !existingIds.has(String(b.id).trim()));
+      setTab3Locations(missing.length > 0 ? [...raw3, ...missing] : raw3);
+    } else {
+      setTab3Locations(raw3);
+    }
     const mgrKey = isKhemavan ? 'TEMPLE_GROUP_MANAGERS_V1' : `TEMPLE_GROUP_MANAGERS_${currentTempleId.toUpperCase()}`;
     try {
       const savedMgr = localStorage.getItem(mgrKey);
@@ -817,7 +863,18 @@ export default function TempleMapModal({
   const effectiveTab3Locations = useMemo(() => {
     const { byNumber, byDisplay, byBaseLocation } = tagLookups;
 
-    const mapped = tab3Locations.map((loc) => {
+    // For Wat Khemavan, preserve base building & gate pins from INITIAL_TEMPLE_LOCATIONS
+    let rawTab3 = [...tab3Locations];
+    if (isKhemavan) {
+      const existingIds = new Set(rawTab3.map((l) => String(l.id || '').trim()));
+      INITIAL_TEMPLE_LOCATIONS.forEach((baseLoc) => {
+        if (!existingIds.has(String(baseLoc.id).trim())) {
+          rawTab3.push({ ...baseLoc });
+        }
+      });
+    }
+
+    const mapped = rawTab3.map((loc) => {
       const locIdStr = String(loc.id || '').trim();
       
       // Look up authentic original location name from INITIAL_TEMPLE_LOCATIONS ONLY for Wat Khemavan base building/gate pins
@@ -921,7 +978,7 @@ export default function TempleMapModal({
     });
 
     return result;
-  }, [tab3Locations, tagLookups]);
+  }, [tab3Locations, tagLookups, isKhemavan]);
 
   // Filter out visitor tag pins from Tab 1 & Tab 2 locations so Tab 1 & Tab 2 NEVER display visitor tag pins
   const baseMapLocations = useMemo(() => {
@@ -929,7 +986,7 @@ export default function TempleMapModal({
   }, [locations]);
 
   // Computed: which locations array to use based on active tab
-  const currentLocations = effectiveTab3Locations;
+  const currentLocations = activeTab === 'tagger' ? effectiveTab3Locations : baseMapLocations;
   const getGroupBadgeColor = (groupName) => getGroupColorKey(groupName, currentLocations);
   const [zoomScale, setZoomScale] = useState(1.0);
   const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin circle size in px (14px)
@@ -1009,7 +1066,7 @@ export default function TempleMapModal({
   const [redoStack, setRedoStack] = useState([]);
   const [undoToast, setUndoToast] = useState('');
 
-  // Track deleted categories so deleted groups disappear completely (PROTECT core preset 8 zones for Wat Khemavan ONLY!)
+  // Track deleted categories so deleted groups disappear completely (PROTECT core preset zones for Wat Khemavan ONLY!)
   const CORE_PRESET_ZONES = useMemo(() => isKhemavan ? [
     'ផែន១ ៖ ធម្មសភា',
     'ផែន២ ៖ សាលាឆាន់ចាស់',
@@ -1019,9 +1076,8 @@ export default function TempleMapModal({
     'ផែន៦ ៖ ព្រះផ្ទម',
     'ផែន៧ ៖ តាមកុដិ',
     'ផែន៨ ៖ សាលារៀន',
-    'ធម្មសភា',
-    'សាលាធម្មសភា',
-    'ធម្មសាលាសភា'
+    '⛩️ ក្រុមខ្លោងទ្វារវត្ត',
+    '🏢 ក្រុមអគារ និង កុដិ'
   ] : [], [isKhemavan]);
 
   const [deletedCategories, setDeletedCategories] = useState(() => {
@@ -1029,7 +1085,12 @@ export default function TempleMapModal({
       const key = isKhemavan ? 'TEMPLE_DELETED_GROUPS_V1' : `TEMPLE_DELETED_GROUPS_${currentTempleId.toUpperCase()}`;
       const saved = localStorage.getItem(key);
       const list = saved ? JSON.parse(saved) : [];
-      return isKhemavan ? list.filter((c) => !['ផែន១ ៖ ធម្មសភា', 'ផែន២ ៖ សាលាឆាន់ចាស់', 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់', 'ផែន៤ ៖ ព្រះបរិនិព្វាន', 'ផែន៥ ៖ បណ្ណាល័យ', 'ផែន៦ ៖ ព្រះផ្ទម', 'ផែន៧ ៖ តាមកុដិ', 'ផែន៨ ៖ សាលារៀន', 'ធម្មសភា', 'សាលាធម្មសភា', 'ធម្មសាលាសភា'].includes(c)) : list;
+      return isKhemavan ? list.filter((c) => ![
+        'ផែន១ ៖ ធម្មសភា', 'ផែន២ ៖ សាលាឆាន់ចាស់', 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់', 'ផែន៤ ៖ ព្រះបរិនិព្វាន',
+        'ផែន៥ ៖ បណ្ណាល័យ', 'ផែន៦ ៖ ព្រះផ្ទម', 'ផែន៧ ៖ តាមកុដិ', 'ផែន៨ ៖ សាលារៀន',
+        '⛩️ ក្រុមខ្លោងទ្វារវត្ត', '🏢 ក្រុមអគារ និង កុដិ',
+        'ធម្មសភា', 'សាលាធម្មសភា', 'ធម្មសាលាសភា', 'ដែន១ ៖ ធម្មសភា', 'ដែន១'
+      ].includes(c)) : list;
     } catch {
       return [];
     }
@@ -1209,7 +1270,13 @@ export default function TempleMapModal({
       (cloudLocations) => {
         if (Array.isArray(cloudLocations)) {
           if (isKhemavan && cloudLocations.length === 0) return;
-          setTab3Locations(cloudLocations);
+          if (isKhemavan) {
+            const existingIds = new Set(cloudLocations.map((l) => String(l.id || '').trim()));
+            const missing = INITIAL_TEMPLE_LOCATIONS.filter((b) => !existingIds.has(String(b.id).trim()));
+            setTab3Locations(missing.length > 0 ? [...cloudLocations, ...missing] : cloudLocations);
+          } else {
+            setTab3Locations(cloudLocations);
+          }
         }
       },
       (err) => {
@@ -1452,8 +1519,8 @@ export default function TempleMapModal({
   const getCategorySortOrder = (catName) => {
     const norm = String(catName || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
     
-    // Check if starts with "ផែន" followed by Khmer or Western digits
-    const match = norm.match(/^ផែន\s*([១២៣៤៥៦៧៨1-8]+)/);
+    // Check if starts with "ផែន" or "ដែន" followed by Khmer or Western digits
+    const match = norm.match(/^(?:ផែន|ដែន)\s*([១២៣៤៥៦៧៨1-8]+)/);
     if (match) {
       const numStr = match[1];
       const westernNum = parseInt(khmerToWesternDigits(numStr), 10);
@@ -1472,6 +1539,14 @@ export default function TempleMapModal({
   // Categories list (Sorted numerically: ផែន១, ផែន២, ផែន៣, ផែន៤, ផែន៥, ផែន៦, ផែន៧, ផែន៨, ដើម, etc.)
   const categoryGroups = useMemo(() => {
     const rawGroups = {};
+
+    // For Wat Khemavan, ALWAYS initialize all official core preset Phaen & building groups
+    if (isKhemavan) {
+      CORE_PRESET_ZONES.forEach((zone) => {
+        if (!rawGroups[zone]) rawGroups[zone] = [];
+      });
+    }
+
     currentLocations.forEach((loc) => {
       const cat = autoMigrateCategory(loc.category, loc.name, loc.id);
       if (!cat) return;
@@ -1493,15 +1568,15 @@ export default function TempleMapModal({
     });
 
     return sortedGroups;
-  }, [currentLocations, deletedCategories, CORE_PRESET_ZONES]);
+  }, [currentLocations, deletedCategories, CORE_PRESET_ZONES, isKhemavan]);
 
   const availableCategories = useMemo(() => {
     const cats = new Set();
     Object.keys(categoryGroups).forEach((c) => {
-      if (!deletedCategories.includes(c)) cats.add(c);
+      if (!deletedCategories.includes(c) || (isKhemavan && CORE_PRESET_ZONES.includes(c))) cats.add(c);
     });
     return Array.from(cats);
-  }, [categoryGroups, deletedCategories]);
+  }, [categoryGroups, deletedCategories, CORE_PRESET_ZONES, isKhemavan]);
 
   // Zoom handlers (clamped between 0.4x and 5.0x with center focal preservation)
   const handleZoom = (delta) => {
@@ -2785,6 +2860,11 @@ export default function TempleMapModal({
   const handleDeleteGroup = () => {
     if (!editingGroupName) return;
 
+    if (isKhemavan && CORE_PRESET_ZONES.includes(editingGroupName)) {
+      alert(`មិនអាចលុប «${editingGroupName}» បានទេ ព្រោះជាផែនស្តង់ដារបស់វត្ត!`);
+      return;
+    }
+
     const isConfirmed = window.confirm(
       `តើអ្នកពិតជាចង់លុប Group «${editingGroupName}» នេះមែនទេ?\n\n` +
       `• Group នេះ និងរាល់ Pin ទីតាំង/ស្លាកលេខទាំងអស់ក្នុង Group នេះ នឹងត្រូវលុបបាត់ពីប្រព័ន្ធ!`
@@ -3567,7 +3647,7 @@ export default function TempleMapModal({
 
                   {Object.keys(categoryGroups).map((catName) => {
                     const items = categoryGroups[catName] || [];
-                    const groupMeta = getGroupMetaFromItems(items);
+                    const groupMeta = getGroupMetaFromItems(items, catName);
                     const isSelected = selectedCategory === catName;
                     return (
                       <button
@@ -3579,7 +3659,7 @@ export default function TempleMapModal({
                             : `bg-slate-900 ${groupMeta.text} hover:opacity-100 border-slate-800`
                         }`}
                       >
-                        {catName}
+                        {catName} ({items.length})
                       </button>
                     );
                   })}
@@ -3608,7 +3688,8 @@ export default function TempleMapModal({
                 const filteredItems = items.filter((loc) =>
                   filteredLegendLocations.some((fl) => String(fl.id || '').trim() === String(loc.id || '').trim())
                 );
-                if (filteredItems.length === 0) return null;
+                const hasSearch = Boolean(searchQuery.trim());
+                if (filteredItems.length === 0 && (hasSearch || !isKhemavan || !CORE_PRESET_ZONES.includes(catName))) return null;
 
                 const isOpen = openAccordions[catName] !== false;
                 const groupMeta = getGroupMetaFromItems(items, catName);
@@ -3758,7 +3839,8 @@ export default function TempleMapModal({
 
                     {/* Accordion Content Grid */}
                     {isOpen && (
-                      <div className="p-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+                      filteredItems.length > 0 ? (
+                        <div className="p-2.5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
                         {filteredItems.map((loc, locIdx) => {
                           const isGate = loc.type === 'gate';
                           const tagCount = tagCountsByLocation[loc.id] || 0;
@@ -3866,7 +3948,35 @@ export default function TempleMapModal({
                           );
                         })}
                       </div>
-                    )}
+                    ) : (
+                      <div className="p-3.5 text-center text-xs text-slate-400 bg-slate-950/40 rounded-xl border border-dashed border-slate-800 m-2.5">
+                        <p className="mb-2 font-medium text-slate-300">មិនទាន់មានទីតាំងដៅក្នុង {catName} នៅឡើយទេ</p>
+                        {canCustomizeTab && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const groupColor = getGroupBadgeColor(catName);
+                              setEditingLoc({ isNew: true, x: 50, y: 50 });
+                              setModalForm({
+                                id: getNextDefaultLocationId(currentLocations),
+                                name: '',
+                                badgeColor: groupColor || 'orange',
+                                type: catName.includes('ខ្លោងទ្វារ') ? 'gate' : 'building',
+                                pos: 'R',
+                                category: catName
+                              });
+                              setFormError('');
+                              setIsEditModalOpen(true);
+                            }}
+                            className="px-3 py-1.5 bg-amber-500/20 text-amber-300 hover:bg-amber-500 hover:text-slate-950 rounded-lg text-xs font-bold border border-amber-500/40 transition-all inline-flex items-center gap-1.5 shadow-sm"
+                          >
+                            <Plus className="w-3.5 h-3.5" /> ដៅទីតាំងថ្មីក្នុង {catName}
+                          </button>
+                        )}
+                      </div>
+                    )
+                  )}
                   </div>
                 );
               })}
