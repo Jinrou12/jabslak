@@ -51,8 +51,11 @@ import {
   subscribeToGroupSettings,
   saveGroupSettingsToFirebase as rawSaveGroupSettingsToFirebase,
   subscribeToTeamLiveLocations,
+  saveUserLiveLocation,
+  sendTeamSOSAlert,
   clearTeamSOSAlert
 } from '../utils/firebase';
+import { phoneTracker } from '../utils/phoneTracker';
 import { getTempleCustomMapImage, saveTempleCustomMapImage, compressImage } from '../utils/templeStorage';
 import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName, formatTagRanges } from '../utils/khmerSearch';
 
@@ -842,10 +845,91 @@ export default function TempleMapModal({
   const [showTeamTracker, setShowTeamTracker] = useState(true);
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
 
+  // 👥 Tab 4 Team Interactive Spot Positioning State
+  const [isSettingMySpot, setIsSettingMySpot] = useState(false);
+  const [teamFilter, setTeamFilter] = useState('all'); // 'all' | 'walking' | 'stationary' | 'sos'
+  const [isSpotDropdownOpen, setIsSpotDropdownOpen] = useState(false);
+
   useEffect(() => {
     const unsub = subscribeToTeamLiveLocations(setTeamLiveLocations, currentTempleId);
     return () => unsub();
   }, [currentTempleId]);
+
+  const handleSetMySpotFromClick = async (e) => {
+    if (!mapContainerRef.current) return;
+    const rect = mapContainerRef.current.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    const pctX = parseFloat(((clickX / rect.width) * 100).toFixed(2));
+    const pctY = parseFloat(((clickY / rect.height) * 100).toFixed(2));
+
+    // Find nearest landmark/building for human-friendly name
+    let nearestLoc = null;
+    let minDist = 9999;
+    INITIAL_TEMPLE_LOCATIONS.forEach((b) => {
+      const dist = Math.hypot(b.x - pctX, b.y - pctY);
+      if (dist < minDist) {
+        minDist = dist;
+        nearestLoc = b;
+      }
+    });
+
+    const spotName = nearestLoc && minDist < 15
+      ? (minDist < 4 ? nearestLoc.name : `ជិត ${nearestLoc.name}`)
+      : 'ទីតាំងលើ Map';
+
+    const userId = currentUser?.id || 'u-self';
+    const updatedRecord = {
+      userId: userId,
+      userName: currentUser?.name || currentUser?.username || 'ក្រុមការងារ',
+      role: currentUser?.role || 'assistant',
+      phone: currentUser?.phone || '',
+      assignedZone: currentUser?.assignedZone || 'ផែន១ ៖ ធម្មសភា',
+      locationName: spotName,
+      x: pctX,
+      y: pctY,
+      activity: 'stationary',
+      activityText: 'នៅស្ងៀម',
+      speedKmh: 0,
+      updatedAt: new Date().toISOString()
+    };
+
+    phoneTracker.setCurrentSpot({ name: spotName, x: pctX, y: pctY });
+    await saveUserLiveLocation(updatedRecord, currentTempleId);
+
+    setIsSettingMySpot(false);
+    setSelectedTeamMember(updatedRecord);
+    setUndoToast(`📍 បានកំណត់ទីតាំងអ្នកនៅ «${spotName}» (X: ${pctX}%, Y: ${pctY}%) ជោគជ័យ!`);
+    setTimeout(() => setUndoToast(''), 4000);
+  };
+
+  const handleSetMySpotFromDropdown = async (spot) => {
+    if (!spot) return;
+    setIsSpotDropdownOpen(false);
+
+    const userId = currentUser?.id || 'u-self';
+    const updatedRecord = {
+      userId: userId,
+      userName: currentUser?.name || currentUser?.username || 'ក្រុមការងារ',
+      role: currentUser?.role || 'assistant',
+      phone: currentUser?.phone || '',
+      assignedZone: currentUser?.assignedZone || 'ផែន១ ៖ ធម្មសភា',
+      locationName: spot.name,
+      x: spot.x,
+      y: spot.y,
+      activity: 'stationary',
+      activityText: 'នៅស្ងៀម',
+      speedKmh: 0,
+      updatedAt: new Date().toISOString()
+    };
+
+    phoneTracker.setCurrentSpot({ name: spot.name, x: spot.x, y: spot.y });
+    await saveUserLiveLocation(updatedRecord, currentTempleId);
+
+    setSelectedTeamMember(updatedRecord);
+    setUndoToast(`📍 បានផ្លាស់ប្តូរទីតាំងទៅ «${spot.name}» ជោគជ័យ!`);
+    setTimeout(() => setUndoToast(''), 4000);
+  };
 
   // Group tags by person name for dropdown selector & pins
   const groupedAllTags = useMemo(() => {
@@ -999,7 +1083,7 @@ export default function TempleMapModal({
   }, [locations]);
 
   // Computed: which locations array to use based on active tab
-  const currentLocations = activeTab === 'tagger' ? effectiveTab3Locations : baseMapLocations;
+  const currentLocations = activeTab === 'tagger' ? effectiveTab3Locations : activeTab === 'team' ? INITIAL_TEMPLE_LOCATIONS : baseMapLocations;
   const getGroupBadgeColor = (groupName) => getGroupColorKey(groupName, currentLocations);
   const [zoomScale, setZoomScale] = useState(1.0);
   const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin circle size in px (14px)
@@ -2048,8 +2132,12 @@ export default function TempleMapModal({
     handleGroupPinPlacement(pctX, pctY);
   };
 
-  // Map Click (Add new pin on Tab 2 or Tab 3 or Pin Group)
+  // Map Click (Add new pin on Tab 2 or Tab 3 or Pin Group or Set Team Member Spot on Tab 4)
   const handleMapClick = (e) => {
+    if (isSettingMySpot) {
+      handleSetMySpotFromClick(e);
+      return;
+    }
     if (!canCustomizeTab && !pinningGroupMode) return;
     if (draggingPinId) return;
     if (!pinningGroupMode && pinMovedFlagRef.current) return;
@@ -3100,6 +3188,22 @@ export default function TempleMapModal({
               <span className="hidden sm:inline">🏷️ ផ្ទាំងទី៣ ៖ ដៅស្លាកលេខលើ Map</span>
             </button>
 
+            <button
+              onClick={() => {
+                setActiveTab('team');
+                setShowTeamTracker(true);
+              }}
+              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap cursor-pointer ${
+                activeTab === 'team'
+                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 font-black'
+                  : 'text-emerald-400 hover:text-emerald-200'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5 shrink-0" />
+              <span className="sm:hidden">👥 ផ្ទាំងទី៤</span>
+              <span className="hidden sm:inline">👥 ផ្ទាំងទី៤ ៖ រកទីកន្លែងក្រុមការងារ</span>
+            </button>
+
             <div className="h-4 w-px bg-slate-800 mx-0.5 shrink-0"></div>
 
             {/* Toggle Compass Button */}
@@ -3390,12 +3494,27 @@ export default function TempleMapModal({
                 </div>
               )}
 
+              {/* 📍 Interactive Setting My Spot Top Floating Banner */}
+              {isSettingMySpot && (
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 bg-emerald-500 text-slate-950 px-4 py-2 rounded-2xl shadow-2xl flex items-center gap-2 border-2 border-white font-bold text-xs sm:text-sm animate-bounce pointer-events-auto">
+                  <MapPin className="w-5 h-5 text-slate-950 shrink-0" />
+                  <span>📍 សូមចុចលើទីតាំងដែលអ្នកកំពុងនៅជាក់ស្តែងលើ Map</span>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); setIsSettingMySpot(false); }}
+                    className="ml-2 px-2.5 py-1 bg-slate-950 text-white rounded-xl text-xs hover:bg-slate-800 font-kantumruy font-bold cursor-pointer"
+                  >
+                    បោះបង់ (Cancel)
+                  </button>
+                </div>
+              )}
+
               {/* Scalable Map Box */}
               {activeMapSrc ? (
                 <div
                   ref={mapContainerRef}
                   onClick={handleMapClick}
-                  className="relative w-full mx-auto origin-top-left"
+                  className={`relative w-full mx-auto origin-top-left ${isSettingMySpot ? 'cursor-crosshair ring-4 ring-emerald-400/60' : ''}`}
                   style={{
                     width: `${zoomScale * 100}%`,
                     minWidth: '100%',
@@ -3439,43 +3558,64 @@ export default function TempleMapModal({
                   {/* ════════ MAP PIN MARKERS & MATHEMATICALLY LOCKED BADGES ════════ */}
                   {isPinsVisible && (
                     <div className="absolute inset-0 z-20 pointer-events-none">
-                      {currentLocations.map((loc, locIdx) => {
-                        const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
-                        if (hiddenCategories[locCat]) return null;
+                      {activeTab === 'team' ? (
+                        /* 🏢 Clean subtle authentic temple landmarks on Tab 4 */
+                        INITIAL_TEMPLE_LOCATIONS.map((loc) => (
+                          <div
+                            key={`landmark-${loc.id}`}
+                            style={{
+                              position: 'absolute',
+                              left: `${loc.x}%`,
+                              top: `${loc.y}%`,
+                              zIndex: 15
+                            }}
+                            className="-translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center opacity-85"
+                          >
+                            <div className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-slate-950/80 shadow-md"></div>
+                            <span className="mt-0.5 px-1.5 py-0.5 rounded bg-slate-950/90 text-[9px] text-amber-200/95 font-bold font-kantumruy whitespace-nowrap shadow border border-slate-800 pointer-events-none">
+                              {loc.name}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        currentLocations.map((loc, locIdx) => {
+                          const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+                          if (hiddenCategories[locCat]) return null;
 
-                        const currentPinSize = groupPinSizes[locCat] || pinSizePx;
-                        const isCategoryLocked = lockedCategories[locCat];
-                        const isHighlighted =
-                          selectedLocation?.id === loc.id ||
-                          hoveredLocation?.id === loc.id;
-                        const isHovered = hoveredLocation?.id === loc.id;
+                          const currentPinSize = groupPinSizes[locCat] || pinSizePx;
+                          const isCategoryLocked = lockedCategories[locCat];
+                          const isHighlighted =
+                            selectedLocation?.id === loc.id ||
+                            hoveredLocation?.id === loc.id;
+                          const isHovered = hoveredLocation?.id === loc.id;
 
-                        const isCurrentlyDragging = draggingPinId === loc.id;
-                        const canDragThisPin = canCustomizeTab && canUserDragPins && activeTab !== 'labeled' && !isCategoryLocked;
+                          const isCurrentlyDragging = draggingPinId === loc.id;
+                          const canDragThisPin = canCustomizeTab && canUserDragPins && activeTab !== 'labeled' && !isCategoryLocked;
 
-                        return (
-                          <PinItem
-                            key={loc.id}
-                            loc={loc}
-                            locIdx={locIdx}
-                            activeTab={activeTab}
-                            currentPinSize={currentPinSize}
-                            isHighlighted={isHighlighted}
-                            isHovered={isHovered}
-                            isCurrentlyDragging={isCurrentlyDragging}
-                            canDragThisPin={canDragThisPin}
-                            onPinDragStart={handlePinDragStart}
-                            onMapClick={handleMapClick}
-                            pinMovedFlagRef={pinMovedFlagRef}
-                            pinningGroupMode={pinningGroupMode}
-                            setSelectedLocation={setSelectedLocation}
-                            setHoveredLocation={setHoveredLocation}
-                          />
-                        );
-                      })}
+                          return (
+                            <PinItem
+                              key={loc.id}
+                              loc={loc}
+                              locIdx={locIdx}
+                              activeTab={activeTab}
+                              currentPinSize={currentPinSize}
+                              isHighlighted={isHighlighted}
+                              isHovered={isHovered}
+                              isCurrentlyDragging={isCurrentlyDragging}
+                              canDragThisPin={canDragThisPin}
+                              onPinDragStart={handlePinDragStart}
+                              onMapClick={handleMapClick}
+                              pinMovedFlagRef={pinMovedFlagRef}
+                              pinningGroupMode={pinningGroupMode}
+                              setSelectedLocation={setSelectedLocation}
+                              setHoveredLocation={setHoveredLocation}
+                            />
+                          );
+                        })
+                      )}
 
                       {/* 👥 Live Team Tracker Pins on the Temple Map */}
-                      {showTeamTracker && teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((member) => {
+                      {(showTeamTracker || activeTab === 'team') && teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((member) => {
                         const isSos = Boolean(member.needHelp);
                         const roleGradient = member.role === 'admin'
                           ? 'from-amber-400 via-amber-500 to-amber-600 text-slate-950'
@@ -3491,7 +3631,7 @@ export default function TempleMapModal({
                               top: `${member.y}%`,
                               zIndex: isSos ? 99 : 45
                             }}
-                            className="pointer-events-auto -translate-x-1/2 -translate-y-1/2 cursor-pointer group"
+                            className={`-translate-x-1/2 -translate-y-1/2 cursor-pointer group ${isSettingMySpot ? 'pointer-events-none' : 'pointer-events-auto'}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedTeamMember(member);
@@ -3781,8 +3921,244 @@ export default function TempleMapModal({
             )}
           </div>
 
-          {/* ════════ LOCATION LIST / LEGEND ACCORDION SECTION ════════ */}
-          <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-3 sm:p-4 space-y-2.5">
+          {/* ════════ TAB 4: TEAM TRACKER OR TAB 1-3 LEGEND ACCORDION ════════ */}
+          {activeTab === 'team' ? (
+            <div className="bg-slate-950/90 border border-emerald-500/40 rounded-2xl p-3 sm:p-5 space-y-4 shadow-2xl font-kantumruy">
+              {/* Team Panel Header */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40 shadow-inner">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <h3 className="font-moul text-sm sm:text-base text-emerald-400">
+                      👥 ផ្ទាំងទី៤ ៖ រកទីកន្លែងក្រុមការងារ (Team Tracker)
+                    </h3>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-1">
+                    តាមដានទីតាំងផ្ទាល់របស់ Admin & Assistant តាមផែននីមួយៗ លើផែនទីវត្តអារាម (Real-time GPS / Spot)
+                  </p>
+                </div>
+
+                {/* Action Buttons: Set My Spot + Dropdown */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Interactive Pin-on-map button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSettingMySpot(true);
+                      viewportRef.current?.scrollIntoView({ behavior: 'smooth' });
+                    }}
+                    className={`px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all shadow-lg cursor-pointer ${
+                      isSettingMySpot
+                        ? 'bg-amber-400 text-slate-950 ring-4 ring-amber-400/50 animate-pulse'
+                        : 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-emerald-500/30 active:scale-95'
+                    }`}
+                  >
+                    <MapPin className="w-4 h-4 shrink-0" />
+                    <span>{isSettingMySpot ? '📍 ចុចលើ Map ដើម្បីដៅ' : '📍 ដៅ / រំកិលទីតាំងខ្ញុំលើ Map'}</span>
+                  </button>
+
+                  {/* Building Dropdown Selector */}
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsSpotDropdownOpen(!isSpotDropdownOpen)}
+                      className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <span>🏢 រើសទីតាំងអគារ</span>
+                      <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                    </button>
+
+                    {isSpotDropdownOpen && (
+                      <div className="absolute right-0 top-full mt-1 w-64 max-h-64 overflow-y-auto bg-slate-900 border border-slate-700 rounded-xl shadow-2xl p-1.5 z-50 animate-in fade-in slide-in-from-top-2">
+                        <div className="px-2 py-1 text-[11px] text-slate-400 font-bold border-b border-slate-800 mb-1">
+                          រើសទីតាំងអគារដើម្បីកំណត់ទីតាំងអ្នក ៖
+                        </div>
+                        {INITIAL_TEMPLE_LOCATIONS.map((b) => (
+                          <button
+                            key={b.id}
+                            type="button"
+                            onClick={() => handleSetMySpotFromDropdown(b)}
+                            className="w-full text-left px-2.5 py-1.5 rounded-lg text-xs text-slate-200 hover:bg-emerald-600 hover:text-white transition-colors flex items-center justify-between cursor-pointer"
+                          >
+                            <span className="truncate">{b.name}</span>
+                            <span className="text-[10px] text-slate-400 ml-1">
+                              ({b.x}%, {b.y}%)
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* SOS Quick Button for Current User */}
+                  {(() => {
+                    const myId = currentUser?.id || 'u-self';
+                    const myRecord = teamLiveLocations.find((m) => m.userId === myId);
+                    const isMySos = Boolean(myRecord?.needHelp);
+                    return (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (isMySos) {
+                            await clearTeamSOSAlert(currentTempleId);
+                            setUndoToast('✅ បានដកសញ្ញាអាសន្ន SOS រួចរាល់');
+                          } else {
+                            await sendTeamSOSAlert({ reason: 'ត្រូវការជំនួយបន្ទាន់នៅទីតាំង' }, currentTempleId);
+                            setUndoToast('🚨 បានផ្ញើសញ្ញាអាសន្ន SOS ទៅកាន់ក្រុមការងារទាំងអស់!');
+                          }
+                          setTimeout(() => setUndoToast(''), 4000);
+                        }}
+                        className={`px-3 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-1.5 transition-all shadow-lg cursor-pointer ${
+                          isMySos
+                            ? 'bg-rose-600 text-white animate-bounce'
+                            : 'bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-600/60'
+                        }`}
+                      >
+                        <span className="text-sm">🚨</span>
+                        <span>{isMySos ? 'បិទ SOS ខ្ញុំ' : 'ហៅជំនួយ (SOS)'}</span>
+                      </button>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* Filter Chips Bar */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+                {[
+                  { id: 'all', label: `🌐 ទាំងអស់ (${westernToKhmerDigits(teamLiveLocations.length)})` },
+                  { id: 'walking', label: `🟢 🚶‍♂️ កំពុងដើរ (${westernToKhmerDigits(teamLiveLocations.filter((m) => m.activity === 'walking').length)})` },
+                  { id: 'stationary', label: `🟡 🧍 នៅស្ងៀម (${westernToKhmerDigits(teamLiveLocations.filter((m) => m.activity !== 'walking' && !m.needHelp).length)})` },
+                  { id: 'sos', label: `🚨 SOS សុំជំនួយ (${westernToKhmerDigits(teamLiveLocations.filter((m) => m.needHelp).length)})` }
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => setTeamFilter(f.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all border cursor-pointer ${
+                      teamFilter === f.id
+                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-md font-black'
+                        : 'bg-slate-900 text-slate-400 hover:text-slate-200 border-slate-800'
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Team Member Cards Grid */}
+              {teamLiveLocations.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-xs">
+                  មិនទាន់មានសមាជិកក្រុមការងារ Online លើប្រព័ន្ធនៅឡើយទេ។ សូមចុចប៊ូតុង «📍 ដៅ / រំកិលទីតាំងខ្ញុំលើ Map» ខាងលើដើម្បីកំណត់ទីតាំងអ្នក!
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
+                  {teamLiveLocations
+                    .filter((m) => {
+                      if (teamFilter === 'walking') return m.activity === 'walking';
+                      if (teamFilter === 'stationary') return m.activity !== 'walking' && !m.needHelp;
+                      if (teamFilter === 'sos') return Boolean(m.needHelp);
+                      return true;
+                    })
+                    .map((member) => {
+                      const isSos = Boolean(member.needHelp);
+                      const roleGradient = member.role === 'admin'
+                        ? 'from-amber-400 via-amber-500 to-amber-600 text-slate-950'
+                        : 'from-sky-400 via-blue-500 to-indigo-600 text-white';
+                      const initials = member.userName ? member.userName.slice(0, 1) : 'U';
+
+                      return (
+                        <div
+                          key={member.userId || member.id}
+                          className={`p-3 rounded-xl border transition-all flex flex-col justify-between gap-2.5 ${
+                            isSos
+                              ? 'bg-rose-950/40 border-rose-500/80 shadow-rose-950/50 shadow-lg'
+                              : 'bg-slate-900/90 border-slate-800 hover:border-emerald-500/50 shadow-md'
+                          }`}
+                        >
+                          {/* Top row: Avatar + Name + Status */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className={`w-9 h-9 rounded-xl bg-gradient-to-br ${roleGradient} flex items-center justify-center font-bold text-xs shadow-md shrink-0 border border-white/40`}>
+                                {initials}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="text-xs font-bold text-slate-100 truncate flex items-center gap-1.5">
+                                  <span>{member.userName || member.name || 'ក្រុមការងារ'}</span>
+                                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-amber-300 font-normal">
+                                    {member.role === 'admin' ? 'Admin' : 'Assistant'}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-slate-400 truncate">
+                                  {member.assignedZone || 'ផែន១ ៖ ធម្មសភា'}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Status pill */}
+                            {isSos ? (
+                              <span className="px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black animate-pulse shrink-0">
+                                🚨 SOS
+                              </span>
+                            ) : member.activity === 'walking' ? (
+                              <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold shrink-0">
+                                🚶‍♂️ កំពុងដើរ
+                              </span>
+                            ) : (
+                              <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold shrink-0">
+                                🧍 នៅស្ងៀម
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Middle row: Location Name + Coordinates */}
+                          <div className="text-[11px] bg-slate-950/60 p-2 rounded-lg border border-slate-800/80 flex items-center justify-between gap-1 text-slate-300">
+                            <div className="flex items-center gap-1 truncate">
+                              <MapPin className="w-3 h-3 text-emerald-400 shrink-0" />
+                              <span className="truncate font-bold text-emerald-300">
+                                {member.locationName || 'ទីតាំងលើ Map'}
+                              </span>
+                            </div>
+                            <span className="text-[10px] text-slate-500 shrink-0">
+                              ({member.x}%, {member.y}%)
+                            </span>
+                          </div>
+
+                          {/* Action Buttons: Find on Map + Call */}
+                          <div className="flex items-center gap-2 pt-1 border-t border-slate-800/60">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                centerPinOnMap({ x: member.x, y: member.y });
+                                setSelectedTeamMember(member);
+                                viewportRef.current?.scrollIntoView({ behavior: 'smooth' });
+                              }}
+                              className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] rounded-lg shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                            >
+                              <Search className="w-3 h-3" />
+                              <span>🔍 រកលើ Map</span>
+                            </button>
+
+                            {member.phone && (
+                              <a
+                                href={`tel:${member.phone}`}
+                                className="px-2.5 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] rounded-lg shadow-sm transition-all flex items-center justify-center gap-1 shrink-0"
+                                title={`ខលទៅ ${member.phone}`}
+                              >
+                                <PhoneCall className="w-3 h-3" />
+                                <span>ខល</span>
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="bg-slate-950/80 border border-slate-800 rounded-2xl p-3 sm:p-4 space-y-2.5">
             
             {/* Legend Section Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800">
@@ -4267,6 +4643,7 @@ export default function TempleMapModal({
               })}
             </div>
           </div>
+          )}
         </div>
 
         {/* ═══════════════ MODAL: ADD / EDIT LOCATION ═══════════════ */}
