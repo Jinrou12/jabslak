@@ -1961,19 +1961,42 @@ const KHEMAVAN_CORE_ZONES = [
     return () => window.removeEventListener('phone-location-allowed', handleLocationAllowed);
   }, [currentUser, teamLiveLocations]);
 
+  // Ref to track if current highlightLocationName has already been processed to prevent auto-switching tabs on background syncs
+  const lastProcessedHighlightRef = useRef(null);
+
   // Focus on highlighted location or tag if passed from parent
   useEffect(() => {
-    if (highlightLocationName) {
-      let targetLoc = null;
+    if (!highlightLocationName) {
+      lastProcessedHighlightRef.current = null;
+      return;
+    }
 
-      if (typeof highlightLocationName === 'object' && highlightLocationName !== null) {
-        const tagObj = highlightLocationName;
+    // Never re-run or auto-switch tabs if this exact highlight location prop was already processed
+    if (lastProcessedHighlightRef.current === highlightLocationName) {
+      return;
+    }
+    lastProcessedHighlightRef.current = highlightLocationName;
 
-        // 1. If explicit 'team' tab or self member requested -> Interactive Map + Team Tracker (Image 4)
-        if (tagObj.tab === 'team' || tagObj.isSelf) {
-          setActiveTab('interactive');
-          setTab2SubView('team');
-          setShowTeamTracker(true);
+    let targetLoc = null;
+
+    if (typeof highlightLocationName === 'object' && highlightLocationName !== null) {
+      const tagObj = highlightLocationName;
+
+      // 0. If explicit 'owners' tab requested -> Owners Tag Checklist (Zero Map Focus, Zero Auto Switch to Tagger)
+      if (tagObj.tab === 'owners') {
+        setActiveTab('owners');
+        if (tagObj.zone) {
+          setSelectedCategory(tagObj.zone);
+          setSelectedSizeGroup(tagObj.zone);
+        }
+        return;
+      }
+
+      // 1. If explicit 'team' tab or self member requested -> Interactive Map + Team Tracker (Image 4)
+      if (tagObj.tab === 'team' || tagObj.isSelf) {
+        setActiveTab('interactive');
+        setTab2SubView('team');
+        setShowTeamTracker(true);
 
           if (tagObj.x != null && tagObj.y != null) {
             targetLoc = {
@@ -2081,7 +2104,6 @@ const KHEMAVAN_CORE_ZONES = [
 
       // DO NOT FALLBACK TO RANDOM FIRST LOCATION!
       setSelectedLocation(targetLoc || null);
-    }
   }, [highlightLocationName, effectiveTab3Locations, locations, currentUser, teamLiveLocations, userAssignedZone]);
 
   // Auto scroll modal body UP to Map section & smooth center camera on target location on map
