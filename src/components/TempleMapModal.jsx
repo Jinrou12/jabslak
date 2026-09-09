@@ -18,6 +18,7 @@ import {
   Folder,
   FolderPlus,
   Compass,
+  User,
   Users,
   Search,
   Filter,
@@ -3826,7 +3827,6 @@ export default function TempleMapModal({
                         const cleanName = String(member.userName || member.name || '')
                           .replace(/\s*\([^)]*\)/g, '')
                           .trim() || 'ក្រុមការងារ';
-                        const initialLetter = cleanName ? Array.from(cleanName)[0] : 'U';
 
                         return (
                           <div
@@ -3863,13 +3863,19 @@ export default function TempleMapModal({
                             <div className={`relative flex flex-col items-center transition-transform duration-150 group-hover:scale-110 ${
                               isSelected || isMe ? 'scale-105' : ''
                             }`}>
-                              {/* 20px Circular Pion Head */}
-                              <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${pionGradient} ring-1.5 ring-white/95 shadow-md flex items-center justify-center font-bold text-[10px] font-kantumruy select-none leading-none`}>
-                                {isSos ? '🚨' : initialLetter}
+                              {/* Circular Pion Head with Person Icon */}
+                              <div className={`w-[22px] h-[22px] rounded-full bg-gradient-to-br ${pionGradient} ring-1.5 ring-white/95 shadow-md flex items-center justify-center select-none leading-none transition-transform duration-150`}>
+                                {isSos ? (
+                                  <span className="text-[10px]">🚨</span>
+                                ) : isWalking ? (
+                                  <span className="text-[11px] leading-none">🚶‍♂️</span>
+                                ) : (
+                                  <User className="w-3.5 h-3.5 stroke-[2.5]" />
+                                )}
                               </div>
 
                               {/* Pion Needle pointing directly to map coordinate */}
-                              <div className={`w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-t-[3.5px] ${needleColor} -mt-[0.5px] drop-shadow-sm`} />
+                              <div className={`w-0 h-0 border-l-[3.5px] border-l-transparent border-r-[3.5px] border-r-transparent border-t-[4px] ${needleColor} -mt-[0.5px] drop-shadow-sm`} />
 
                               {/* Tiny Status Indicator Dot */}
                               <span
