@@ -6,7 +6,7 @@ import {
   saveTab3Locations as saveTab3LocationsLocal,
   getSavedTempleLocations,
   getSavedTab3Locations
-} from '../data/templeLocations';
+} from '../data/templeLocations.js';
 
 // Dynamically read custom Firebase Database credentials from localStorage or URL parameter
 let urlDbParam = '';
@@ -27,6 +27,8 @@ const customProjectId = typeof localStorage !== 'undefined' ? localStorage.getIt
 
 export const DEFAULT_FIREBASE_RTDB_URL = 'https://jabslak-default-rtdb.asia-southeast1.firebasedatabase.app';
 
+const env = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+
 /**
  * Build direct REST API endpoint URL for any Firebase RTDB path.
  * This works 100% reliably across all browsers (PC & Phone) without requiring
@@ -34,20 +36,20 @@ export const DEFAULT_FIREBASE_RTDB_URL = 'https://jabslak-default-rtdb.asia-sout
  */
 export function getFirebaseRestEndpoint(path) {
   const customDb = (typeof localStorage !== 'undefined' ? localStorage.getItem('FB_DB_URL') : null) || urlDbParam;
-  const baseUrl = (customDb || import.meta.env.VITE_FIREBASE_DATABASE_URL || DEFAULT_FIREBASE_RTDB_URL).replace(/\/$/, '');
+  const baseUrl = (customDb || env.VITE_FIREBASE_DATABASE_URL || DEFAULT_FIREBASE_RTDB_URL).replace(/\/$/, '');
   const cleanPath = String(path).replace(/^\/+/, '');
   return `${baseUrl}/${cleanPath}.json`;
 }
 
 // Firebase configuration
 const firebaseConfig = {
-  apiKey: customApiKey || import.meta.env.VITE_FIREBASE_API_KEY || 'AIzaSyAA-placeholder-key-for-offline-mode',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || 'jabslak.firebaseapp.com',
-  databaseURL: customDbUrl || import.meta.env.VITE_FIREBASE_DATABASE_URL || DEFAULT_FIREBASE_RTDB_URL,
-  projectId: customProjectId || import.meta.env.VITE_FIREBASE_PROJECT_ID || 'jabslak',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'jabslak.firebasestorage.app',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '000000000000',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || '1:000000000000:web:0000000000000000000000'
+  apiKey: customApiKey || env.VITE_FIREBASE_API_KEY || 'AIzaSyAA-placeholder-key-for-offline-mode',
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || 'jabslak.firebaseapp.com',
+  databaseURL: customDbUrl || env.VITE_FIREBASE_DATABASE_URL || DEFAULT_FIREBASE_RTDB_URL,
+  projectId: customProjectId || env.VITE_FIREBASE_PROJECT_ID || 'jabslak',
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || 'jabslak.firebasestorage.app',
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '000000000000',
+  appId: env.VITE_FIREBASE_APP_ID || '1:000000000000:web:0000000000000000000000'
 };
 
 let app = null;

@@ -37,6 +37,9 @@ class PhoneTrackerManager {
     this.syncIntervalId = null;
     this.calibrationUnsub = null;
     this.listeners = new Set();
+    this.initialLockListeners = new Set();
+    this.hasInitialLocationLock = false;
+    this.initialLockData = null;
 
     this.currentUser = null;
     this.currentTempleId = 'khemavan';
@@ -75,6 +78,18 @@ class PhoneTrackerManager {
     return () => this.listeners.delete(listener);
   }
 
+  onInitialLocationLock(listener) {
+    this.initialLockListeners.add(listener);
+    if (this.hasInitialLocationLock && this.initialLockData) {
+      try {
+        listener(this.initialLockData);
+      } catch (e) {
+        console.error('Initial lock listener error:', e);
+      }
+    }
+    return () => this.initialLockListeners.delete(listener);
+  }
+
   notify() {
     const currentState = this.getState();
     this.listeners.forEach((fn) => {
@@ -103,6 +118,10 @@ class PhoneTrackerManager {
    */
   start({ user, templeId = 'khemavan', defaultSpot = null }) {
     if (!user || !user.id) return;
+    if (this.currentUser?.id !== user.id) {
+      this.hasInitialLocationLock = false;
+      this.initialLockData = null;
+    }
     this.currentUser = user;
     this.currentTempleId = templeId;
     if (defaultSpot) {
@@ -148,6 +167,19 @@ class PhoneTrackerManager {
     // 1. Geolocation watch (Satellite GPS)
     if (typeof navigator !== 'undefined' && 'geolocation' in navigator) {
       try {
+        // Fast initial position acquisition
+        navigator.geolocation.getCurrentPosition(
+          (pos) => this.handleGeoPosition(pos, true),
+          (err) => {
+            console.warn('Initial geolocation check:', err.message);
+          },
+          {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 10000
+          }
+        );
+
         this.watchId = navigator.geolocation.watchPosition(
           (pos) => this.handleGeoPosition(pos),
           (err) => {
@@ -254,6 +286,54 @@ class PhoneTrackerManager {
   }
 
   /**
+   * Manually trigger location request & camera glide to current GPS spot
+   */
+  requestLocationPermissionAndCenter() {
+    if (typeof navigator === 'undefined' || !('geolocation' in navigator)) {
+      alert('ឧបករណ៍របស់អ្នកមិនគាំទ្រ Geolocation/GPS ទេ!');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        this.handleGeoPosition(pos, true);
+        const mapped = gpsToMapCoords(pos.coords.latitude, pos.coords.longitude, this.gpsCalibration);
+        const landmark = mapped ? getNearestLandmark(mapped.x, mapped.y) : null;
+        const spot = {
+          x: mapped ? mapped.x : this.state.x,
+          y: mapped ? mapped.y : this.state.y,
+          locationName: landmark ? landmark.name : this.state.locationName,
+          name: landmark ? landmark.name : this.state.locationName,
+          latitude: pos.coords.latitude,
+          longitude: pos.coords.longitude,
+          accuracy: pos.coords.accuracy,
+          user: this.currentUser,
+          forceFly: true,
+          timestamp: Date.now()
+        };
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('phone-location-allowed', {
+            detail: { spot, user: this.currentUser, forceFly: true }
+          }));
+        }
+      },
+      (err) => {
+        console.warn('Geolocation permission error:', err);
+        if (err.code === 1) {
+          alert('សូមបើកសិទ្ធិ Location (Allow Location Access) ក្នុងកម្មវិធីរុករក (Browser) ដើម្បីអាចដៅទីតាំងផ្ទាល់ខ្លួនបាន!');
+        } else {
+          alert('មិនអាចចាប់សញ្ញា GPS បានទេ! សូមសាកល្បងម្តងទៀតនៅទីវាល ឬបើក GPS ទូរស័ព្ទ។');
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  }
+
+  /**
    * Update active GPS calibration
    */
   setGpsCalibration(cal) {
@@ -313,13 +393,39 @@ class PhoneTrackerManager {
 
     // 🛰️ Georeferencing: Map real GPS (lat, lon) -> JPEG map percentage (x%, y%)
     const mapped = gpsToMapCoords(latitude, longitude, this.gpsCalibration);
+    let landmark = null;
     if (mapped) {
-      const landmark = getNearestLandmark(mapped.x, mapped.y);
+      landmark = getNearestLandmark(mapped.x, mapped.y);
       this.currentGpsSpot = { x: mapped.x, y: mapped.y, name: landmark.name };
       if (!this.manualSpot) {
         this.state.x = mapped.x;
         this.state.y = mapped.y;
         this.state.locationName = landmark.name;
+      }
+    }
+
+    // 🎯 Initial Location Permission Granted & Lock Notification
+    if (!this.hasInitialLocationLock) {
+      this.hasInitialLocationLock = true;
+      const spotData = {
+        x: mapped ? mapped.x : this.state.x,
+        y: mapped ? mapped.y : this.state.y,
+        locationName: landmark ? landmark.name : this.state.locationName,
+        name: landmark ? landmark.name : this.state.locationName,
+        latitude,
+        longitude,
+        accuracy,
+        user: this.currentUser,
+        timestamp: Date.now()
+      };
+      this.initialLockData = spotData;
+      this.initialLockListeners.forEach((fn) => {
+        try { fn(spotData); } catch (e) { console.error('Initial lock listener error:', e); }
+      });
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('phone-location-allowed', {
+          detail: { spot: spotData, user: this.currentUser }
+        }));
       }
     }
 

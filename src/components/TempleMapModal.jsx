@@ -33,7 +33,8 @@ import {
   ArrowLeft,
   PhoneCall,
   Settings,
-  Radio
+  Radio,
+  Navigation
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
@@ -60,7 +61,7 @@ import {
   saveGpsCalibrationToFirebase
 } from '../utils/firebase';
 import { phoneTracker } from '../utils/phoneTracker';
-import { DEFAULT_KHEMAVAN_CALIBRATION, gpsToMapCoords, getNearestLandmark } from '../utils/geoCalibrator.js';
+import { DEFAULT_KHEMAVAN_CALIBRATION, gpsToMapCoords, getNearestLandmark, parseCoordinatesString } from '../utils/geoCalibrator.js';
 import { getTempleCustomMapImage, saveTempleCustomMapImage, compressImage } from '../utils/templeStorage';
 import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName, formatTagRanges } from '../utils/khmerSearch';
 
@@ -709,11 +710,20 @@ const categoryMigrationMap = {
   'ផែន៨': 'ផែន៨ ៖ សាលារៀន'
 };
 
-function autoMigrateCategory(cat, locName = '', locId = '') {
+function autoMigrateCategory(cat, locName = '', locId = '', isTab3 = false) {
   const locStr = String(locName || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
   const idStr = String(locId || '').trim();
 
-  // 1. If location is specifically ធម្មសាលាសភា or ID 1 or contains ធម្មសភា / សាលាធម្មសភា and has no valid category or old category, assign to ផែន១ ៖ ធម្មសភា
+  // On Tab 1 & Tab 2, Phaen and Thommasaphea categories MUST NOT exist!
+  if (!isTab3) {
+    if (locStr.includes('ខ្លោងទ្វារ')) return '⛩️ ក្រុមខ្លោងទ្វារវត្ត';
+    if (!cat || cat.includes('ផែន') || cat.includes('ធម្មសភា') || cat.includes('ដែន')) {
+      return '🏢 ក្រុមអគារ និង កុដិ';
+    }
+    return cat;
+  }
+
+  // 1. If location is specifically ធម្មសាលាសភា or ID 1 or contains ធម្មសភា / សាលាធម្មសភា and has no valid category or old category, assign to ផែន១ ៖ ធម្មសភា (Tab 3 only)
   if ((locStr.includes('ធម្មសភា') || locStr.includes('ធម្មសាលាសភា') || idStr === '១' || idStr === '1') && (!cat || cat === 'ដើម' || cat === 'ធម្មសភា' || cat === 'សាលាធម្មសភា' || cat === 'ដែន១ ៖ ធម្មសភា' || cat === 'ដែន១')) {
     return 'ផែន១ ៖ ធម្មសភា';
   }
@@ -818,6 +828,7 @@ export default function TempleMapModal({
     return raw;
   });
   const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ នៅស្លាកលើ Map)
+  const [tab2SubView, setTab2SubView] = useState('locations'); // 'locations' | 'team' (Tab 2 only)
 
   useEffect(() => {
     setLocations(getSavedTempleLocations(currentTempleId));
@@ -979,6 +990,25 @@ export default function TempleMapModal({
     setTimeout(() => setUndoToast(''), 4000);
   };
 
+  const handlePasteCoordinates = (pointKey, text) => {
+    const parsed = parseCoordinatesString(text);
+    if (parsed) {
+      setGpsCalibration((prev) => ({
+        ...prev,
+        [pointKey]: {
+          ...prev[pointKey],
+          lat: parsed.lat,
+          lon: parsed.lon
+        }
+      }));
+      const pName = gpsCalibration[pointKey]?.name || pointKey;
+      setUndoToast(`✅ បានដាក់កូអរដោណេសម្រាប់ «${pName}» ៖ Lat ${parsed.lat}, Lon ${parsed.lon}`);
+      setTimeout(() => setUndoToast(''), 4000);
+      return true;
+    }
+    return false;
+  };
+
   const handleSaveCalibration = async () => {
     await saveGpsCalibrationToFirebase(gpsCalibration, currentTempleId);
     phoneTracker.setGpsCalibration(gpsCalibration);
@@ -1074,7 +1104,7 @@ export default function TempleMapModal({
 
       return {
         ...loc,
-        category: autoMigrateCategory(loc.category, loc.name, loc.id),
+        category: autoMigrateCategory(loc.category, loc.name, loc.id, true),
         name: finalName, // ALWAYS KEEP FULL FORMATTED NAME WITH OWNER NAME!
         displayName: finalName, // Pre-computed for zero O(N) lookup in render
         tagOwnerName: tagOwner,
@@ -1142,12 +1172,23 @@ export default function TempleMapModal({
   }, [tab3Locations, tagLookups, isKhemavan]);
 
   // Filter out visitor tag pins from Tab 1 & Tab 2 locations so Tab 1 & Tab 2 NEVER display visitor tag pins
+  // Also guarantee categories on Tab 1 & Tab 2 never contain ផែន or ធម្មសភា
   const baseMapLocations = useMemo(() => {
-    return locations.filter((loc) => !loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay);
+    return locations
+      .filter((loc) => !loc.isTagPin && !loc.tagNumber && !loc.tagNumberDisplay)
+      .map((loc) => {
+        let cat = loc.category || '';
+        if (!cat || cat.includes('ផែន') || cat.includes('ធម្មសភា') || cat.includes('ដែន')) {
+          cat = (loc.type === 'gate' || String(loc.name || '').includes('ខ្លោងទ្វារ'))
+            ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត'
+            : '🏢 ក្រុមអគារ និង កុដិ';
+        }
+        return { ...loc, category: cat };
+      });
   }, [locations]);
 
   // Computed: which locations array to use based on active tab
-  const currentLocations = activeTab === 'tagger' ? effectiveTab3Locations : activeTab === 'team' ? INITIAL_TEMPLE_LOCATIONS : baseMapLocations;
+  const currentLocations = activeTab === 'tagger' ? effectiveTab3Locations : baseMapLocations;
   const getGroupBadgeColor = (groupName) => getGroupColorKey(groupName, currentLocations);
   const [zoomScale, setZoomScale] = useState(1.0);
   const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin circle size in px (14px)
@@ -1571,6 +1612,38 @@ export default function TempleMapModal({
     });
   };
 
+  // 🛰️ Immediate Location Acquired Event -> Auto Center & Popup on Map
+  useEffect(() => {
+    const handleLocationAllowed = (e) => {
+      const spot = e?.detail?.spot;
+      if (!spot) return;
+
+      const myId = currentUser?.id || 'u-self';
+      const myRecord = teamLiveLocations.find((m) => m.userId === myId) || {
+        userId: myId,
+        userName: currentUser?.name || currentUser?.username || 'ខ្ញុំ',
+        role: currentUser?.role || 'assistant',
+        phone: currentUser?.phone || '',
+        locationName: spot.name || spot.locationName || 'ធម្មសភា',
+        x: spot.x,
+        y: spot.y,
+        activity: 'stationary',
+        activityText: 'នៅស្ងៀម',
+        accuracy: spot.accuracy,
+        isAutoGps: true
+      };
+
+      setShowTeamTracker(true);
+      centerPinOnMap({ x: spot.x, y: spot.y });
+      setSelectedTeamMember(myRecord);
+      setUndoToast(`📍 បានរកឃើញទីតាំងអ្នកនៅ «${spot.name || spot.locationName}»!`);
+      setTimeout(() => setUndoToast(''), 5000);
+    };
+
+    window.addEventListener('phone-location-allowed', handleLocationAllowed);
+    return () => window.removeEventListener('phone-location-allowed', handleLocationAllowed);
+  }, [currentUser, teamLiveLocations]);
+
   // Focus on highlighted location or tag if passed from parent
   useEffect(() => {
     if (highlightLocationName) {
@@ -1589,6 +1662,25 @@ export default function TempleMapModal({
             y: Number(tagObj.y),
             category: '👥 ទីតាំងក្រុមការងារ'
           };
+          if (tagObj.isSelf) {
+            setActiveTab('interactive');
+            setTab2SubView('team');
+            setShowTeamTracker(true);
+            const myId = currentUser?.id || 'u-self';
+            const myRecord = teamLiveLocations.find((m) => m.userId === myId) || {
+              userId: myId,
+              userName: currentUser?.name || currentUser?.username || 'ខ្ញុំ',
+              role: currentUser?.role || 'assistant',
+              phone: currentUser?.phone || '',
+              locationName: tagObj.name || 'ទីតាំងខ្ញុំ',
+              x: Number(tagObj.x),
+              y: Number(tagObj.y),
+              activity: 'stationary',
+              activityText: 'នៅស្ងៀម',
+              isAutoGps: true
+            };
+            setSelectedTeamMember(myRecord);
+          }
         }
         const tagNoStr = String(tagObj.tagNumber || '').trim();
         const tagDispStr = String(tagObj.tagNumberDisplay || '').trim();
@@ -1713,17 +1805,28 @@ export default function TempleMapModal({
   const categoryGroups = useMemo(() => {
     const rawGroups = {};
 
-    // For Wat Khemavan, ALWAYS initialize all official core preset Phaen & building groups
-    if (isKhemavan) {
+    // For Wat Khemavan, ALWAYS initialize official core preset Phaen & building groups ONLY on Tab 3!
+    // On Tab 1 & Tab 2, Phaen/Thommasaphea zone groups MUST NOT exist!
+    if (activeTab === 'tagger' && isKhemavan) {
       CORE_PRESET_ZONES.forEach((zone) => {
         if (!rawGroups[zone]) rawGroups[zone] = [];
       });
     }
 
     currentLocations.forEach((loc) => {
-      const cat = autoMigrateCategory(loc.category, loc.name, loc.id);
+      let cat = autoMigrateCategory(loc.category, loc.name, loc.id, activeTab === 'tagger');
       if (!cat) return;
-      if (deletedCategories.includes(cat) && !CORE_PRESET_ZONES.includes(cat)) return;
+
+      // In Tab 1 & Tab 2, group (ធម្មសភា.......) and any ផែន... groups MUST NOT EXIST!
+      if (activeTab !== 'tagger') {
+        if (cat.includes('ធម្មសភា') || cat.includes('ផែន') || cat.includes('ដែន') || CORE_PRESET_ZONES.includes(cat)) {
+          cat = (loc.type === 'gate' || String(loc.name || '').includes('ខ្លោងទ្វារ'))
+            ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត'
+            : '🏢 ក្រុមអគារ និង កុដិ';
+        }
+      }
+
+      if (deletedCategories.includes(cat) && (activeTab !== 'tagger' || !CORE_PRESET_ZONES.includes(cat))) return;
       if (!rawGroups[cat]) rawGroups[cat] = [];
       rawGroups[cat].push(loc);
     });
@@ -1741,15 +1844,15 @@ export default function TempleMapModal({
     });
 
     return sortedGroups;
-  }, [currentLocations, deletedCategories, CORE_PRESET_ZONES, isKhemavan]);
+  }, [currentLocations, deletedCategories, CORE_PRESET_ZONES, isKhemavan, activeTab]);
 
   const availableCategories = useMemo(() => {
     const cats = new Set();
     Object.keys(categoryGroups).forEach((c) => {
-      if (!deletedCategories.includes(c) || (isKhemavan && CORE_PRESET_ZONES.includes(c))) cats.add(c);
+      if (!deletedCategories.includes(c) || (activeTab === 'tagger' && isKhemavan && CORE_PRESET_ZONES.includes(c))) cats.add(c);
     });
     return Array.from(cats);
-  }, [categoryGroups, deletedCategories, CORE_PRESET_ZONES, isKhemavan]);
+  }, [categoryGroups, deletedCategories, CORE_PRESET_ZONES, isKhemavan, activeTab]);
 
   // Zoom handlers (clamped between 0.4x and 5.0x with center focal preservation)
   const handleZoom = (delta) => {
@@ -3252,22 +3355,6 @@ export default function TempleMapModal({
               <span className="hidden sm:inline">🏷️ ផ្ទាំងទី៣ ៖ ដៅស្លាកលេខលើ Map</span>
             </button>
 
-            <button
-              onClick={() => {
-                setActiveTab('team');
-                setShowTeamTracker(true);
-              }}
-              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'team'
-                  ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 font-black'
-                  : 'text-emerald-400 hover:text-emerald-200'
-              }`}
-            >
-              <Users className="w-3.5 h-3.5 shrink-0" />
-              <span className="sm:hidden">👥 ផ្ទាំងទី៤</span>
-              <span className="hidden sm:inline">👥 ផ្ទាំងទី៤ ៖ រកទីកន្លែងក្រុមការងារ</span>
-            </button>
-
             <div className="h-4 w-px bg-slate-800 mx-0.5 shrink-0"></div>
 
             {/* Toggle Compass Button */}
@@ -3300,20 +3387,28 @@ export default function TempleMapModal({
               )}
             </button>
 
-            {/* Toggle Team Live Tracker Layer Button */}
-            <button
-              type="button"
-              onClick={() => setShowTeamTracker(!showTeamTracker)}
-              className={`px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
-                showTeamTracker
-                  ? 'bg-emerald-500/25 border border-emerald-500/60 text-emerald-300 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200 border border-slate-800'
-              }`}
-              title={showTeamTracker ? 'លាក់ទីតាំងក្រុមការងារ' : 'បង្ហាញទីតាំងក្រុមការងារលើ Map'}
-            >
-              <Users className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-              <span className="hidden sm:inline font-kantumruy">👥 ក្រុមការងារ ({westernToKhmerDigits(teamLiveLocations.length)})</span>
-            </button>
+            {/* Toggle Team Live Tracker Layer Button - ONLY VISIBLE ON TAB 2 */}
+            {activeTab === 'interactive' && (
+              <button
+                type="button"
+                onClick={() => {
+                  const nextShow = !showTeamTracker;
+                  setShowTeamTracker(nextShow);
+                  if (nextShow && tab2SubView !== 'team') {
+                    setTab2SubView('team');
+                  }
+                }}
+                className={`px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                  showTeamTracker
+                    ? 'bg-emerald-500/25 border border-emerald-500/60 text-emerald-300 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-200 border border-slate-800'
+                }`}
+                title={showTeamTracker ? 'លាក់ទីតាំងក្រុមការងារលើ Map' : 'បង្ហាញទីតាំងក្រុមការងារលើ Map'}
+              >
+                <Users className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                <span className="hidden sm:inline font-kantumruy">👥 ក្រុមការងារ ({westernToKhmerDigits(teamLiveLocations.length)})</span>
+              </button>
+            )}
 
             <div className="h-4 w-px bg-slate-800 mx-0.5 shrink-0"></div>
 
@@ -3448,72 +3543,116 @@ export default function TempleMapModal({
         {/* ═══════════════ MAIN CONTENT BODY (MAP & LEGEND) ═══════════════ */}
         <div ref={modalBodyRef} className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3">
           
-          {/* 👥 Live Team Tracker Bar */}
-          <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl text-xs font-kantumruy flex-wrap">
-            <div className="flex items-center gap-2 flex-wrap min-w-0">
-              <button
-                type="button"
-                onClick={() => setShowTeamTracker(!showTeamTracker)}
-                className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
-                  showTeamTracker
-                    ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/20'
-                    : 'bg-slate-800 text-slate-400 hover:text-slate-200'
-                }`}
-                title={showTeamTracker ? 'ចុចដើម្បីលាក់ Pin ក្រុមការងារ' : 'ចុចដើម្បីបង្ហាញ Pin ក្រុមការងារ'}
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>{showTeamTracker ? '👥 ក្រុមការងារ (បើក)' : '👥 ក្រុមការងារ (បិទ)'}</span>
-              </button>
+          {/* 👥 Live Team Tracker Bar - ONLY ON TAB 2 */}
+          {activeTab === 'interactive' && (
+            <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl text-xs font-kantumruy flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap min-w-0">
+                <button
+                  type="button"
+                  onClick={() => setShowTeamTracker(!showTeamTracker)}
+                  className={`px-2.5 py-1 rounded-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-sm ${
+                    showTeamTracker
+                      ? 'bg-emerald-500 text-slate-950 shadow-emerald-500/20'
+                      : 'bg-slate-800 text-slate-400 hover:text-slate-200'
+                  }`}
+                  title={showTeamTracker ? 'ចុចដើម្បីលាក់ Pin ក្រុមការងារ' : 'ចុចដើម្បីបង្ហាញ Pin ក្រុមការងារ'}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>{showTeamTracker ? '👥 ក្រុមការងារ (បើក)' : '👥 ក្រុមការងារ (បិទ)'}</span>
+                </button>
 
-              {/* Live count summary */}
+                {/* 📍 Quick Fly to My Location Button */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const myId = currentUser?.id || 'u-self';
+                    const myRecord = teamLiveLocations.find((m) => m.userId === myId);
+                    const state = phoneTracker.getState();
+                    const targetX = myRecord?.x != null ? myRecord.x : state.x;
+                    const targetY = myRecord?.y != null ? myRecord.y : state.y;
+                    const targetName = myRecord?.locationName || state.locationName || 'ធម្មសភា';
+
+                    setShowTeamTracker(true);
+                    centerPinOnMap({ x: targetX, y: targetY });
+                    setSelectedTeamMember(myRecord || {
+                      userId: myId,
+                      userName: currentUser?.name || currentUser?.username || 'ខ្ញុំ',
+                      role: currentUser?.role || 'assistant',
+                      phone: currentUser?.phone || '',
+                      locationName: targetName,
+                      x: targetX,
+                      y: targetY,
+                      activity: state.activity || 'stationary',
+                      activityText: state.activityText || 'នៅស្ងៀម',
+                      isAutoGps: true
+                    });
+                    setUndoToast(`📍 កំពុងបង្ហាញទីតាំងអ្នកនៅ «${targetName}»`);
+                    setTimeout(() => setUndoToast(''), 4000);
+
+                    // Trigger fresh GPS acquire
+                    phoneTracker.requestLocationPermissionAndCenter();
+                  }}
+                  className="px-2.5 py-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-md shadow-emerald-500/20 active:scale-95"
+                  title="ចុចដើម្បី Fly ទៅកាន់ទីតាំង GPS របស់អ្នកលើ Map ភ្លាមៗ"
+                >
+                  <Navigation className="w-3.5 h-3.5 animate-pulse" />
+                  <span>📍 ទីតាំងខ្ញុំ</span>
+                </button>
+
+                {/* Live count summary */}
+                {showTeamTracker && teamLiveLocations.length > 0 && (
+                  <div className="flex items-center gap-2 text-[11px] text-slate-300 flex-wrap">
+                    <span className="flex items-center gap-1 text-emerald-400 font-bold">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                      <span>🚶‍♂️ {teamLiveLocations.filter((m) => m.activity === 'walking').length} កំពុងដើរ</span>
+                    </span>
+                    <span className="text-slate-600">•</span>
+                    <span className="flex items-center gap-1 text-amber-400 font-bold">
+                      <span>🧍 {teamLiveLocations.filter((m) => m.activity !== 'walking').length} នៅស្ងៀម</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Quick Member Spotlight Chips */}
               {showTeamTracker && teamLiveLocations.length > 0 && (
-                <div className="flex items-center gap-2 text-[11px] text-slate-300 flex-wrap">
-                  <span className="flex items-center gap-1 text-emerald-400 font-bold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span>🚶‍♂️ {teamLiveLocations.filter((m) => m.activity === 'walking').length} កំពុងដើរ</span>
-                  </span>
-                  <span className="text-slate-600">•</span>
-                  <span className="flex items-center gap-1 text-amber-400 font-bold">
-                    <span>🧍 {teamLiveLocations.filter((m) => m.activity !== 'walking').length} នៅស្ងៀម</span>
-                  </span>
+                <div className="flex items-center gap-1.5 overflow-x-auto max-w-full py-0.5">
+                  {teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((m) => {
+                    const isWalking = m.activity === 'walking';
+                    return (
+                      <button
+                        key={`quick-${m.userId}`}
+                        type="button"
+                        onClick={() => {
+                          setSelectedTeamMember(m);
+                          if (typeof highlightLocationName === 'function') {
+                            highlightLocationName({
+                              name: m.locationName || m.userName,
+                              x: m.x,
+                              y: m.y
+                            });
+                          } else {
+                            centerPinOnMap({ x: m.x, y: m.y });
+                          }
+                        }}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 whitespace-nowrap transition-all cursor-pointer ${
+                          m.needHelp
+                            ? 'bg-rose-500/20 text-rose-300 border-rose-500/60 animate-pulse'
+                            : isWalking
+                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                        }`}
+                      >
+                        <span>{isWalking ? '🚶‍♂️' : '🧍'}</span>
+                        <span className="truncate max-w-[80px]">{m.userName || 'U'}</span>
+                        {isWalking && <span className="text-emerald-400 text-[9px]">({m.speedKmh || 3.2}គ.ម)</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
-
-            {/* Quick Member Spotlight Chips */}
-            {showTeamTracker && teamLiveLocations.length > 0 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto max-w-full py-0.5">
-                {teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((m) => {
-                  const isWalking = m.activity === 'walking';
-                  return (
-                    <button
-                      key={`quick-${m.userId}`}
-                      type="button"
-                      onClick={() => {
-                        setSelectedTeamMember(m);
-                        highlightLocationName({
-                          name: m.locationName || m.userName,
-                          x: m.x,
-                          y: m.y
-                        });
-                      }}
-                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 whitespace-nowrap transition-all cursor-pointer ${
-                        m.needHelp
-                          ? 'bg-rose-500/20 text-rose-300 border-rose-500/60 animate-pulse'
-                          : isWalking
-                          ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                          : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                      }`}
-                    >
-                      <span>{isWalking ? '🚶‍♂️' : '🧍'}</span>
-                      <span className="truncate max-w-[80px]">{m.userName || 'U'}</span>
-                      {isWalking && <span className="text-emerald-400 text-[9px]">({m.speedKmh || 3.2}គ.ម)</span>}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          )}
 
           {/* MAP CANVAS CONTAINER */}
           <div className="relative rounded-2xl border-2 border-slate-700 bg-white overflow-hidden shadow-inner">
@@ -3622,65 +3761,46 @@ export default function TempleMapModal({
                   {/* ════════ MAP PIN MARKERS & MATHEMATICALLY LOCKED BADGES ════════ */}
                   {isPinsVisible && (
                     <div className="absolute inset-0 z-20 pointer-events-none">
-                      {activeTab === 'team' ? (
-                        /* 🏢 Clean subtle authentic temple landmarks on Tab 4 */
-                        INITIAL_TEMPLE_LOCATIONS.map((loc) => (
-                          <div
-                            key={`landmark-${loc.id}`}
-                            style={{
-                              position: 'absolute',
-                              left: `${loc.x}%`,
-                              top: `${loc.y}%`,
-                              zIndex: 15
-                            }}
-                            className="-translate-x-1/2 -translate-y-1/2 pointer-events-none flex flex-col items-center opacity-85"
-                          >
-                            <div className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-slate-950/80 shadow-md"></div>
-                            <span className="mt-0.5 px-1.5 py-0.5 rounded bg-slate-950/90 text-[9px] text-amber-200/95 font-bold font-kantumruy whitespace-nowrap shadow border border-slate-800 pointer-events-none">
-                              {loc.name}
-                            </span>
-                          </div>
-                        ))
-                      ) : (
-                        currentLocations.map((loc, locIdx) => {
-                          const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
-                          if (hiddenCategories[locCat]) return null;
+                      {currentLocations.map((loc, locIdx) => {
+                        const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+                        if (hiddenCategories[locCat]) return null;
 
-                          const currentPinSize = groupPinSizes[locCat] || pinSizePx;
-                          const isCategoryLocked = lockedCategories[locCat];
-                          const isHighlighted =
-                            selectedLocation?.id === loc.id ||
-                            hoveredLocation?.id === loc.id;
-                          const isHovered = hoveredLocation?.id === loc.id;
+                        const currentPinSize = groupPinSizes[locCat] || pinSizePx;
+                        const isCategoryLocked = lockedCategories[locCat];
+                        const isHighlighted =
+                          selectedLocation?.id === loc.id ||
+                          hoveredLocation?.id === loc.id;
+                        const isHovered = hoveredLocation?.id === loc.id;
 
-                          const isCurrentlyDragging = draggingPinId === loc.id;
-                          const canDragThisPin = canCustomizeTab && canUserDragPins && activeTab !== 'labeled' && !isCategoryLocked;
+                        const isCurrentlyDragging = draggingPinId === loc.id;
+                        const canDragThisPin = canCustomizeTab && canUserDragPins && activeTab !== 'labeled' && !isCategoryLocked;
 
-                          return (
-                            <PinItem
-                              key={loc.id}
-                              loc={loc}
-                              locIdx={locIdx}
-                              activeTab={activeTab}
-                              currentPinSize={currentPinSize}
-                              isHighlighted={isHighlighted}
-                              isHovered={isHovered}
-                              isCurrentlyDragging={isCurrentlyDragging}
-                              canDragThisPin={canDragThisPin}
-                              onPinDragStart={handlePinDragStart}
-                              onMapClick={handleMapClick}
-                              pinMovedFlagRef={pinMovedFlagRef}
-                              pinningGroupMode={pinningGroupMode}
-                              setSelectedLocation={setSelectedLocation}
-                              setHoveredLocation={setHoveredLocation}
-                            />
-                          );
-                        })
-                      )}
+                        return (
+                          <PinItem
+                            key={loc.id}
+                            loc={loc}
+                            locIdx={locIdx}
+                            activeTab={activeTab}
+                            currentPinSize={currentPinSize}
+                            isHighlighted={isHighlighted}
+                            isHovered={isHovered}
+                            isCurrentlyDragging={isCurrentlyDragging}
+                            canDragThisPin={canDragThisPin}
+                            onPinDragStart={handlePinDragStart}
+                            onMapClick={handleMapClick}
+                            pinMovedFlagRef={pinMovedFlagRef}
+                            pinningGroupMode={pinningGroupMode}
+                            setSelectedLocation={setSelectedLocation}
+                            setHoveredLocation={setHoveredLocation}
+                          />
+                        );
+                      })}
 
-                      {/* 👥 Live Team Tracker Pins on the Temple Map */}
-                      {(showTeamTracker || activeTab === 'team') && teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((member) => {
+                      {/* 👥 Live Team Tracker Pins on the Temple Map - ONLY VISIBLE ON TAB 2 */}
+                      {activeTab === 'interactive' && showTeamTracker && teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((member) => {
                         const isSos = Boolean(member.needHelp);
+                        const isMe = member.userId === (currentUser?.id || 'u-self');
+                        const isSelected = selectedTeamMember && selectedTeamMember.userId === member.userId;
                         const roleGradient = member.role === 'admin'
                           ? 'from-amber-400 via-amber-500 to-amber-600 text-slate-950'
                           : 'from-sky-400 via-blue-500 to-indigo-600 text-white';
@@ -3693,7 +3813,7 @@ export default function TempleMapModal({
                               position: 'absolute',
                               left: `${member.x}%`,
                               top: `${member.y}%`,
-                              zIndex: isSos ? 99 : 45
+                              zIndex: isSos ? 99 : (isMe || isSelected ? 80 : 45)
                             }}
                             className={`-translate-x-1/2 -translate-y-1/2 cursor-pointer group ${isSettingMySpot ? 'pointer-events-none' : 'pointer-events-auto'}`}
                             onClick={(e) => {
@@ -3714,9 +3834,38 @@ export default function TempleMapModal({
                               </>
                             )}
 
+                            {/* 📍 Radar Waves if Current User (Self) or Selected Member */}
+                            {(isMe || isSelected) && !isSos && (
+                              <>
+                                <div className="absolute -inset-5 rounded-full bg-emerald-400/35 animate-ping pointer-events-none" />
+                                <div className="absolute -inset-2.5 rounded-full border-2 border-emerald-400 animate-pulse pointer-events-none" />
+                              </>
+                            )}
+
+                            {/* 📍 Direct Interactive Popup Balloon right above Pin */}
+                            <div className={`absolute -top-11 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-xl text-[11px] font-bold font-kantumruy whitespace-nowrap shadow-2xl border flex items-center gap-1.5 z-50 pointer-events-auto transition-all ${
+                              isMe
+                                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-white scale-105 shadow-emerald-950/80 animate-bounce'
+                                : isSelected
+                                ? 'bg-slate-900/95 text-amber-300 border-amber-500 shadow-slate-950/80 animate-bounce'
+                                : 'opacity-0 group-hover:opacity-100 bg-slate-900/90 text-slate-200 border-slate-700'
+                            }`}>
+                              <MapPin className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                              <span>{isMe ? '📍 ទីតាំងអ្នក ៖ ' : ''}{member.locationName || member.name || 'ទីតាំងលើ Map'}</span>
+                              <div className={`absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent ${
+                                isMe
+                                  ? 'border-t-teal-600'
+                                  : isSelected
+                                  ? 'border-t-slate-900/95'
+                                  : 'border-t-slate-900/90'
+                              }`} />
+                            </div>
+
                             <div className={`relative flex items-center justify-center rounded-full p-0.5 shadow-2xl transition-transform hover:scale-125 ${
                               isSos
                                 ? 'ring-4 ring-rose-500 ring-offset-2 ring-offset-slate-950 animate-bounce'
+                                : isMe || isSelected
+                                ? 'ring-3 ring-emerald-400 ring-offset-2 ring-offset-slate-950 scale-110'
                                 : member.activity === 'walking'
                                 ? 'ring-3 ring-emerald-400 ring-offset-1 ring-offset-slate-950'
                                 : 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-950'
@@ -3724,11 +3873,13 @@ export default function TempleMapModal({
                               <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${
                                 isSos
                                   ? 'from-rose-500 to-red-700 text-white'
+                                  : isMe
+                                  ? 'from-emerald-400 via-teal-500 to-emerald-600 text-slate-950 font-black ring-1 ring-white'
                                   : member.activity === 'walking'
                                   ? 'from-emerald-400 via-teal-500 to-emerald-600 text-slate-950 font-black'
                                   : roleGradient
                               } flex items-center justify-center font-bold text-xs shadow-lg border border-white/80`}>
-                                {isSos ? '🚨' : member.activity === 'walking' ? '🚶‍♂️' : initials}
+                                {isSos ? '🚨' : isMe ? '📍' : member.activity === 'walking' ? '🚶‍♂️' : initials}
                               </div>
                             </div>
 
@@ -3736,11 +3887,13 @@ export default function TempleMapModal({
                             <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-0.5 rounded-lg border text-[10px] whitespace-nowrap font-bold shadow-xl pointer-events-none flex items-center gap-1 font-kantumruy ${
                               isSos
                                 ? 'bg-rose-950/95 border-rose-500/90 text-rose-200'
+                                : isMe
+                                ? 'bg-emerald-950/95 border-emerald-400 text-emerald-200'
                                 : member.activity === 'walking'
                                 ? 'bg-emerald-950/95 border-emerald-500/80 text-emerald-200'
                                 : 'bg-slate-950/95 border-slate-700 text-slate-100'
                             }`}>
-                              <span>{member.userName || member.name}</span>
+                              <span>{isMe ? `(អ្នក) ${member.userName || member.name}` : (member.userName || member.name)}</span>
                               {isSos ? (
                                 <span className="text-rose-400 font-extrabold animate-pulse">🚨 SOS!</span>
                               ) : member.activity === 'walking' ? (
@@ -3940,7 +4093,8 @@ export default function TempleMapModal({
                     const selCat = autoMigrateCategory(
                       selectedLocation.category || (selectedLocation.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ'),
                       selectedLocation.name,
-                      selectedLocation.id
+                      selectedLocation.id,
+                      activeTab === 'tagger'
                     );
                     const managerName = groupManagers[selCat] || selectedLocation.managerName || 'មិនទាន់បញ្ជាក់';
 
@@ -3985,9 +4139,30 @@ export default function TempleMapModal({
             )}
           </div>
 
-          {/* ════════ TAB 4: TEAM TRACKER OR TAB 1-3 LEGEND ACCORDION ════════ */}
-          {activeTab === 'team' ? (
+          {/* ════════ TAB 2: TEAM TRACKER SUB-VIEW OR LEGEND ACCORDION ════════ */}
+          {(activeTab === 'interactive' && tab2SubView === 'team') ? (
             <div className="bg-slate-950/90 border border-emerald-500/40 rounded-2xl p-3 sm:p-5 space-y-4 shadow-2xl font-kantumruy">
+              {/* Sub-view switcher on Tab 2 */}
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setTab2SubView('locations')}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 cursor-pointer"
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>📍 បញ្ជីទីតាំងវត្ត ({currentLocations.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTab2SubView('team')}
+                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 font-black cursor-pointer"
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(teamLiveLocations.length)})</span>
+                </button>
+              </div>
+
               {/* Team Panel Header */}
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-800">
                 <div>
@@ -3996,7 +4171,7 @@ export default function TempleMapModal({
                       <Users className="w-4 h-4" />
                     </div>
                     <h3 className="font-moul text-sm sm:text-base text-emerald-400">
-                      👥 ផ្ទាំងទី៤ ៖ រកទីកន្លែងក្រុមការងារ (Team Tracker)
+                      👥 ផ្ទាំងទី២ ៖ តាមដានទីតាំងក្រុមការងារ (Team Tracker)
                     </h3>
                   </div>
                   <p className="text-xs text-slate-400 mt-1">
@@ -4306,6 +4481,37 @@ export default function TempleMapModal({
                 )}
               </div>
             </div>
+
+            {/* Sub-view switcher for Tab 2 */}
+            {activeTab === 'interactive' && (
+              <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setTab2SubView('locations')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                    tab2SubView === 'locations'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                      : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
+                  }`}
+                >
+                  <MapPin className="w-3.5 h-3.5" />
+                  <span>📍 បញ្ជីទីតាំងវត្ត ({currentLocations.length})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTab2SubView('team')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                    tab2SubView === 'team'
+                      ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 font-black'
+                      : 'bg-slate-900 text-emerald-400 hover:text-emerald-200 border border-slate-800'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(teamLiveLocations.length)})</span>
+                </button>
+              </div>
+            )}
 
             {/* Sub-view switcher for Tab 3 */}
             {activeTab === 'tagger' && (
@@ -4864,9 +5070,57 @@ export default function TempleMapModal({
                     </select>
                   </div>
 
-                  <div className="text-[11px] text-slate-300 font-mono bg-slate-900 p-2 rounded-xl border border-slate-800">
-                    <div>Lat: {gpsCalibration.p1?.lat?.toFixed(6)}</div>
-                    <div>Lon: {gpsCalibration.p1?.lon?.toFixed(6)}</div>
+                  {/* Direct Paste from Google Maps */}
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-0.5">📋 បិទភ្ជាប់ (Paste) ពី Google Maps ៖</label>
+                    <input
+                      type="text"
+                      placeholder="ឧ. 11.984407, 105.440369"
+                      onChange={(e) => {
+                        if (handlePasteCoordinates('p1', e.target.value)) {
+                          e.target.value = '';
+                        }
+                      }}
+                      className="w-full bg-slate-900 border border-slate-700 focus:border-emerald-400 rounded-xl px-2.5 py-1.5 text-xs text-emerald-300 font-mono focus:outline-none placeholder:text-slate-600"
+                    />
+                  </div>
+
+                  {/* Manual Lat & Lon fields */}
+                  <div className="grid grid-cols-2 gap-2 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-0.5 font-bold">Latitude ៖</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={gpsCalibration.p1?.lat ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                          setGpsCalibration((prev) => ({
+                            ...prev,
+                            p1: { ...prev.p1, lat: val }
+                          }));
+                        }}
+                        placeholder="11.xxxxxx"
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-400 rounded-lg px-2 py-1 text-xs text-emerald-300 font-mono focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-0.5 font-bold">Longitude ៖</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={gpsCalibration.p1?.lon ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                          setGpsCalibration((prev) => ({
+                            ...prev,
+                            p1: { ...prev.p1, lon: val }
+                          }));
+                        }}
+                        placeholder="105.xxxxxx"
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-emerald-400 rounded-lg px-2 py-1 text-xs text-emerald-300 font-mono focus:outline-none"
+                      />
+                    </div>
                   </div>
 
                   <button
@@ -4911,9 +5165,57 @@ export default function TempleMapModal({
                     </select>
                   </div>
 
-                  <div className="text-[11px] text-slate-300 font-mono bg-slate-900 p-2 rounded-xl border border-slate-800">
-                    <div>Lat: {gpsCalibration.p2?.lat?.toFixed(6)}</div>
-                    <div>Lon: {gpsCalibration.p2?.lon?.toFixed(6)}</div>
+                  {/* Direct Paste from Google Maps */}
+                  <div>
+                    <label className="text-[10px] text-slate-400 block mb-0.5">📋 បិទភ្ជាប់ (Paste) ពី Google Maps ៖</label>
+                    <input
+                      type="text"
+                      placeholder="ឧ. 11.984020, 105.440850"
+                      onChange={(e) => {
+                        if (handlePasteCoordinates('p2', e.target.value)) {
+                          e.target.value = '';
+                        }
+                      }}
+                      className="w-full bg-slate-900 border border-slate-700 focus:border-amber-400 rounded-xl px-2.5 py-1.5 text-xs text-amber-300 font-mono focus:outline-none placeholder:text-slate-600"
+                    />
+                  </div>
+
+                  {/* Manual Lat & Lon fields */}
+                  <div className="grid grid-cols-2 gap-2 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-0.5 font-bold">Latitude ៖</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={gpsCalibration.p2?.lat ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                          setGpsCalibration((prev) => ({
+                            ...prev,
+                            p2: { ...prev.p2, lat: val }
+                          }));
+                        }}
+                        placeholder="11.xxxxxx"
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-lg px-2 py-1 text-xs text-amber-300 font-mono focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] text-slate-400 block mb-0.5 font-bold">Longitude ៖</label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={gpsCalibration.p2?.lon ?? ''}
+                        onChange={(e) => {
+                          const val = e.target.value === '' ? '' : parseFloat(e.target.value);
+                          setGpsCalibration((prev) => ({
+                            ...prev,
+                            p2: { ...prev.p2, lon: val }
+                          }));
+                        }}
+                        placeholder="105.xxxxxx"
+                        className="w-full bg-slate-950 border border-slate-700 focus:border-amber-400 rounded-lg px-2 py-1 text-xs text-amber-300 font-mono focus:outline-none"
+                      />
+                    </div>
                   </div>
 
                   <button

@@ -32,8 +32,9 @@ export default function LoginModal({
       const userEmail = (u.email || '').toLowerCase().trim();
       const altEmail = (u.altEmail || '').toLowerCase().trim();
 
-      // Direct email match
+      // Direct email match or username prefix match (e.g. samnang, annkle, admin, assistant)
       if (userEmail === trimmedEmail || altEmail === trimmedEmail) return true;
+      if (userEmail.split('@')[0] === trimmedEmail) return true;
 
       // Owner aliases: owner@gmail.com, thonvisal12@gmail.com, or "owner"
       if (
@@ -78,6 +79,10 @@ export default function LoginModal({
         matchedUser = DEFAULT_USERS.find((u) => u.role === 'admin');
       } else if (trimmedEmail === 'assistant@gmail.com' || trimmedEmail === 'assistant') {
         matchedUser = DEFAULT_USERS.find((u) => u.role === 'assistant');
+      } else if (trimmedEmail === 'annkle@gmail.com' || trimmedEmail === 'annkle') {
+        matchedUser = DEFAULT_USERS.find((u) => u.email === 'annkle@gmail.com');
+      } else if (trimmedEmail === 'samnang@gmail.com' || trimmedEmail === 'samnang') {
+        matchedUser = DEFAULT_USERS.find((u) => u.email === 'samnang@gmail.com');
       }
     }
 

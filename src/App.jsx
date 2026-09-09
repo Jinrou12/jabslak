@@ -118,6 +118,7 @@ export default function App() {
   const [isTempleMapOpen, setIsTempleMapOpen] = useState(false);
   const [templeMapTargetLoc, setTempleMapTargetLoc] = useState(null);
   const [isZoneAttendanceModalOpen, setIsZoneAttendanceModalOpen] = useState(false);
+  const [locationAllowedPopup, setLocationAllowedPopup] = useState(null);
   
   // PWA Install State
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
@@ -131,6 +132,21 @@ export default function App() {
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
+
+  // 🛰️ Immediate Location Acquired Event -> Show Popup for Admin/Assistant
+  useEffect(() => {
+    const handleLocAllowed = (e) => {
+      const spot = e?.detail?.spot;
+      if (spot && effectiveUser && effectiveUser.role !== 'guest') {
+        if (!isTempleMapOpen) {
+          setLocationAllowedPopup({ spot, user: effectiveUser });
+        }
+      }
+    };
+
+    window.addEventListener('phone-location-allowed', handleLocAllowed);
+    return () => window.removeEventListener('phone-location-allowed', handleLocAllowed);
+  }, [effectiveUser, isTempleMapOpen]);
 
   // 🚨 Real-time Global Team SOS Alert Monitor
   const [teamLocations, setTeamLocations] = useState([]);
@@ -1503,6 +1519,80 @@ export default function App() {
             setIsTempleMapOpen(true);
           }}
         />
+      )}
+
+      {/* 📍 Celebratory Location Granted & Locked Popup */}
+      {locationAllowedPopup && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-300 font-kantumruy">
+          <div className="bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 border-2 border-emerald-500/80 rounded-3xl p-5 max-w-sm w-full shadow-[0_0_50px_rgba(16,185,129,0.35)] text-center relative overflow-hidden">
+            {/* Ambient background glow */}
+            <div className="absolute -top-12 left-1/2 -translate-x-1/2 w-36 h-36 bg-emerald-500/25 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Animated Pin Avatar */}
+            <div className="relative mx-auto w-16 h-16 rounded-3xl bg-gradient-to-br from-emerald-400 via-teal-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 mb-3.5 border-2 border-white/80">
+              <div className="absolute -inset-2 rounded-3xl bg-emerald-400/30 animate-ping pointer-events-none" />
+              <MapPin className="w-8 h-8 text-slate-950 stroke-[2.5]" />
+            </div>
+
+            <h3 className="text-base sm:text-lg font-bold font-moul text-white mb-1">
+              បានអនុញ្ញាតទីតាំងជោគជ័យ!
+            </h3>
+            <p className="text-xs text-slate-300 mb-3">
+              ប្រព័ន្ធបានដៅទីតាំងជាក់ស្តែងរបស់អ្នកលើប្លង់វត្ត ៖
+            </p>
+
+            {/* Location highlight box */}
+            <div className="bg-slate-900/90 border border-emerald-500/50 rounded-2xl p-3 mb-4 text-left space-y-1.5 shadow-inner">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] text-slate-400">ទីតាំងដៅលើ Map ៖</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
+                  🛰️ GPS Auto
+                </span>
+              </div>
+              <div className="text-sm font-bold text-amber-300 font-moul flex items-center gap-1.5 truncate">
+                <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="truncate">{locationAllowedPopup.spot?.name || locationAllowedPopup.spot?.locationName || 'ធម្មសភា'}</span>
+              </div>
+              <div className="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
+                <span>កូអរដោនេ ៖ X {locationAllowedPopup.spot?.x}%, Y {locationAllowedPopup.spot?.y}%</span>
+                {locationAllowedPopup.spot?.accuracy && (
+                  <span className="text-emerald-400 font-bold">
+                    ±{Math.round(locationAllowedPopup.spot.accuracy)}m
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const target = locationAllowedPopup.spot;
+                  setLocationAllowedPopup(null);
+                  setTempleMapTargetLoc({
+                    name: target?.name || target?.locationName || 'ទីតាំងខ្ញុំ',
+                    x: target?.x,
+                    y: target?.y,
+                    isSelf: true
+                  });
+                  setIsTempleMapOpen(true);
+                }}
+                className="w-full py-3 bg-gradient-to-r from-emerald-500 via-teal-400 to-emerald-500 hover:from-emerald-400 hover:to-emerald-300 text-slate-950 font-bold text-xs sm:text-sm rounded-2xl shadow-xl shadow-emerald-500/30 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-98 transition-all cursor-pointer font-moul"
+              >
+                <span>🗺️ មើលលើ Map ភ្លាមៗ</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setLocationAllowedPopup(null)}
+                className="w-full py-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 font-bold text-xs rounded-xl transition-all cursor-pointer"
+              >
+                យល់ព្រម
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 📱 Fixed Mobile Bottom Navigation Bar for Phones ONLY (Hidden while searching or on PC/Desktop) */}
