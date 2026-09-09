@@ -493,38 +493,44 @@ export default function ZoneAttendanceModal({
               </span>
             </button>
 
-            {/* Button 2: បង្ហាញ pion pin ដែលខ្លួនគ្រប់គ្រង */}
+            {/* Button 2: បង្ហាញ pion pin ដែលខ្លួនគ្រប់គ្រងលើ Map */}
             <button
               type="button"
-              onClick={() => setActiveSubView('pins')}
-              className={`py-2 px-1 sm:px-2 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 ${
-                activeSubView === 'pins'
-                  ? 'bg-gradient-to-b from-sky-500/25 to-sky-500/10 border-sky-400 text-sky-300 shadow-md shadow-sky-500/10 ring-1 ring-sky-400/40'
-                  : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/80'
-              }`}
+              onClick={() => {
+                if (onOpenTempleMap) {
+                  onClose();
+                  onOpenTempleMap({ zone: effectiveActiveZone, tab: 'tagger', fromZoneModal: true });
+                } else {
+                  setActiveSubView('pins');
+                }
+              }}
+              className="py-2 px-1 sm:px-2 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 bg-slate-900/80 border-sky-500/40 text-sky-300 hover:text-sky-200 hover:bg-sky-500/20 active:scale-95 shadow-sm"
+              title="បើកប្លង់ Map ដើម្បីឃើញតែ Pion Pin ក្នុងផែននេះ"
             >
               <div className="flex items-center gap-1 max-w-full">
                 <MapPin className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                 <span className="font-moul text-[10px] sm:text-xs truncate">
-                  Pion Pin គ្រប់គ្រង
+                  Pion Pin លើ Map
                 </span>
               </div>
-              <span className={`text-[9px] sm:text-[10px] px-2 py-0.2 rounded-full font-bold ${
-                activeSubView === 'pins' ? 'bg-sky-400/20 text-sky-300 border border-sky-400/40' : 'bg-slate-800 text-slate-400'
-              }`}>
+              <span className="text-[9px] sm:text-[10px] px-2 py-0.2 rounded-full font-bold bg-sky-400/20 text-sky-300 border border-sky-400/40">
                 {westernToKhmerDigits(zoneManagedPins.length)} ទីតាំង
               </span>
             </button>
 
-            {/* Button 3: Track Location ក្រុមការងារក្នុងក្រុម */}
+            {/* Button 3: Track Location ក្រុមការងារក្នុងក្រុមលើ Map */}
             <button
               type="button"
-              onClick={() => setActiveSubView('track')}
-              className={`py-2 px-1 sm:px-2 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 relative ${
-                activeSubView === 'track'
-                  ? 'bg-gradient-to-b from-emerald-500/25 to-emerald-500/10 border-emerald-400 text-emerald-300 shadow-md shadow-emerald-500/10 ring-1 ring-emerald-400/40'
-                  : 'bg-slate-900/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/80'
-              }`}
+              onClick={() => {
+                if (onOpenTempleMap) {
+                  onClose();
+                  onOpenTempleMap({ zone: effectiveActiveZone, tab: 'team', fromZoneModal: true });
+                } else {
+                  setActiveSubView('track');
+                }
+              }}
+              className="py-2 px-1 sm:px-2 rounded-2xl border text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-1 relative bg-slate-900/80 border-emerald-500/40 text-emerald-300 hover:text-emerald-200 hover:bg-emerald-500/20 active:scale-95 shadow-sm"
+              title="បើកប្លង់ Map ដើម្បីតាមដានតែក្រុមការងារក្នុងផែននេះ"
             >
               {activeSosMember && (
                 <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-rose-500 text-[9px] text-white font-bold flex items-center justify-center animate-ping">
@@ -534,12 +540,10 @@ export default function ZoneAttendanceModal({
               <div className="flex items-center gap-1 max-w-full">
                 <Users className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
                 <span className="font-moul text-[10px] sm:text-xs truncate">
-                  Track ក្រុមការងារ
+                  Track ក្រុមលើ Map
                 </span>
               </div>
-              <span className={`text-[9px] sm:text-[10px] px-2 py-0.2 rounded-full font-bold ${
-                activeSubView === 'track' ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/40' : 'bg-slate-800 text-slate-400'
-              }`}>
+              <span className="text-[9px] sm:text-[10px] px-2 py-0.2 rounded-full font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/40">
                 {westernToKhmerDigits(zoneTeamMembers.length)} នាក់
               </span>
             </button>

@@ -864,6 +864,23 @@ function autoMigrateCategory(cat, locName = '', locId = '', isTab3 = false) {
   return norm;
 }
 
+function normalizeZoneName(zoneStr = '') {
+  let norm = String(zoneStr || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().normalize('NFC');
+  if (norm.startsWith('ដែន')) {
+    norm = 'ផែន' + norm.slice(3);
+  }
+  if (norm.includes('ធម្មសភា') || norm.includes('ធម្មសាលា')) return 'ផែន១ ៖ ធម្មសភា';
+  if (norm.includes('សាលាឆាន់ចាស់') && norm.includes('មុខ')) return 'ផែន៣ ៖ មុខសាលាឆាន់ចាស់';
+  if (norm.includes('សាលាឆាន់')) return 'ផែន២ ៖ សាលាឆាន់ចាស់';
+  if (norm.includes('បរិនិព្វាន') || norm.includes('វិហារ') || norm.includes('ពោធិ')) return 'ផែន៤ ៖ ព្រះបរិនិព្វាន';
+  if (norm.includes('បណ្ណាល័យ')) return 'ផែន៥ ៖ បណ្ណាល័យ';
+  if (norm.includes('ព្រះផ្ទម') || norm.includes('ព្រះផ្ទំ')) return 'ផែន៦ ៖ ព្រះផ្ទម';
+  if (norm.includes('កុដិ')) return 'ផែន៧ ៖ តាមកុដិ';
+  if (norm.includes('សាលារៀន') || norm.includes('វិទ្យុ')) return 'ផែន៨ ៖ សាលារៀន';
+  if (norm.includes('ខ្លោងទ្វារ')) return '⛩️ ក្រុមខ្លោងទ្វារវត្ត';
+  return norm;
+}
+
 export default function TempleMapModal({
   onClose,
   allTags = [],
@@ -886,6 +903,15 @@ export default function TempleMapModal({
     : '';
   const isZoneRestricted = Boolean(userAssignedZone) && !isOwner;
   const canCustomizeMap = (userRole === 'admin' || userRole === 'owner') && !isZoneRestricted;
+
+  // 🎯 ZONE-SPECIFIC MAP MODE vs GENERAL TEMPLE MAP
+  // When opened from ZoneAttendanceModal, targetZoneParam is set.
+  // If user is zone-restricted, activeZoneScope is set to their assigned zone.
+  const targetZoneParam = highlightLocationName && typeof highlightLocationName === 'object' ? highlightLocationName.zone : null;
+  const activeZoneScope = targetZoneParam
+    ? normalizeZoneName(targetZoneParam)
+    : (isZoneRestricted ? normalizeZoneName(userAssignedZone) : null);
+  const isZoneScoped = Boolean(activeZoneScope);
 
   const currentTempleId = currentTemple?.id || 'khemavan';
   const isKhemavan = currentTempleId === 'khemavan';
@@ -952,8 +978,19 @@ export default function TempleMapModal({
     }
     return raw;
   });
-  const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ ដៅស្លាកលើ Map)
-  const [tab2SubView, setTab2SubView] = useState(() => isZoneRestricted ? 'team' : 'locations'); // 'locations' | 'team' (Tab 2 only)
+  const [activeTab, setActiveTab] = useState(() => {
+    if (highlightLocationName && typeof highlightLocationName === 'object') {
+      if (highlightLocationName.tab === 'team') return 'interactive';
+      if (highlightLocationName.tab === 'tagger') return 'tagger';
+    }
+    return 'tagger';
+  });
+  const [tab2SubView, setTab2SubView] = useState(() => {
+    if (highlightLocationName && typeof highlightLocationName === 'object' && highlightLocationName.tab === 'team') {
+      return 'team';
+    }
+    return isZoneScoped ? 'team' : 'locations';
+  });
 
   useEffect(() => {
     setLocations(getSavedTempleLocations(currentTempleId));
@@ -986,6 +1023,19 @@ export default function TempleMapModal({
   const [showTeamTracker, setShowTeamTracker] = useState(true);
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
   const allSavedUsers = useMemo(() => getSavedUsers(), []);
+
+  // 🎯 Team Live Locations strictly filtered to current zone when in Zone Scope Mode
+  const scopedTeamLiveLocations = useMemo(() => {
+    if (!isZoneScoped || !activeZoneScope) return teamLiveLocations;
+    return teamLiveLocations.filter((m) => {
+      const memberZoneNorm = normalizeZoneName(m.assignedZone || '');
+      return (
+        memberZoneNorm === activeZoneScope ||
+        memberZoneNorm.includes(activeZoneScope) ||
+        activeZoneScope.includes(memberZoneNorm)
+      );
+    });
+  }, [isZoneScoped, activeZoneScope, teamLiveLocations]);
 
   // 👥 Tab 4 Team Interactive Spot Positioning State
   const [isSettingMySpot, setIsSettingMySpot] = useState(false);
@@ -1313,12 +1363,53 @@ export default function TempleMapModal({
       });
   }, [locations]);
 
+  // 🎯 Filter Tab 3 locations strictly to activeZoneScope when in Zone Scope Mode
+  const scopedTab3Locations = useMemo(() => {
+    if (!isZoneScoped || !activeZoneScope) return effectiveTab3Locations;
+    return effectiveTab3Locations.filter((loc) => {
+      const locCat = loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមក្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ');
+      const normCat = normalizeZoneName(locCat);
+      if (normCat === activeZoneScope || normCat.includes(activeZoneScope) || activeZoneScope.includes(normCat)) {
+        return true;
+      }
+      const locName = String(loc.name || '');
+      const locDisp = String(loc.displayName || '');
+      if (
+        activeZoneScope.includes('ធម្មសភា') &&
+        (locName.includes('ធម្មសភា') || locName.includes('ធម្មសាលា') || locDisp.includes('ធម្មសភា') || locDisp.includes('ធម្មសាលា'))
+      ) {
+        return true;
+      }
+      if (
+        activeZoneScope.includes('បរិនិព្វាន') &&
+        (locName.includes('វិហារ') || locName.includes('ពោធិ') || locDisp.includes('វិហារ') || locDisp.includes('ពោធិ'))
+      ) {
+        return true;
+      }
+      if (
+        activeZoneScope.includes('បណ្ណាល័យ') &&
+        (locName.includes('បណ្ណាល័យ') || locDisp.includes('បណ្ណាល័យ'))
+      ) {
+        return true;
+      }
+      if (
+        activeZoneScope.includes('ព្រះផ្ទំ') &&
+        (locName.includes('ព្រះផ្ទំ') || locDisp.includes('ព្រះផ្ទំ'))
+      ) {
+        return true;
+      }
+      return false;
+    });
+  }, [isZoneScoped, activeZoneScope, effectiveTab3Locations]);
+
   // Computed: which locations array to use based on active tab
-  const currentLocations = activeTab === 'tagger' ? effectiveTab3Locations : baseMapLocations;
+  const currentLocations = activeTab === 'tagger'
+    ? (isZoneScoped ? scopedTab3Locations : effectiveTab3Locations)
+    : baseMapLocations;
   const getGroupBadgeColor = (groupName) => getGroupColorKey(groupName, currentLocations);
   const [zoomScale, setZoomScale] = useState(1.0);
   const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin circle size in px (14px)
-  const [selectedSizeGroup, setSelectedSizeGroup] = useState(() => isZoneRestricted && userAssignedZone ? userAssignedZone : 'all'); // 'all' | categoryName
+  const [selectedSizeGroup, setSelectedSizeGroup] = useState(() => isZoneScoped && activeZoneScope ? activeZoneScope : 'all'); // 'all' | categoryName
   const [groupPinSizes, setGroupPinSizes] = useState({}); // { [catName]: sizeInPx }
   const [isLabelsVisible, setIsLabelsVisible] = useState(true);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
@@ -1326,11 +1417,11 @@ export default function TempleMapModal({
   const [isCompassExpanded, setIsCompassExpanded] = useState(false);
   const [isDragEnabled, setIsDragEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState(() => isZoneRestricted && userAssignedZone ? userAssignedZone : 'all');
+  const [selectedCategory, setSelectedCategory] = useState(() => isZoneScoped && activeZoneScope ? activeZoneScope : 'all');
 
-  // Strict Zone Restriction Guard: never allow labeled (Tab 1) or locations mode on Tab 2
+  // Strict Zone Restriction Guard: never allow labeled (Tab 1) or locations mode on Tab 2 when zone scoped
   useEffect(() => {
-    if (isZoneRestricted) {
+    if (isZoneScoped) {
       if (activeTab === 'labeled') {
         setActiveTab('tagger');
       }
@@ -1339,7 +1430,7 @@ export default function TempleMapModal({
         setShowTeamTracker(true);
       }
     }
-  }, [isZoneRestricted, activeTab, tab2SubView]);
+  }, [isZoneScoped, activeTab, tab2SubView]);
   const [openAccordions, setOpenAccordions] = useState({});
   const [hiddenCategories, setHiddenCategories] = useState({});
   const [lockedCategories, setLockedCategories] = useState({});
@@ -3418,9 +3509,13 @@ export default function TempleMapModal({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h2 className="text-sm sm:text-base md:text-lg font-bold font-moul text-amber-400 truncate">
-                  ផែនទីវត្ត និង ទីតាំង
+                  {isZoneScoped ? `ផែនទី ៖ ${activeZoneScope}` : 'ផែនទីវត្ត និង ទីតាំង'}
                 </h2>
-                {currentTemple?.name && (
+                {isZoneScoped ? (
+                  <span className="bg-sky-500/25 text-sky-300 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border border-sky-500/40 shrink-0 font-kantumruy">
+                    ផ្នែកគ្រប់គ្រង
+                  </span>
+                ) : currentTemple?.name && (
                   <span className="bg-amber-500/25 text-amber-300 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border border-amber-500/40 shrink-0 font-moul">
                     {currentTemple.name}
                   </span>
@@ -3430,14 +3525,16 @@ export default function TempleMapModal({
                 </span>
               </div>
               <p className="text-[10px] sm:text-xs text-slate-400 truncate hidden sm:block">
-                ប្លង់វត្តអន្តរកម្ម ទិសទាំង ៨ និងការគ្រប់គ្រងទីតាំងស្លាកលេខ
+                {isZoneScoped
+                  ? `ផែនទីសម្រាប់តែ ${activeZoneScope} (ឃើញតែ Pion Pin និងក្រុមការងារក្នុងផែននេះ)`
+                  : 'ប្លង់វត្តអន្តរកម្ម ទិសទាំង ៨ និងការគ្រប់គ្រងទីតាំងស្លាកលេខ'}
               </p>
             </div>
           </div>
 
           {/* Quick Header Actions (Upload Map for Owner, Close / Back Button) */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {userRole === 'owner' && (
+            {userRole === 'owner' && !isZoneScoped && (
               <>
                 <input
                   type="file"
@@ -3465,7 +3562,9 @@ export default function TempleMapModal({
                 title="ថយក្រោយទៅផ្ទាំងដើម"
               >
                 <ArrowLeft className="w-4 h-4 stroke-[3]" />
-                <span className="whitespace-nowrap font-bold">ថយក្រោយ</span>
+                <span className="whitespace-nowrap font-bold">
+                  {highlightLocationName?.fromZoneModal ? `ត្រឡប់ទៅ ${activeZoneScope || 'ផែន'}` : 'ថយក្រោយ'}
+                </span>
               </button>
             )}
             {onClose && (
@@ -3484,16 +3583,16 @@ export default function TempleMapModal({
         <div className="px-2 sm:px-5 py-1.5 sm:py-2 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 shrink-0">
           {/* Tab buttons & Toggle buttons (Scrollable on small mobile screens) */}
           <div className="flex items-center gap-1 bg-slate-900 p-0.5 sm:p-1 rounded-2xl border border-slate-800 w-full sm:w-auto overflow-x-auto no-scrollbar justify-start">
-            {isZoneRestricted ? (
+            {isZoneScoped ? (
               <>
                 {/* 1. Pion Pin គ្រប់គ្រង (Opens Tag Pin map matching Image 1) */}
                 <button
                   type="button"
                   onClick={() => {
                     setActiveTab('tagger');
-                    if (userAssignedZone) {
-                      setSelectedCategory(userAssignedZone);
-                      setSelectedSizeGroup(userAssignedZone);
+                    if (activeZoneScope) {
+                      setSelectedCategory(activeZoneScope);
+                      setSelectedSizeGroup(activeZoneScope);
                     }
                   }}
                   className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
@@ -3505,8 +3604,8 @@ export default function TempleMapModal({
                 >
                   <Tag className="w-3.5 h-3.5 shrink-0" />
                   <span>🏷️ Pion Pin គ្រប់គ្រង</span>
-                  {userAssignedZone && (
-                    <span className="text-[10px] opacity-90 hidden md:inline">({userAssignedZone})</span>
+                  {activeZoneScope && (
+                    <span className="text-[10px] opacity-90 hidden md:inline">({activeZoneScope})</span>
                   )}
                 </button>
 
@@ -3527,12 +3626,15 @@ export default function TempleMapModal({
                 >
                   <Users className="w-3.5 h-3.5 shrink-0" />
                   <span>👥 Track ក្រុមការងារ</span>
+                  {activeZoneScope && (
+                    <span className="text-[10px] opacity-90 hidden md:inline">({activeZoneScope})</span>
+                  )}
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
                     activeTab === 'interactive'
                       ? 'bg-slate-950/40 text-slate-950 border-slate-950/50'
                       : 'bg-slate-800 text-slate-300 border-slate-700'
                   }`}>
-                    {westernToKhmerDigits(teamLiveLocations.length)}
+                    {westernToKhmerDigits(scopedTeamLiveLocations.length)}
                   </span>
                 </button>
               </>
@@ -3825,24 +3927,24 @@ export default function TempleMapModal({
                 </button>
 
                 {/* Live count summary */}
-                {showTeamTracker && teamLiveLocations.length > 0 && (
+                {showTeamTracker && scopedTeamLiveLocations.length > 0 && (
                   <div className="flex items-center gap-2 text-[11px] text-slate-300 flex-wrap">
                     <span className="flex items-center gap-1 text-emerald-400 font-bold">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                      <span>🚶‍♂️ {teamLiveLocations.filter((m) => m.activity === 'walking').length} កំពុងដើរ</span>
+                      <span>🚶‍♂️ {scopedTeamLiveLocations.filter((m) => m.activity === 'walking').length} កំពុងដើរ</span>
                     </span>
                     <span className="text-slate-600">•</span>
                     <span className="flex items-center gap-1 text-amber-400 font-bold">
-                      <span>🧍 {teamLiveLocations.filter((m) => m.activity !== 'walking').length} នៅស្ងៀម</span>
+                      <span>🧍 {scopedTeamLiveLocations.filter((m) => m.activity !== 'walking').length} នៅស្ងៀម</span>
                     </span>
                   </div>
                 )}
               </div>
 
               {/* Quick Member Spotlight Chips */}
-              {showTeamTracker && teamLiveLocations.length > 0 && (
+              {showTeamTracker && scopedTeamLiveLocations.length > 0 && (
                 <div className="flex items-center gap-1.5 overflow-x-auto max-w-full py-0.5">
-                  {teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((m) => {
+                  {scopedTeamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((m) => {
                     const isWalking = m.activity === 'walking';
                     const cName = String(m.userName || m.name || '').replace(/\s*\([^)]*\)/g, '').trim() || 'U';
                     const groupTheme = getTeamMemberGroupTheme(m, allSavedUsers);
@@ -4023,7 +4125,7 @@ export default function TempleMapModal({
 
                       {/* 👥 Live Team Tracker Pins on the Temple Map - SLEEK, COMPACT & SIMPLE */}
                       {/* 👥 Live Team Tracker Pion Pins on the Temple Map - ULTRA-COMPACT, ELEGANT & SIMPLE */}
-                      {activeTab === 'interactive' && showTeamTracker && teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((member) => {
+                      {activeTab === 'interactive' && showTeamTracker && scopedTeamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((member) => {
                         const isSos = Boolean(member.needHelp);
                         const isMe = member.userId === (currentUser?.id || 'u-self');
                         const isSelected = selectedTeamMember && selectedTeamMember.userId === member.userId;
@@ -4387,7 +4489,7 @@ export default function TempleMapModal({
                     className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 font-black cursor-pointer"
                   >
                     <Users className="w-3.5 h-3.5" />
-                    <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(teamLiveLocations.length)})</span>
+                    <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(scopedTeamLiveLocations.length)})</span>
                   </button>
                 </div>
               )}
@@ -4519,10 +4621,10 @@ export default function TempleMapModal({
               {/* Filter Chips Bar */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {[
-                  { id: 'all', label: `🌐 ទាំងអស់ (${westernToKhmerDigits(teamLiveLocations.length)})` },
-                  { id: 'walking', label: `🟢 🚶‍♂️ កំពុងដើរ (${westernToKhmerDigits(teamLiveLocations.filter((m) => m.activity === 'walking').length)})` },
-                  { id: 'stationary', label: `🟡 🧍 នៅស្ងៀម (${westernToKhmerDigits(teamLiveLocations.filter((m) => m.activity !== 'walking' && !m.needHelp).length)})` },
-                  { id: 'sos', label: `🚨 SOS សុំជំនួយ (${westernToKhmerDigits(teamLiveLocations.filter((m) => m.needHelp).length)})` }
+                  { id: 'all', label: `🌐 ទាំងអស់ (${westernToKhmerDigits(scopedTeamLiveLocations.length)})` },
+                  { id: 'walking', label: `🟢 🚶‍♂️ កំពុងដើរ (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.activity === 'walking').length)})` },
+                  { id: 'stationary', label: `🟡 🧍 នៅស្ងៀម (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.activity !== 'walking' && !m.needHelp).length)})` },
+                  { id: 'sos', label: `🚨 SOS សុំជំនួយ (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.needHelp).length)})` }
                 ].map((f) => (
                   <button
                     key={f.id}
@@ -4540,13 +4642,13 @@ export default function TempleMapModal({
               </div>
 
               {/* Team Member Cards Grid */}
-              {teamLiveLocations.length === 0 ? (
+              {scopedTeamLiveLocations.length === 0 ? (
                 <div className="py-8 text-center text-slate-400 text-xs">
                   មិនទាន់មានសមាជិកក្រុមការងារ Online លើប្រព័ន្ធនៅឡើយទេ។ សូមចុចប៊ូតុង «📍 ដៅ / រំកិលទីតាំងខ្ញុំលើ Map» ខាងលើដើម្បីកំណត់ទីតាំងអ្នក!
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
-                  {teamLiveLocations
+                  {scopedTeamLiveLocations
                     .filter((m) => {
                       if (teamFilter === 'walking') return m.activity === 'walking';
                       if (teamFilter === 'stationary') return m.activity !== 'walking' && !m.needHelp;

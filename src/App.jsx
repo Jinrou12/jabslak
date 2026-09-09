@@ -1430,8 +1430,12 @@ export default function App() {
           onUpdateTempleMap={handleUpdateTempleMap}
           highlightLocationName={templeMapTargetLoc}
           onClose={() => {
+            const returnToZone = templeMapTargetLoc && typeof templeMapTargetLoc === 'object' && templeMapTargetLoc.fromZoneModal;
             setIsTempleMapOpen(false);
             setTempleMapTargetLoc(null);
+            if (returnToZone) {
+              setIsZoneAttendanceModalOpen(true);
+            }
           }}
           onFilterByLocation={(locName) => {
             setSelectedLocation(locName);
