@@ -880,7 +880,12 @@ export default function TempleMapModal({
   // Only admin & owner can customize (add/edit/delete pins, drag, create groups) on Tab 3
   // Assistant and Guest can only VIEW the map
   const userRole = currentUser?.role || 'guest';
-  const canCustomizeMap = userRole === 'admin' || userRole === 'owner';
+  const isOwner = userRole === 'owner';
+  const userAssignedZone = currentUser?.assignedZone && currentUser.assignedZone !== 'ALL'
+    ? currentUser.assignedZone
+    : '';
+  const isZoneRestricted = Boolean(userAssignedZone) && !isOwner;
+  const canCustomizeMap = (userRole === 'admin' || userRole === 'owner') && !isZoneRestricted;
 
   const currentTempleId = currentTemple?.id || 'khemavan';
   const isKhemavan = currentTempleId === 'khemavan';
@@ -947,8 +952,8 @@ export default function TempleMapModal({
     }
     return raw;
   });
-  const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ នៅស្លាកលើ Map)
-  const [tab2SubView, setTab2SubView] = useState('locations'); // 'locations' | 'team' (Tab 2 only)
+  const [activeTab, setActiveTab] = useState('tagger'); // Default directly to Tab 3 (ផ្ទាំងទី៣ ៖ ដៅស្លាកលើ Map)
+  const [tab2SubView, setTab2SubView] = useState(() => isZoneRestricted ? 'team' : 'locations'); // 'locations' | 'team' (Tab 2 only)
 
   useEffect(() => {
     setLocations(getSavedTempleLocations(currentTempleId));
@@ -1313,7 +1318,7 @@ export default function TempleMapModal({
   const getGroupBadgeColor = (groupName) => getGroupColorKey(groupName, currentLocations);
   const [zoomScale, setZoomScale] = useState(1.0);
   const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin circle size in px (14px)
-  const [selectedSizeGroup, setSelectedSizeGroup] = useState('all'); // 'all' | categoryName
+  const [selectedSizeGroup, setSelectedSizeGroup] = useState(() => isZoneRestricted && userAssignedZone ? userAssignedZone : 'all'); // 'all' | categoryName
   const [groupPinSizes, setGroupPinSizes] = useState({}); // { [catName]: sizeInPx }
   const [isLabelsVisible, setIsLabelsVisible] = useState(true);
   const [isPinsVisible, setIsPinsVisible] = useState(true);
@@ -1321,7 +1326,20 @@ export default function TempleMapModal({
   const [isCompassExpanded, setIsCompassExpanded] = useState(false);
   const [isDragEnabled, setIsDragEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedCategory, setSelectedCategory] = useState(() => isZoneRestricted && userAssignedZone ? userAssignedZone : 'all');
+
+  // Strict Zone Restriction Guard: never allow labeled (Tab 1) or locations mode on Tab 2
+  useEffect(() => {
+    if (isZoneRestricted) {
+      if (activeTab === 'labeled') {
+        setActiveTab('tagger');
+      }
+      if (activeTab === 'interactive' && tab2SubView !== 'team') {
+        setTab2SubView('team');
+        setShowTeamTracker(true);
+      }
+    }
+  }, [isZoneRestricted, activeTab, tab2SubView]);
   const [openAccordions, setOpenAccordions] = useState({});
   const [hiddenCategories, setHiddenCategories] = useState({});
   const [lockedCategories, setLockedCategories] = useState({});
@@ -1768,25 +1786,28 @@ export default function TempleMapModal({
   // Focus on highlighted location or tag if passed from parent
   useEffect(() => {
     if (highlightLocationName) {
-      setActiveTab('tagger');
-
       let targetLoc = null;
 
       if (typeof highlightLocationName === 'object' && highlightLocationName !== null) {
         const tagObj = highlightLocationName;
-        // Direct coordinates from Team Tracker (e.g. { name: ..., x: ..., y: ... })
-        if (tagObj.x != null && tagObj.y != null) {
-          targetLoc = {
-            id: 'team-member-focus',
-            name: tagObj.name || 'ទីតាំងក្រុមការងារ',
-            x: Number(tagObj.x),
-            y: Number(tagObj.y),
-            category: '👥 ទីតាំងក្រុមការងារ'
-          };
+
+        // 1. If explicit 'team' tab or self member requested -> Interactive Map + Team Tracker (Image 4)
+        if (tagObj.tab === 'team' || tagObj.isSelf) {
+          setActiveTab('interactive');
+          setTab2SubView('team');
+          setShowTeamTracker(true);
+
+          if (tagObj.x != null && tagObj.y != null) {
+            targetLoc = {
+              id: 'team-member-focus',
+              name: tagObj.name || 'ទីតាំងក្រុមការងារ',
+              x: Number(tagObj.x),
+              y: Number(tagObj.y),
+              category: '👥 ទីតាំងក្រុមការងារ'
+            };
+          }
+
           if (tagObj.isSelf) {
-            setActiveTab('interactive');
-            setTab2SubView('team');
-            setShowTeamTracker(true);
             const myId = currentUser?.id || 'u-self';
             const myRecord = teamLiveLocations.find((m) => m.userId === myId) || {
               userId: myId,
@@ -1801,6 +1822,29 @@ export default function TempleMapModal({
               isAutoGps: true
             };
             setSelectedTeamMember(myRecord);
+          } else if (tagObj.memberId || tagObj.memberName || tagObj.name) {
+            const foundMember = teamLiveLocations.find((m) =>
+              (tagObj.memberId && m.userId === tagObj.memberId) ||
+              (tagObj.memberName && (m.userName === tagObj.memberName || m.name === tagObj.memberName)) ||
+              (tagObj.name && (m.locationName === tagObj.name || m.userName === tagObj.name || m.name === tagObj.name))
+            );
+            if (foundMember) setSelectedTeamMember(foundMember);
+          }
+        } else {
+          // 2. Default: Pion Pin គ្រប់គ្រងលើ Map (Tab 3 / Image 1)
+          setActiveTab('tagger');
+          if (tagObj.zone) {
+            setSelectedCategory(tagObj.zone);
+            setSelectedSizeGroup(tagObj.zone);
+          }
+          if (tagObj.x != null && tagObj.y != null) {
+            targetLoc = {
+              id: tagObj.id || 'pin-focus',
+              name: tagObj.name || 'Pion Pin',
+              x: Number(tagObj.x),
+              y: Number(tagObj.y),
+              category: tagObj.zone || userAssignedZone || ''
+            };
           }
         }
         const tagNoStr = String(tagObj.tagNumber || '').trim();
@@ -1860,7 +1904,7 @@ export default function TempleMapModal({
       // DO NOT FALLBACK TO RANDOM FIRST LOCATION!
       setSelectedLocation(targetLoc || null);
     }
-  }, [highlightLocationName, effectiveTab3Locations, locations]);
+  }, [highlightLocationName, effectiveTab3Locations, locations, currentUser, teamLiveLocations, userAssignedZone]);
 
   // Auto scroll modal body UP to Map section & smooth center camera on target location on map
   useEffect(() => {
@@ -3440,41 +3484,97 @@ export default function TempleMapModal({
         <div className="px-2 sm:px-5 py-1.5 sm:py-2 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 shrink-0">
           {/* Tab buttons & Toggle buttons (Scrollable on small mobile screens) */}
           <div className="flex items-center gap-1 bg-slate-900 p-0.5 sm:p-1 rounded-2xl border border-slate-800 w-full sm:w-auto overflow-x-auto no-scrollbar justify-start">
-            <button
-              onClick={() => setActiveTab('labeled')}
-              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap ${
-                activeTab === 'labeled'
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="sm:hidden">🖼️ ផ្ទាំងទី១</span>
-              <span className="hidden sm:inline">🖼️ ផ្ទាំងទី១ ៖ ប្លង់មានឈ្មោះ</span>
-            </button>
+            {isZoneRestricted ? (
+              <>
+                {/* 1. Pion Pin គ្រប់គ្រង (Opens Tag Pin map matching Image 1) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('tagger');
+                    if (userAssignedZone) {
+                      setSelectedCategory(userAssignedZone);
+                      setSelectedSizeGroup(userAssignedZone);
+                    }
+                  }}
+                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    activeTab === 'tagger'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                  title="មើល Pion Pin ក្នុងក្រុមខ្លួនគ្រប់គ្រង"
+                >
+                  <Tag className="w-3.5 h-3.5 shrink-0" />
+                  <span>🏷️ Pion Pin គ្រប់គ្រង</span>
+                  {userAssignedZone && (
+                    <span className="text-[10px] opacity-90 hidden md:inline">({userAssignedZone})</span>
+                  )}
+                </button>
 
-            <button
-              onClick={() => setActiveTab('interactive')}
-              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap ${
-                activeTab === 'interactive'
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="sm:hidden">📍 ផ្ទាំងទី២</span>
-              <span className="hidden sm:inline">📍 ផ្ទាំងទី២ ៖ កែសម្រួលទីតាំង & បន្ថែមឈ្មោះ</span>
-            </button>
+                {/* 2. Track ក្រុមការងារ (Opens Interactive Team Tracker map matching Image 4) */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveTab('interactive');
+                    setShowTeamTracker(true);
+                    setTab2SubView('team');
+                  }}
+                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    activeTab === 'interactive'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                  title="តាមដានទីតាំងក្រុមការងារផ្ទាល់"
+                >
+                  <Users className="w-3.5 h-3.5 shrink-0" />
+                  <span>👥 Track ក្រុមការងារ</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
+                    activeTab === 'interactive'
+                      ? 'bg-slate-950/40 text-slate-950 border-slate-950/50'
+                      : 'bg-slate-800 text-slate-300 border-slate-700'
+                  }`}>
+                    {westernToKhmerDigits(teamLiveLocations.length)}
+                  </span>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={() => setActiveTab('labeled')}
+                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap ${
+                    activeTab === 'labeled'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span className="sm:hidden">🖼️ ផ្ទាំងទី១</span>
+                  <span className="hidden sm:inline">🖼️ ផ្ទាំងទី១ ៖ ប្លង់មានឈ្មោះ</span>
+                </button>
 
-            <button
-              onClick={() => setActiveTab('tagger')}
-              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap ${
-                activeTab === 'tagger'
-                  ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-            >
-              <span className="sm:hidden">🏷️ ផ្ទាំងទី៣</span>
-              <span className="hidden sm:inline">🏷️ ផ្ទាំងទី៣ ៖ ដៅស្លាកលេខលើ Map</span>
-            </button>
+                <button
+                  onClick={() => setActiveTab('interactive')}
+                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap ${
+                    activeTab === 'interactive'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span className="sm:hidden">📍 ផ្ទាំងទី២</span>
+                  <span className="hidden sm:inline">📍 ផ្ទាំងទី២ ៖ កែសម្រួលទីតាំង & បន្ថែមឈ្មោះ</span>
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('tagger')}
+                  className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all whitespace-nowrap ${
+                    activeTab === 'tagger'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <span className="sm:hidden">🏷️ ផ្ទាំងទី៣</span>
+                  <span className="hidden sm:inline">🏷️ ផ្ទាំងទី៣ ៖ ដៅស្លាកលេខលើ Map</span>
+                </button>
+              </>
+            )}
 
             <div className="h-4 w-px bg-slate-800 mx-0.5 shrink-0"></div>
 
@@ -3508,8 +3608,8 @@ export default function TempleMapModal({
               )}
             </button>
 
-            {/* Toggle Team Live Tracker Layer Button - ONLY VISIBLE ON TAB 2 */}
-            {activeTab === 'interactive' && (
+            {/* Toggle Team Live Tracker Layer Button - ONLY VISIBLE ON TAB 2 FOR FULL ADMIN */}
+            {!isZoneRestricted && activeTab === 'interactive' && (
               <button
                 type="button"
                 onClick={() => {
@@ -3531,37 +3631,41 @@ export default function TempleMapModal({
               </button>
             )}
 
-            <div className="h-4 w-px bg-slate-800 mx-0.5 shrink-0"></div>
+            {!isZoneRestricted && (
+              <>
+                <div className="h-4 w-px bg-slate-800 mx-0.5 shrink-0"></div>
 
-            {/* Undo Button (Ctrl+Z) */}
-            <button
-              onClick={handleUndo}
-              disabled={history.length === 0}
-              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all ${
-                history.length > 0
-                  ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 cursor-pointer'
-                  : 'bg-slate-900/60 border border-slate-800/80 text-slate-600 cursor-not-allowed opacity-50'
-              }`}
-              title="ថយក្រោយ (Ctrl+Z)"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Ctrl+Z</span>
-            </button>
+                {/* Undo Button (Ctrl+Z) */}
+                <button
+                  onClick={handleUndo}
+                  disabled={history.length === 0}
+                  className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all ${
+                    history.length > 0
+                      ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 cursor-pointer'
+                      : 'bg-slate-900/60 border border-slate-800/80 text-slate-600 cursor-not-allowed opacity-50'
+                  }`}
+                  title="ថយក្រោយ (Ctrl+Z)"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Ctrl+Z</span>
+                </button>
 
-            {/* Redo Button (Ctrl+U) */}
-            <button
-              onClick={handleRedo}
-              disabled={redoStack.length === 0}
-              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all ${
-                redoStack.length > 0
-                  ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 cursor-pointer'
-                  : 'bg-slate-900/60 border border-slate-800/80 text-slate-600 cursor-not-allowed opacity-50'
-              }`}
-              title="ទៅមុខ (Ctrl+U)"
-            >
-              <RotateCw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Ctrl+U</span>
-            </button>
+                {/* Redo Button (Ctrl+U) */}
+                <button
+                  onClick={handleRedo}
+                  disabled={redoStack.length === 0}
+                  className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs font-bold flex items-center gap-1 transition-all ${
+                    redoStack.length > 0
+                      ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300 hover:bg-amber-500/30 cursor-pointer'
+                      : 'bg-slate-900/60 border border-slate-800/80 text-slate-600 cursor-not-allowed opacity-50'
+                  }`}
+                  title="ទៅមុខ (Ctrl+U)"
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Ctrl+U</span>
+                </button>
+              </>
+            )}
           </div>
 
           {/* Eye & Compass & Customizable Group Size Controls */}
@@ -4265,26 +4369,28 @@ export default function TempleMapModal({
           {/* ════════ TAB 2: TEAM TRACKER SUB-VIEW OR LEGEND ACCORDION ════════ */}
           {(activeTab === 'interactive' && tab2SubView === 'team') ? (
             <div className="bg-slate-950/90 border border-emerald-500/40 rounded-2xl p-3 sm:p-5 space-y-4 shadow-2xl font-kantumruy">
-              {/* Sub-view switcher on Tab 2 */}
-              <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setTab2SubView('locations')}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 cursor-pointer"
-                >
-                  <MapPin className="w-3.5 h-3.5" />
-                  <span>📍 បញ្ជីទីតាំងវត្ត ({currentLocations.length})</span>
-                </button>
+              {/* Sub-view switcher on Tab 2 (Only for full admin/owner) */}
+              {!isZoneRestricted && (
+                <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setTab2SubView('locations')}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800 cursor-pointer"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>📍 បញ្ជីទីតាំងវត្ត ({currentLocations.length})</span>
+                  </button>
 
-                <button
-                  type="button"
-                  onClick={() => setTab2SubView('team')}
-                  className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 font-black cursor-pointer"
-                >
-                  <Users className="w-3.5 h-3.5" />
-                  <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(teamLiveLocations.length)})</span>
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    onClick={() => setTab2SubView('team')}
+                    className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 font-black cursor-pointer"
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(teamLiveLocations.length)})</span>
+                  </button>
+                </div>
+              )}
 
               {/* Team Panel Header */}
               <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-800">
@@ -4605,8 +4711,8 @@ export default function TempleMapModal({
               </div>
             </div>
 
-            {/* Sub-view switcher for Tab 2 */}
-            {activeTab === 'interactive' && (
+            {/* Sub-view switcher for Tab 2 (Only for full admin/owner) */}
+            {!isZoneRestricted && activeTab === 'interactive' && (
               <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
                 <button
                   type="button"

@@ -794,7 +794,7 @@ export default function ZoneAttendanceModal({
                   type="button"
                   onClick={() => {
                     onClose();
-                    onOpenTempleMap(effectiveActiveZone);
+                    onOpenTempleMap({ zone: effectiveActiveZone, tab: 'tagger' });
                   }}
                   className="px-3 py-2 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all shrink-0 cursor-pointer"
                   title="មើលលើប្លង់ផែនទីវត្ត"
@@ -852,7 +852,9 @@ export default function ZoneAttendanceModal({
                           onOpenTempleMap({
                             name: pin.name,
                             x: pin.x,
-                            y: pin.y
+                            y: pin.y,
+                            zone: effectiveActiveZone,
+                            tab: 'tagger'
                           });
                         }}
                         className="flex-1 py-1.5 px-2.5 bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
@@ -924,7 +926,9 @@ export default function ZoneAttendanceModal({
                         onOpenTempleMap({
                           name: activeSosMember.locationName || effectiveActiveZone,
                           x: activeSosMember.x || 16.15,
-                          y: activeSosMember.y || 44.31
+                          y: activeSosMember.y || 44.31,
+                          zone: effectiveActiveZone,
+                          tab: 'team'
                         });
                       }}
                       className="px-2.5 py-1.5 bg-sky-500 hover:bg-sky-400 text-slate-950 font-bold rounded-xl text-xs flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
@@ -1032,6 +1036,21 @@ export default function ZoneAttendanceModal({
               </div>
 
               <div className="flex items-center gap-1.5 shrink-0">
+                {onOpenTempleMap && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onClose();
+                      onOpenTempleMap({ zone: effectiveActiveZone, tab: 'team' });
+                    }}
+                    className="px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold rounded-xl text-[11px] flex items-center gap-1 shadow-md active:scale-95 transition-all cursor-pointer"
+                    title="មើលទីតាំងក្រុមការងារលើប្លង់ Map"
+                  >
+                    <MapIcon className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">មើល Map ធំ</span>
+                  </button>
+                )}
+
                 <div className="relative">
                   <button
                     type="button"
@@ -1189,8 +1208,12 @@ export default function ZoneAttendanceModal({
                               onClose();
                               onOpenTempleMap({
                                 name: member.locationName || effectiveActiveZone,
+                                memberName: member.name,
+                                memberId: member.id,
                                 x: member.x || 16.15,
-                                y: member.y || 44.31
+                                y: member.y || 44.31,
+                                zone: effectiveActiveZone,
+                                tab: 'team'
                               });
                             }}
                             className="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-300 hover:bg-sky-500 hover:text-slate-950 border border-sky-500/40 flex items-center justify-center transition-all cursor-pointer shadow-sm"
