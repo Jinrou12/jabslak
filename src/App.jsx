@@ -1133,7 +1133,13 @@ export default function App() {
           arrivedCount={arrivedCount}
           currentUser={effectiveUser}
           currentTemple={currentTemple}
-          onOpenZoneAttendance={() => setIsZoneAttendanceModalOpen(true)}
+          onOpenZoneAttendance={() => {
+            const targetZone = (effectiveUser?.assignedZone && effectiveUser.assignedZone !== 'ALL')
+              ? effectiveUser.assignedZone
+              : 'ផែន១ ៖ ធម្មសភា';
+            setTempleMapTargetLoc({ zone: targetZone, tab: 'owners' });
+            setIsTempleMapOpen(true);
+          }}
           onOpenTempleSelectModal={() => {
             if (effectiveUser?.role === 'owner') {
               setIsTempleSelectOpen(true);
@@ -1201,6 +1207,11 @@ export default function App() {
               currentTemple={currentTemple}
               onUpdateTempleMap={handleUpdateTempleMap}
               highlightLocationName={templeMapTargetLoc}
+              onToggleStationArrival={handleToggleStationArrival}
+              onSelectTag={(t) => {
+                setSelectedTag(t);
+                setViewMode('grid');
+              }}
               onClose={() => {
                 setViewMode('grid');
                 setTempleMapTargetLoc(null);
@@ -1429,13 +1440,14 @@ export default function App() {
           currentTemple={currentTemple}
           onUpdateTempleMap={handleUpdateTempleMap}
           highlightLocationName={templeMapTargetLoc}
+          onToggleStationArrival={handleToggleStationArrival}
+          onSelectTag={(t) => {
+            setSelectedTag(t);
+            setIsTempleMapOpen(false);
+          }}
           onClose={() => {
-            const returnToZone = templeMapTargetLoc && typeof templeMapTargetLoc === 'object' && templeMapTargetLoc.fromZoneModal;
             setIsTempleMapOpen(false);
             setTempleMapTargetLoc(null);
-            if (returnToZone) {
-              setIsZoneAttendanceModalOpen(true);
-            }
           }}
           onFilterByLocation={(locName) => {
             setSelectedLocation(locName);

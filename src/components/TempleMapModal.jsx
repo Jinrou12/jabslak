@@ -35,7 +35,8 @@ import {
   PhoneCall,
   Settings,
   Radio,
-  Navigation
+  Navigation,
+  Clock
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
@@ -891,6 +892,7 @@ export default function TempleMapModal({
   onFilterByLocation,
   onAddTagForLocation,
   onSelectTag,
+  onToggleStationArrival = null,
   isModal = true
 }) {
   const modalMode = isModal && Boolean(onClose);
@@ -905,12 +907,33 @@ export default function TempleMapModal({
   const canCustomizeMap = (userRole === 'admin' || userRole === 'owner') && !isZoneRestricted;
 
   // 🎯 ZONE-SPECIFIC MAP MODE vs GENERAL TEMPLE MAP
+// 🏛️ Khemawan Core Zones List
+const KHEMAVAN_CORE_ZONES = [
+  'ផែន១ ៖ ធម្មសភា',
+  'ផែន២ ៖ សាលាឆាន់ចាស់',
+  'ផែន៣ ៖ មុខសាលាឆាន់',
+  'ផែន៤ ៖ បុព្វសាលាពោធិ៍',
+  'ផែន៥ ៖ វិហារ & បរិនិព្វាន',
+  'ផែន៦ ៖ បណ្ណាល័យ',
+  'ផែន៧ ៖ ព្រះផ្ទំ',
+  'ផែន៨ ៖ សាលារៀន'
+];
+
   // When opened from ZoneAttendanceModal, targetZoneParam is set.
   // If user is zone-restricted, activeZoneScope is set to their assigned zone.
   const targetZoneParam = highlightLocationName && typeof highlightLocationName === 'object' ? highlightLocationName.zone : null;
-  const activeZoneScope = targetZoneParam
+  const initialZone = targetZoneParam
     ? normalizeZoneName(targetZoneParam)
     : (isZoneRestricted ? normalizeZoneName(userAssignedZone) : null);
+  const [scopedZone, setScopedZone] = useState(initialZone);
+
+  useEffect(() => {
+    if (targetZoneParam) {
+      setScopedZone(normalizeZoneName(targetZoneParam));
+    }
+  }, [targetZoneParam]);
+
+  const activeZoneScope = isZoneRestricted ? normalizeZoneName(userAssignedZone) : scopedZone;
   const isZoneScoped = Boolean(activeZoneScope);
 
   const currentTempleId = currentTemple?.id || 'khemavan';
@@ -980,10 +1003,11 @@ export default function TempleMapModal({
   });
   const [activeTab, setActiveTab] = useState(() => {
     if (highlightLocationName && typeof highlightLocationName === 'object') {
-      if (highlightLocationName.tab === 'team') return 'interactive';
-      if (highlightLocationName.tab === 'tagger') return 'tagger';
+      if (highlightLocationName.tab === 'team' || highlightLocationName.tab === 'interactive') return 'interactive';
+      if (highlightLocationName.tab === 'tagger' || highlightLocationName.tab === 'pins') return 'tagger';
+      if (highlightLocationName.tab === 'owners') return 'owners';
     }
-    return 'tagger';
+    return isZoneScoped ? 'owners' : 'tagger';
   });
   const [tab2SubView, setTab2SubView] = useState(() => {
     if (highlightLocationName && typeof highlightLocationName === 'object' && highlightLocationName.tab === 'team') {
@@ -1036,6 +1060,7 @@ export default function TempleMapModal({
       );
     });
   }, [isZoneScoped, activeZoneScope, teamLiveLocations]);
+
 
   // 👥 Tab 4 Team Interactive Spot Positioning State
   const [isSettingMySpot, setIsSettingMySpot] = useState(false);
@@ -1407,6 +1432,68 @@ export default function TempleMapModal({
     ? (isZoneScoped ? scopedTab3Locations : effectiveTab3Locations)
     : baseMapLocations;
   const getGroupBadgeColor = (groupName) => getGroupColorKey(groupName, currentLocations);
+
+  // 📋 Zone Tag Owners & Attendance State (Button 1: ឈ្មោះម្ចាស់ស្លាក)
+  const [ownerSearchQuery, setOwnerSearchQuery] = useState('');
+  const [ownerFilterStatus, setOwnerFilterStatus] = useState('all'); // 'all' | 'arrived' | 'notArrived'
+
+  // Filter tags strictly belonging to the currently active zone
+  const zoneTags = useMemo(() => {
+    if (!activeZoneScope) return allTags;
+    const targetNorm = normalizeZoneName(activeZoneScope);
+    return allTags.filter((tag) => {
+      const tagZone = tag.zone ? normalizeZoneName(tag.zone) : '';
+      if (tagZone && (tagZone === targetNorm || tagZone.includes(targetNorm) || targetNorm.includes(tagZone))) return true;
+      const loc = String(tag.baseLocation || tag.location || '').trim();
+      const normLoc = normalizeZoneName(loc);
+      if (normLoc && (normLoc === targetNorm || normLoc.includes(targetNorm) || targetNorm.includes(normLoc))) return true;
+      const tagNo = String(tag.tagNumber || '').trim();
+      if (tagNo) {
+        const p = effectiveTab3Locations.find((l) => String(l.tagNumber || '').trim() === tagNo);
+        if (p) {
+          const pNorm = normalizeZoneName(p.category || '');
+          if (pNorm === targetNorm || pNorm.includes(targetNorm) || targetNorm.includes(pNorm)) return true;
+        }
+      }
+      return false;
+    });
+  }, [allTags, activeZoneScope, effectiveTab3Locations]);
+
+  const totalInZone = zoneTags.length;
+  const arrivedInZone = zoneTags.filter((t) => Boolean(t.stationArrived)).length;
+  const notArrivedInZone = totalInZone - arrivedInZone;
+  const arrivedPercentage = totalInZone > 0 ? Math.round((arrivedInZone / totalInZone) * 100) : 0;
+
+  const displayedZoneTags = useMemo(() => {
+    let list = [...zoneTags];
+    if (ownerFilterStatus === 'arrived') {
+      list = list.filter((t) => Boolean(t.stationArrived));
+    } else if (ownerFilterStatus === 'notArrived') {
+      list = list.filter((t) => !t.stationArrived);
+    }
+    const q = ownerSearchQuery.trim().toLowerCase();
+    if (q) {
+      const qWestern = khmerToWesternDigits(q);
+      const qKhmer = westernToKhmerDigits(q);
+      list = list.filter((t) => {
+        const tagNo = String(t.tagNumber || '');
+        const tagDisp = String(t.tagNumberDisplay || '');
+        const nameStr = String(t.name || '').toLowerCase();
+        const phoneStr = String(t.phone || '');
+        const locStr = String(t.baseLocation || t.location || '').toLowerCase();
+        return (
+          tagNo.includes(q) ||
+          tagNo.includes(qWestern) ||
+          tagDisp.includes(q) ||
+          tagDisp.includes(qKhmer) ||
+          nameStr.includes(q) ||
+          phoneStr.includes(q) ||
+          locStr.includes(q)
+        );
+      });
+    }
+    return list;
+  }, [zoneTags, ownerFilterStatus, ownerSearchQuery]);
   const [zoomScale, setZoomScale] = useState(1.0);
   const [pinSizePx, setPinSizePx] = useState(14); // Default global Pin circle size in px (14px)
   const [selectedSizeGroup, setSelectedSizeGroup] = useState(() => isZoneScoped && activeZoneScope ? activeZoneScope : 'all'); // 'all' | categoryName
@@ -3509,12 +3596,28 @@ export default function TempleMapModal({
             <div className="min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h2 className="text-sm sm:text-base md:text-lg font-bold font-moul text-amber-400 truncate">
-                  {isZoneScoped ? `ផែនទី ៖ ${activeZoneScope}` : 'ផែនទីវត្ត និង ទីតាំង'}
+                  {isZoneScoped ? activeZoneScope : 'ផែនទីវត្ត និង ទីតាំង'}
                 </h2>
                 {isZoneScoped ? (
-                  <span className="bg-sky-500/25 text-sky-300 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border border-sky-500/40 shrink-0 font-kantumruy">
-                    ផ្នែកគ្រប់គ្រង
-                  </span>
+                  <>
+                    <span className="bg-sky-500/25 text-sky-300 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border border-sky-500/40 shrink-0 font-kantumruy">
+                      ផ្នែកគ្រប់គ្រង
+                    </span>
+                    {!isZoneRestricted && (
+                      <select
+                        value={scopedZone}
+                        onChange={(e) => setScopedZone(e.target.value)}
+                        className="bg-slate-900 border border-amber-500/40 text-amber-300 text-[10px] sm:text-xs font-bold rounded-lg px-2 py-0.5 focus:outline-none cursor-pointer font-kantumruy"
+                        title="ប្តូរផែនគ្រប់គ្រង"
+                      >
+                        {KHEMAVAN_CORE_ZONES.map((z) => (
+                          <option key={z} value={z}>
+                            {z}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </>
                 ) : currentTemple?.name && (
                   <span className="bg-amber-500/25 text-amber-300 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border border-amber-500/40 shrink-0 font-moul">
                     {currentTemple.name}
@@ -3556,19 +3659,6 @@ export default function TempleMapModal({
             )}
             {onClose && (
               <button
-                type="button"
-                onClick={onClose}
-                className="flex items-center gap-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 shadow-md shadow-amber-500/20"
-                title="ថយក្រោយទៅផ្ទាំងដើម"
-              >
-                <ArrowLeft className="w-4 h-4 stroke-[3]" />
-                <span className="whitespace-nowrap font-bold">
-                  {highlightLocationName?.fromZoneModal ? `ត្រឡប់ទៅ ${activeZoneScope || 'ផែន'}` : 'ថយក្រោយ'}
-                </span>
-              </button>
-            )}
-            {onClose && (
-              <button
                 onClick={onClose}
                 className="p-1.5 sm:p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full transition-all ml-0.5"
                 title="បិទផែនទី"
@@ -3585,7 +3675,29 @@ export default function TempleMapModal({
           <div className="flex items-center gap-1 bg-slate-900 p-0.5 sm:p-1 rounded-2xl border border-slate-800 w-full sm:w-auto overflow-x-auto no-scrollbar justify-start">
             {isZoneScoped ? (
               <>
-                {/* 1. Pion Pin គ្រប់គ្រង (Opens Tag Pin map matching Image 1) */}
+                {/* Button 1: ឈ្មោះម្ចាស់ស្លាក */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('owners')}
+                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                    activeTab === 'owners'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                  }`}
+                  title="មើលឈ្មោះម្ចាស់ស្លាកក្នុងផែន និងកត់ត្រាការយកស្លាក"
+                >
+                  <Tag className="w-3.5 h-3.5 shrink-0" />
+                  <span>ឈ្មោះម្ចាស់ស្លាក</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
+                    activeTab === 'owners'
+                      ? 'bg-slate-950/40 text-slate-950 border-slate-950/50'
+                      : 'bg-slate-800 text-slate-300 border-slate-700'
+                  }`}>
+                    {westernToKhmerDigits(totalInZone)} ស្លាក
+                  </span>
+                </button>
+
+                {/* Button 2: Pion Pin លើ Map */}
                 <button
                   type="button"
                   onClick={() => {
@@ -3600,16 +3712,20 @@ export default function TempleMapModal({
                       ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
-                  title="មើល Pion Pin ក្នុងក្រុមខ្លួនគ្រប់គ្រង"
+                  title="មើល Pion Pin ក្នុងផែននេះលើ Map"
                 >
-                  <Tag className="w-3.5 h-3.5 shrink-0" />
-                  <span>🏷️ Pion Pin គ្រប់គ្រង</span>
-                  {activeZoneScope && (
-                    <span className="text-[10px] opacity-90 hidden md:inline">({activeZoneScope})</span>
-                  )}
+                  <MapPin className="w-3.5 h-3.5 shrink-0" />
+                  <span>Pion Pin លើ Map</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
+                    activeTab === 'tagger'
+                      ? 'bg-slate-950/40 text-slate-950 border-slate-950/50'
+                      : 'bg-slate-800 text-slate-300 border-slate-700'
+                  }`}>
+                    {westernToKhmerDigits(currentLocations.length)} ទីតាំង
+                  </span>
                 </button>
 
-                {/* 2. Track ក្រុមការងារ (Opens Interactive Team Tracker map matching Image 4) */}
+                {/* Button 3: Track ក្រុមលើ Map */}
                 <button
                   type="button"
                   onClick={() => {
@@ -3622,19 +3738,16 @@ export default function TempleMapModal({
                       ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
-                  title="តាមដានទីតាំងក្រុមការងារផ្ទាល់"
+                  title="តាមដានទីតាំងក្រុមការងារផ្ទាល់លើ Map"
                 >
                   <Users className="w-3.5 h-3.5 shrink-0" />
-                  <span>👥 Track ក្រុមការងារ</span>
-                  {activeZoneScope && (
-                    <span className="text-[10px] opacity-90 hidden md:inline">({activeZoneScope})</span>
-                  )}
+                  <span>Track ក្រុមលើ Map</span>
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
                     activeTab === 'interactive'
                       ? 'bg-slate-950/40 text-slate-950 border-slate-950/50'
                       : 'bg-slate-800 text-slate-300 border-slate-700'
                   }`}>
-                    {westernToKhmerDigits(scopedTeamLiveLocations.length)}
+                    {westernToKhmerDigits(scopedTeamLiveLocations.length)} នាក់
                   </span>
                 </button>
               </>
@@ -3867,10 +3980,253 @@ export default function TempleMapModal({
           </div>
         )}
 
-        {/* ═══════════════ MAIN CONTENT BODY (MAP & LEGEND) ═══════════════ */}
+        {/* ═══════════════ MAIN CONTENT BODY (OWNERS / MAP & LEGEND) ═══════════════ */}
         <div ref={modalBodyRef} className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3">
-          
-          {/* 👥 Live Team Tracker Bar - ONLY ON TAB 2 */}
+          {activeTab === 'owners' ? (
+            <div className="space-y-3 font-kantumruy">
+              {/* Stats Counter Bar */}
+              <div className="grid grid-cols-3 gap-2 p-3 bg-slate-900/80 border border-slate-800 rounded-2xl text-center shadow-sm">
+                <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-2 sm:p-3">
+                  <div className="text-[10px] sm:text-xs text-slate-400 font-bold">សរុបក្នុងផែន</div>
+                  <div className="text-base sm:text-xl font-black text-slate-100 font-moul">
+                    {westernToKhmerDigits(totalInZone)} <span className="text-[10px] sm:text-xs font-normal text-slate-400 font-kantumruy">ស្លាក</span>
+                  </div>
+                </div>
+
+                <div className="bg-emerald-950/30 border border-emerald-500/40 rounded-xl p-2 sm:p-3">
+                  <div className="text-[10px] sm:text-xs text-emerald-400 font-bold">បានយកស្លាក</div>
+                  <div className="text-base sm:text-xl font-black text-emerald-400 font-moul">
+                    {westernToKhmerDigits(arrivedInZone)} <span className="text-[10px] sm:text-xs font-normal text-emerald-300 font-kantumruy">({westernToKhmerDigits(arrivedPercentage)}%)</span>
+                  </div>
+                </div>
+
+                <div className="bg-amber-950/30 border border-amber-500/40 rounded-xl p-2 sm:p-3">
+                  <div className="text-[10px] sm:text-xs text-amber-400 font-bold">មិនទាន់យកស្លាក</div>
+                  <div className="text-base sm:text-xl font-black text-amber-400 font-moul">
+                    {westernToKhmerDigits(notArrivedInZone)} <span className="text-[10px] sm:text-xs font-normal text-amber-300 font-kantumruy">ស្លាក</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Search & Filter Chips */}
+              <div className="p-3 bg-slate-900/90 border border-slate-800 rounded-2xl space-y-2 shadow-sm">
+                <div className="relative">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={ownerSearchQuery}
+                    onChange={(e) => setOwnerSearchQuery(e.target.value)}
+                    placeholder="ស្វែងរកតាមលេខស្លាក ឬ ឈ្មោះម្ចាស់ស្លាក..."
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-amber-400 font-kantumruy"
+                  />
+                  {ownerSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setOwnerSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+                  <button
+                    type="button"
+                    onClick={() => setOwnerFilterStatus('all')}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border shrink-0 cursor-pointer ${
+                      ownerFilterStatus === 'all'
+                        ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm font-black'
+                        : 'bg-slate-950 text-slate-300 border-slate-800 hover:border-slate-700'
+                    }`}
+                  >
+                    🌐 ទាំងអស់ ({westernToKhmerDigits(totalInZone)})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setOwnerFilterStatus('arrived')}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border shrink-0 cursor-pointer ${
+                      ownerFilterStatus === 'arrived'
+                        ? 'bg-emerald-500 text-slate-950 border-emerald-400 shadow-sm font-black'
+                        : 'bg-slate-950 text-emerald-400 border-slate-800 hover:border-emerald-500/40'
+                    }`}
+                  >
+                    ✅ បានយកស្លាក ({westernToKhmerDigits(arrivedInZone)})
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setOwnerFilterStatus('notArrived')}
+                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all border shrink-0 cursor-pointer ${
+                      ownerFilterStatus === 'notArrived'
+                        ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-sm font-black'
+                        : 'bg-slate-950 text-amber-400 border-slate-800 hover:border-amber-500/40'
+                    }`}
+                  >
+                    ⏳ មិនទាន់យកស្លាក ({westernToKhmerDigits(notArrivedInZone)})
+                  </button>
+                </div>
+              </div>
+
+              {/* Tags List */}
+              <div className="space-y-2.5">
+                {displayedZoneTags.length === 0 ? (
+                  <div className="h-64 flex flex-col items-center justify-center text-center p-6 bg-slate-900/40 rounded-2xl border border-dashed border-slate-800">
+                    <div className="w-12 h-12 rounded-full bg-slate-800/80 flex items-center justify-center text-slate-500 mb-2">
+                      <Search className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-sm font-bold text-slate-300 mb-1">
+                      មិនមានស្លាកលេខក្នុង «{activeZoneScope}» ឡើយ
+                    </h3>
+                    <p className="text-xs text-slate-500 max-w-sm">
+                      {ownerSearchQuery
+                        ? 'មិនមានលទ្ធផលផ្គូផ្គងនឹងការស្វែងរករបស់អ្នកទេ។'
+                        : 'មិនទាន់មានស្លាកលេខណាដែលកំណត់ក្នុងផែននេះនៅឡើយទេ។'}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                    {displayedZoneTags.map((tag) => {
+                      const isStationArrived = Boolean(tag.stationArrived);
+                      const isReceptionArrived = Boolean(tag.arrived);
+                      const tagDisp = tag.tagNumberDisplay || (tag.tagNumber ? westernToKhmerDigits(tag.tagNumber) : String(tag.id));
+                      const cleanOwner = String(tag.name || '').replace(/^ស្លាកលេខ\s*\S+\s*៖\s*/, '').trim() || 'គ្មានឈ្មោះ';
+                      const spotName = String(tag.baseLocation || tag.location || '').trim();
+
+                      return (
+                        <div
+                          key={tag.id}
+                          className={`rounded-2xl border p-3.5 transition-all shadow-md flex flex-col justify-between gap-2.5 ${
+                            isStationArrived
+                              ? 'bg-slate-900/95 border-emerald-500/40 shadow-emerald-500/5 ring-1 ring-emerald-500/20'
+                              : 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
+                          }`}
+                        >
+                          {/* Top row: Tag Badge, Name & Actions */}
+                          <div className="flex items-start justify-between gap-2.5">
+                            <div className="flex items-start gap-2.5 min-w-0">
+                              <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 font-moul font-bold text-xs flex items-center justify-center shrink-0 shadow-md ring-2 ring-white/20">
+                                {tagDisp}
+                              </div>
+
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <h4 className="text-sm font-bold text-slate-100 truncate font-kantumruy">
+                                    {cleanOwner}
+                                  </h4>
+                                  {isReceptionArrived ? (
+                                    <span className="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-1.5 py-0.2 rounded-full font-bold">
+                                      ✓ ដល់វត្ត
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] bg-slate-800 text-slate-400 border border-slate-700 px-1.5 py-0.2 rounded-full">
+                                      មិនទាន់ដល់វត្ត
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p className="text-[11px] text-amber-300/90 truncate flex items-center gap-1 mt-0.5">
+                                  <MapPin className="w-3 h-3 shrink-0 text-amber-400" />
+                                  <span>{spotName || activeZoneScope}</span>
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Actions: Phone, Map View & Detail */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              {tag.phone && (
+                                <a
+                                  href={`tel:${tag.phone}`}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500 hover:text-slate-950 border border-emerald-500/40 flex items-center justify-center transition-all shadow-sm"
+                                  title={`ខលទៅលេខ ៖ ${tag.phone}`}
+                                >
+                                  <PhoneCall className="w-4 h-4" />
+                                </a>
+                              )}
+
+                              {/* Jump to this tag on map without pop up! */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveTab('tagger');
+                                  const tagNo = String(tag.tagNumber || '');
+                                  const foundLoc = effectiveTab3Locations.find((l) => String(l.tagNumber || '') === tagNo);
+                                  if (foundLoc) {
+                                    setSelectedLocation(foundLoc);
+                                    centerPinOnMap({ x: foundLoc.x, y: foundLoc.y });
+                                  }
+                                }}
+                                className="w-8 h-8 rounded-xl bg-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-slate-950 border border-sky-500/40 flex items-center justify-center transition-all cursor-pointer"
+                                title="មើលទីតាំងលើ Map"
+                              >
+                                <MapIcon className="w-3.5 h-3.5" />
+                              </button>
+
+                              {onSelectTag && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onSelectTag(tag);
+                                  }}
+                                  className="w-8 h-8 rounded-xl bg-slate-800 text-slate-400 hover:text-amber-400 hover:bg-slate-700 border border-slate-700 flex items-center justify-center transition-all cursor-pointer"
+                                  title="មើលព័ត៌មានលម្អិត"
+                                >
+                                  <ExternalLink className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* BOTTOM ROW: TOUCH BUTTON TO MARK "បានយកស្លាក" */}
+                          <div className="pt-2 border-t border-slate-800/80">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (onToggleStationArrival) {
+                                  onToggleStationArrival(tag);
+                                }
+                              }}
+                              className={`w-full py-2 px-3 rounded-xl font-bold text-xs transition-all flex items-center justify-between gap-2 shadow-sm cursor-pointer ${
+                                isStationArrived
+                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/60 hover:bg-emerald-500/30'
+                                  : 'bg-slate-800/90 text-slate-300 border border-slate-700 hover:bg-amber-500/20 hover:text-amber-300 hover:border-amber-500/50 active:scale-[0.98]'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`w-5 h-5 rounded-lg flex items-center justify-center border transition-all ${
+                                    isStationArrived
+                                      ? 'bg-emerald-500 border-emerald-400 text-slate-950 shadow-sm'
+                                      : 'border-slate-600 bg-slate-900'
+                                  }`}
+                                >
+                                  {isStationArrived && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                                </div>
+                                <span className="font-moul text-[11px]">
+                                  {isStationArrived ? '✅ បានយកស្លាករួចរាល់' : '⏳ មិនទាន់យកស្លាក (ចុចដើម្បីគ្រីស)'}
+                                </span>
+                              </div>
+
+                              {tag.stationArrivedAt && isStationArrived && (
+                                <span className="text-[10px] text-emerald-400/90 flex items-center gap-1">
+                                  <Clock className="w-3 h-3" />
+                                  <span>{new Date(tag.stationArrivedAt).toLocaleTimeString('km-KH', { hour: '2-digit', minute: '2-digit' })}</span>
+                                </span>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="contents">
+              {/* 👥 Live Team Tracker Bar - ONLY ON TAB 2 */}
           {activeTab === 'interactive' && (
             <div className="flex items-center justify-between gap-2 px-3 py-1.5 bg-slate-900/90 border border-slate-800 rounded-2xl text-xs font-kantumruy flex-wrap">
               <div className="flex items-center gap-2 flex-wrap min-w-0">
@@ -5293,6 +5649,8 @@ export default function TempleMapModal({
               })}
             </div>
           </div>
+          )}
+            </div>
           )}
         </div>
 
