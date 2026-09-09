@@ -3619,6 +3619,7 @@ export default function TempleMapModal({
                 <div className="flex items-center gap-1.5 overflow-x-auto max-w-full py-0.5">
                   {teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((m) => {
                     const isWalking = m.activity === 'walking';
+                    const cName = String(m.userName || m.name || '').replace(/\s*\([^)]*\)/g, '').trim() || 'U';
                     return (
                       <button
                         key={`quick-${m.userId}`}
@@ -3644,7 +3645,7 @@ export default function TempleMapModal({
                         }`}
                       >
                         <span>{isWalking ? '🚶‍♂️' : '🧍'}</span>
-                        <span className="truncate max-w-[80px]">{m.userName || 'U'}</span>
+                        <span className="truncate max-w-[80px]">{cName}</span>
                         {isWalking && <span className="text-emerald-400 text-[9px]">({m.speedKmh || 3.2}គ.ម)</span>}
                       </button>
                     );
@@ -3796,15 +3797,24 @@ export default function TempleMapModal({
                         );
                       })}
 
-                      {/* 👥 Live Team Tracker Pins on the Temple Map - ONLY VISIBLE ON TAB 2 */}
+                      {/* 👥 Live Team Tracker Pins on the Temple Map - SLEEK, COMPACT & SIMPLE */}
                       {activeTab === 'interactive' && showTeamTracker && teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((member) => {
                         const isSos = Boolean(member.needHelp);
                         const isMe = member.userId === (currentUser?.id || 'u-self');
                         const isSelected = selectedTeamMember && selectedTeamMember.userId === member.userId;
-                        const roleGradient = member.role === 'admin'
-                          ? 'from-amber-400 via-amber-500 to-amber-600 text-slate-950'
-                          : 'from-sky-400 via-blue-500 to-indigo-600 text-white';
-                        const initials = member.userName ? member.userName.slice(0, 1) : 'U';
+                        const isWalking = member.activity === 'walking';
+
+                        const roleColor = member.role === 'owner'
+                          ? 'from-teal-400 to-emerald-600 text-white'
+                          : member.role === 'admin'
+                          ? 'from-amber-400 to-amber-600 text-slate-950'
+                          : 'from-sky-400 to-blue-600 text-white';
+
+                        // Clean short name without parenthetical tags (e.g. ភិក្ខុអាន់ឃ្លី, សំណាង, លោកប្រធាន)
+                        const cleanName = String(member.userName || member.name || '')
+                          .replace(/\s*\([^)]*\)/g, '')
+                          .trim() || 'ក្រុមការងារ';
+                        const initialLetter = cleanName ? cleanName.charAt(0) : 'U';
 
                         return (
                           <div
@@ -3815,96 +3825,72 @@ export default function TempleMapModal({
                               top: `${member.y}%`,
                               zIndex: isSos ? 99 : (isMe || isSelected ? 80 : 45)
                             }}
-                            className={`-translate-x-1/2 -translate-y-1/2 cursor-pointer group ${isSettingMySpot ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                            className={`-translate-x-1/2 -translate-y-1/2 cursor-pointer group select-none ${isSettingMySpot ? 'pointer-events-none' : 'pointer-events-auto'}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedTeamMember(member);
                             }}
                           >
-                            {/* Flashing Ping Beacon if SOS */}
-                            {isSos && (
-                              <div className="absolute -inset-4 rounded-full bg-rose-500/70 animate-ping pointer-events-none" />
-                            )}
+                            {/* Subtle single pulse ring for self, selected, or SOS */}
+                            {isSos ? (
+                              <div className="absolute -inset-2 rounded-full bg-rose-500/50 animate-ping pointer-events-none" />
+                            ) : (isMe || isSelected) ? (
+                              <div className="absolute -inset-1.5 rounded-full bg-emerald-400/25 animate-ping pointer-events-none" />
+                            ) : null}
 
-                            {/* Walking footstep waves if walking */}
-                            {member.activity === 'walking' && !isSos && (
-                              <>
-                                <div className="absolute -inset-3 rounded-full bg-emerald-400/30 animate-ping pointer-events-none" />
-                                <div className="absolute -inset-1.5 rounded-full border-2 border-emerald-400/80 animate-pulse pointer-events-none" />
-                              </>
-                            )}
-
-                            {/* 📍 Radar Waves if Current User (Self) or Selected Member */}
-                            {(isMe || isSelected) && !isSos && (
-                              <>
-                                <div className="absolute -inset-5 rounded-full bg-emerald-400/35 animate-ping pointer-events-none" />
-                                <div className="absolute -inset-2.5 rounded-full border-2 border-emerald-400 animate-pulse pointer-events-none" />
-                              </>
-                            )}
-
-                            {/* 📍 Direct Interactive Popup Balloon right above Pin */}
-                            <div className={`absolute -top-11 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded-xl text-[11px] font-bold font-kantumruy whitespace-nowrap shadow-2xl border flex items-center gap-1.5 z-50 pointer-events-auto transition-all ${
-                              isMe
-                                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-white scale-105 shadow-emerald-950/80 animate-bounce'
-                                : isSelected
-                                ? 'bg-slate-900/95 text-amber-300 border-amber-500 shadow-slate-950/80 animate-bounce'
-                                : 'opacity-0 group-hover:opacity-100 bg-slate-900/90 text-slate-200 border-slate-700'
-                            }`}>
-                              <MapPin className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-                              <span>{isMe ? '📍 ទីតាំងអ្នក ៖ ' : ''}{member.locationName || member.name || 'ទីតាំងលើ Map'}</span>
-                              <div className={`absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent ${
-                                isMe
-                                  ? 'border-t-teal-600'
-                                  : isSelected
-                                  ? 'border-t-slate-900/95'
-                                  : 'border-t-slate-900/90'
-                              }`} />
-                            </div>
-
-                            <div className={`relative flex items-center justify-center rounded-full p-0.5 shadow-2xl transition-transform hover:scale-125 ${
-                              isSos
-                                ? 'ring-4 ring-rose-500 ring-offset-2 ring-offset-slate-950 animate-bounce'
-                                : isMe || isSelected
-                                ? 'ring-3 ring-emerald-400 ring-offset-2 ring-offset-slate-950 scale-110'
-                                : member.activity === 'walking'
-                                ? 'ring-3 ring-emerald-400 ring-offset-1 ring-offset-slate-950'
-                                : 'ring-2 ring-emerald-400 ring-offset-1 ring-offset-slate-950'
-                            }`}>
-                              <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${
+                            {/* Mini Tooltip on Hover or Selected */}
+                            {(isSelected || isSos) && (
+                              <div className={`absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md text-[10px] font-bold font-kantumruy whitespace-nowrap shadow-lg border pointer-events-none flex items-center gap-1 z-50 ${
                                 isSos
-                                  ? 'from-rose-500 to-red-700 text-white'
+                                  ? 'bg-rose-950/95 border-rose-500 text-rose-200'
                                   : isMe
-                                  ? 'from-emerald-400 via-teal-500 to-emerald-600 text-slate-950 font-black ring-1 ring-white'
-                                  : member.activity === 'walking'
-                                  ? 'from-emerald-400 via-teal-500 to-emerald-600 text-slate-950 font-black'
-                                  : roleGradient
-                              } flex items-center justify-center font-bold text-xs shadow-lg border border-white/80`}>
-                                {isSos ? '🚨' : isMe ? '📍' : member.activity === 'walking' ? '🚶‍♂️' : initials}
+                                  ? 'bg-slate-900/95 border-emerald-400 text-emerald-300'
+                                  : 'bg-slate-900/95 border-amber-400 text-amber-300'
+                              }`}>
+                                <MapPin className="w-3 h-3 text-amber-300 shrink-0" />
+                                <span>{isSos ? '🚨 ត្រូវការជំនួយ!' : member.locationName || member.name || 'ទីតាំងលើ Map'}</span>
+                                <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
                               </div>
+                            )}
+
+                            {/* Compact Circular Pin */}
+                            <div className={`relative flex items-center justify-center transition-transform duration-200 group-hover:scale-115 ${
+                              isSelected || isMe ? 'scale-105' : ''
+                            }`}>
+                              <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${
+                                isSos
+                                  ? 'from-rose-500 to-red-600 text-white ring-2 ring-rose-400'
+                                  : isMe
+                                  ? 'from-emerald-400 to-teal-600 text-slate-950 ring-2 ring-emerald-300'
+                                  : roleColor
+                              } ring-1 ring-white/90 shadow-md flex items-center justify-center font-bold text-[10px] font-kantumruy`}>
+                                {isSos ? '🚨' : initialLetter}
+                              </div>
+
+                              {/* Small Status Indicator Dot at bottom-right */}
+                              <span
+                                className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-slate-950 shadow-sm ${
+                                  isSos
+                                    ? 'bg-rose-500 animate-ping'
+                                    : isWalking
+                                    ? 'bg-emerald-400'
+                                    : 'bg-amber-400'
+                                }`}
+                                title={isWalking ? 'កំពុងដើរ' : 'នៅស្ងៀម'}
+                              />
                             </div>
 
-                            {/* Label Card under avatar */}
-                            <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-1 px-2 py-0.5 rounded-lg border text-[10px] whitespace-nowrap font-bold shadow-xl pointer-events-none flex items-center gap-1 font-kantumruy ${
+                            {/* Clean, Compact Short Name Pill */}
+                            <div className={`mt-0.5 px-1.5 py-0.2 rounded-full border text-[9px] font-bold text-center whitespace-nowrap shadow-sm pointer-events-none flex items-center justify-center gap-0.5 font-kantumruy max-w-[85px] truncate backdrop-blur-sm transition-all ${
                               isSos
-                                ? 'bg-rose-950/95 border-rose-500/90 text-rose-200'
+                                ? 'bg-rose-950/90 border-rose-500/80 text-rose-200'
                                 : isMe
-                                ? 'bg-emerald-950/95 border-emerald-400 text-emerald-200'
-                                : member.activity === 'walking'
-                                ? 'bg-emerald-950/95 border-emerald-500/80 text-emerald-200'
-                                : 'bg-slate-950/95 border-slate-700 text-slate-100'
+                                ? 'bg-slate-950/85 border-emerald-400/80 text-emerald-300'
+                                : isSelected
+                                ? 'bg-slate-950/90 border-amber-400/80 text-amber-300'
+                                : 'bg-slate-950/75 border-slate-700/60 text-slate-200 group-hover:bg-slate-950/95 group-hover:text-white'
                             }`}>
-                              <span>{isMe ? `(អ្នក) ${member.userName || member.name}` : (member.userName || member.name)}</span>
-                              {isSos ? (
-                                <span className="text-rose-400 font-extrabold animate-pulse">🚨 SOS!</span>
-                              ) : member.activity === 'walking' ? (
-                                <span className="text-emerald-400 font-bold animate-pulse">
-                                  🚶‍♂️ កំពុងដើរ {member.speedKmh ? `(${member.speedKmh} គ.ម/ម៉)` : ''}
-                                </span>
-                              ) : (
-                                <span className="text-amber-400/90 text-[9px]">
-                                  🧍 នៅស្ងៀម {member.stationaryMinutes > 0 ? `(${member.stationaryMinutes}ន)` : ''}
-                                </span>
-                              )}
+                              <span className="truncate">{cleanName}</span>
                             </div>
                           </div>
                         );
