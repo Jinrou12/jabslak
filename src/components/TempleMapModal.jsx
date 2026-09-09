@@ -65,6 +65,125 @@ import { phoneTracker } from '../utils/phoneTracker';
 import { DEFAULT_KHEMAVAN_CALIBRATION, gpsToMapCoords, getNearestLandmark, parseCoordinatesString } from '../utils/geoCalibrator.js';
 import { getTempleCustomMapImage, saveTempleCustomMapImage, compressImage } from '../utils/templeStorage';
 import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName, formatTagRanges } from '../utils/khmerSearch';
+import { getSavedUsers } from '../utils/storage';
+
+// 🎨 Group Theme Palettes for Live Team Tracking Pins (Members in the same group share the EXACT same color)
+const TEAM_GROUP_PRESETS = [
+  {
+    matcher: (z) => z.includes('ផែន១') || z.includes('1') || z.includes('ធម្មសភា'),
+    gradient: 'from-cyan-400 via-sky-500 to-blue-600 text-white',
+    needle: 'border-t-blue-600',
+    border: 'border-sky-400/80 text-sky-300',
+    chip: 'bg-sky-500/20 text-sky-300 border-sky-500/40 hover:bg-sky-500/30'
+  },
+  {
+    matcher: (z) => z.includes('ផែន២') || z.includes('2') || z.includes('សាលាឆាន់ចាស់'),
+    gradient: 'from-amber-400 via-amber-500 to-orange-500 text-slate-950',
+    needle: 'border-t-amber-500',
+    border: 'border-amber-400/80 text-amber-300',
+    chip: 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+  },
+  {
+    matcher: (z) => z.includes('ផែន៣') || z.includes('3') || z.includes('មុខសាលាឆាន់'),
+    gradient: 'from-purple-500 via-violet-500 to-indigo-600 text-white',
+    needle: 'border-t-violet-600',
+    border: 'border-purple-400/80 text-purple-300',
+    chip: 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30'
+  },
+  {
+    matcher: (z) => z.includes('ផែន៤') || z.includes('4') || z.includes('ព្រះបរិនិព្វាន'),
+    gradient: 'from-pink-500 via-rose-500 to-red-600 text-white',
+    needle: 'border-t-rose-600',
+    border: 'border-rose-400/80 text-rose-300',
+    chip: 'bg-rose-500/20 text-rose-300 border-rose-500/40 hover:bg-rose-500/30'
+  },
+  {
+    matcher: (z) => z.includes('ផែន៥') || z.includes('5') || z.includes('បណ្ណាល័យ'),
+    gradient: 'from-indigo-500 via-indigo-600 to-blue-700 text-white',
+    needle: 'border-t-indigo-600',
+    border: 'border-indigo-400/80 text-indigo-300',
+    chip: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 hover:bg-indigo-500/30'
+  },
+  {
+    matcher: (z) => z.includes('ផែន៦') || z.includes('6') || z.includes('ព្រះផ្ទម'),
+    gradient: 'from-fuchsia-500 via-pink-500 to-rose-600 text-white',
+    needle: 'border-t-fuchsia-600',
+    border: 'border-fuchsia-400/80 text-fuchsia-300',
+    chip: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/40 hover:bg-fuchsia-500/30'
+  },
+  {
+    matcher: (z) => z.includes('ផែន៧') || z.includes('7') || z.includes('តាមកុដិ'),
+    gradient: 'from-lime-400 via-emerald-500 to-green-600 text-slate-950',
+    needle: 'border-t-emerald-600',
+    border: 'border-lime-400/80 text-lime-300',
+    chip: 'bg-lime-500/20 text-lime-300 border-lime-500/40 hover:bg-lime-500/30'
+  },
+  {
+    matcher: (z) => z.includes('ផែន៨') || z.includes('8') || z.includes('សាលារៀន'),
+    gradient: 'from-teal-400 via-teal-500 to-cyan-700 text-slate-950',
+    needle: 'border-t-teal-600',
+    border: 'border-teal-400/80 text-teal-300',
+    chip: 'bg-teal-500/20 text-teal-300 border-teal-500/40 hover:bg-teal-500/30'
+  },
+  {
+    matcher: (z) => z.includes('ខ្លោងទ្វារ'),
+    gradient: 'from-amber-500 via-amber-600 to-yellow-600 text-slate-950',
+    needle: 'border-t-amber-600',
+    border: 'border-amber-400/80 text-amber-300',
+    chip: 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30'
+  },
+  {
+    matcher: (z) => z.includes('អគារ') || z.includes('កុដិ'),
+    gradient: 'from-emerald-500 via-teal-600 to-emerald-700 text-white',
+    needle: 'border-t-emerald-600',
+    border: 'border-emerald-400/80 text-emerald-300',
+    chip: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+  }
+];
+
+const FALLBACK_GROUP_THEMES = [
+  { gradient: 'from-cyan-400 via-sky-500 to-blue-600 text-white', needle: 'border-t-sky-600', border: 'border-sky-400/80 text-sky-300', chip: 'bg-sky-500/20 text-sky-300 border-sky-500/40' },
+  { gradient: 'from-amber-400 via-amber-500 to-orange-500 text-slate-950', needle: 'border-t-amber-500', border: 'border-amber-400/80 text-amber-300', chip: 'bg-amber-500/20 text-amber-300 border-amber-500/40' },
+  { gradient: 'from-purple-500 via-violet-500 to-indigo-600 text-white', needle: 'border-t-violet-600', border: 'border-purple-400/80 text-purple-300', chip: 'bg-purple-500/20 text-purple-300 border-purple-500/40' },
+  { gradient: 'from-emerald-500 via-teal-500 to-emerald-700 text-white', needle: 'border-t-teal-600', border: 'border-emerald-400/80 text-emerald-300', chip: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40' },
+  { gradient: 'from-pink-500 via-rose-500 to-red-600 text-white', needle: 'border-t-rose-600', border: 'border-rose-400/80 text-rose-300', chip: 'bg-rose-500/20 text-rose-300 border-rose-500/40' },
+  { gradient: 'from-fuchsia-500 via-pink-500 to-rose-600 text-white', needle: 'border-t-fuchsia-600', border: 'border-fuchsia-400/80 text-fuchsia-300', chip: 'bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/40' },
+  { gradient: 'from-lime-400 via-emerald-500 to-green-600 text-slate-950', needle: 'border-t-emerald-600', border: 'border-lime-400/80 text-lime-300', chip: 'bg-lime-500/20 text-lime-300 border-lime-500/40' }
+];
+
+function getTeamMemberGroupTheme(member, allSavedUsers = []) {
+  const uObj = allSavedUsers.find((u) => u && (u.id === member?.userId || (member?.email && u.email === member.email)));
+  const assigned = String(member?.assignedZone || uObj?.assignedZone || member?.group || '').trim();
+  const userName = String(member?.userName || member?.name || uObj?.name || '').trim();
+
+  // 1. Leadership / Owner (ALL)
+  const isOwner = member?.role === 'owner' || uObj?.role === 'owner' || userName.includes('Owner') || userName.includes('ប្រធាន');
+  if (isOwner || assigned === 'ALL') {
+    return {
+      gradient: 'from-emerald-500 via-teal-500 to-emerald-700 text-white',
+      needle: 'border-t-teal-600',
+      border: 'border-emerald-400/80 text-emerald-300',
+      chip: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
+    };
+  }
+
+  // 2. Check matched preset by assignedZone or userName
+  const searchStr = `${assigned} ${userName}`;
+  for (const preset of TEAM_GROUP_PRESETS) {
+    if (preset.matcher(searchStr)) {
+      return preset;
+    }
+  }
+
+  // 3. Fallback deterministic hash by group string
+  const key = assigned || userName;
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) {
+    hash = (hash << 5) - hash + key.charCodeAt(i);
+    hash |= 0;
+  }
+  return FALLBACK_GROUP_THEMES[Math.abs(hash) % FALLBACK_GROUP_THEMES.length];
+}
 
 const PIN_COLOR_GRADIENTS = [
   'bg-gradient-to-br from-cyan-300 via-sky-400 to-blue-500 text-slate-950',       // 1: Cyan Sky
@@ -861,6 +980,7 @@ export default function TempleMapModal({
   const [teamLiveLocations, setTeamLiveLocations] = useState([]);
   const [showTeamTracker, setShowTeamTracker] = useState(true);
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
+  const allSavedUsers = useMemo(() => getSavedUsers(), []);
 
   // 👥 Tab 4 Team Interactive Spot Positioning State
   const [isSettingMySpot, setIsSettingMySpot] = useState(false);
@@ -3621,6 +3741,7 @@ export default function TempleMapModal({
                   {teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((m) => {
                     const isWalking = m.activity === 'walking';
                     const cName = String(m.userName || m.name || '').replace(/\s*\([^)]*\)/g, '').trim() || 'U';
+                    const groupTheme = getTeamMemberGroupTheme(m, allSavedUsers);
                     return (
                       <button
                         key={`quick-${m.userId}`}
@@ -3640,9 +3761,7 @@ export default function TempleMapModal({
                         className={`px-2 py-0.5 rounded-lg text-[10px] font-bold border flex items-center gap-1 whitespace-nowrap transition-all cursor-pointer ${
                           m.needHelp
                             ? 'bg-rose-500/20 text-rose-300 border-rose-500/60 animate-pulse'
-                            : isWalking
-                            ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30'
-                            : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                            : groupTheme.chip
                         }`}
                       >
                         <span>{isWalking ? '🚶‍♂️' : '🧍'}</span>
@@ -3806,22 +3925,15 @@ export default function TempleMapModal({
                         const isSelected = selectedTeamMember && selectedTeamMember.userId === member.userId;
                         const isWalking = member.activity === 'walking';
 
-                        // Vibrant role gradients for the pion head
+                        // 🎨 Group Theme: Members in the SAME group share the EXACT same color!
+                        const groupTheme = getTeamMemberGroupTheme(member, allSavedUsers);
                         const pionGradient = isSos
                           ? 'from-rose-500 via-red-500 to-rose-700 text-white'
-                          : isMe
-                          ? 'from-emerald-500 via-teal-500 to-emerald-700 text-white'
-                          : member.role === 'admin'
-                          ? 'from-amber-400 via-amber-500 to-amber-600 text-slate-950'
-                          : 'from-sky-400 via-blue-500 to-indigo-600 text-white';
+                          : groupTheme.gradient;
 
                         const needleColor = isSos
                           ? 'border-t-rose-600'
-                          : isMe
-                          ? 'border-t-teal-600'
-                          : member.role === 'admin'
-                          ? 'border-t-amber-500'
-                          : 'border-t-blue-600';
+                          : groupTheme.needle;
 
                         // Clean short name without parenthetical tags (e.g. ភិក្ខុអាន់ឃ្លី, សំណាង, លោកប្រធាន)
                         const cleanName = String(member.userName || member.name || '')
@@ -3859,12 +3971,14 @@ export default function TempleMapModal({
                               </div>
                             )}
 
-                            {/* Pion Pin Body (20px Avatar Badge + Pointer needle) */}
+                            {/* Pion Pin Body (22px Avatar Badge + Pointer needle) */}
                             <div className={`relative flex flex-col items-center transition-transform duration-150 group-hover:scale-110 ${
                               isSelected || isMe ? 'scale-105' : ''
                             }`}>
                               {/* Circular Pion Head with Person Icon */}
-                              <div className={`w-[22px] h-[22px] rounded-full bg-gradient-to-br ${pionGradient} ring-1.5 ring-white/95 shadow-md flex items-center justify-center select-none leading-none transition-transform duration-150`}>
+                              <div className={`w-[22px] h-[22px] rounded-full bg-gradient-to-br ${pionGradient} ${
+                                isMe ? 'ring-2 ring-white shadow-lg' : 'ring-1.5 ring-white/95 shadow-md'
+                              } flex items-center justify-center select-none leading-none transition-transform duration-150`}>
                                 {isSos ? (
                                   <span className="text-[10px]">🚨</span>
                                 ) : isWalking ? (
@@ -3895,10 +4009,10 @@ export default function TempleMapModal({
                               isSos
                                 ? 'bg-rose-950/90 border-rose-500/80 text-rose-200'
                                 : isMe
-                                ? 'bg-slate-950/90 border-emerald-400/80 text-emerald-300 ring-1 ring-emerald-400/40'
+                                ? 'bg-slate-950/90 border-white/80 text-emerald-300 ring-1 ring-emerald-400/40'
                                 : isSelected
                                 ? 'bg-slate-950/95 border-amber-400 text-amber-300'
-                                : 'bg-slate-950/80 border-slate-700/60 text-slate-200 group-hover:bg-slate-950/95 group-hover:text-white'
+                                : `bg-slate-950/85 ${groupTheme.border}`
                             }`}>
                               <span className="truncate">{cleanName}</span>
                             </div>
