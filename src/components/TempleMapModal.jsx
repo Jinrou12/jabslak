@@ -3798,23 +3798,35 @@ export default function TempleMapModal({
                       })}
 
                       {/* 👥 Live Team Tracker Pins on the Temple Map - SLEEK, COMPACT & SIMPLE */}
+                      {/* 👥 Live Team Tracker Pion Pins on the Temple Map - ULTRA-COMPACT, ELEGANT & SIMPLE */}
                       {activeTab === 'interactive' && showTeamTracker && teamLiveLocations.filter((m) => m && m.x != null && m.y != null).map((member) => {
                         const isSos = Boolean(member.needHelp);
                         const isMe = member.userId === (currentUser?.id || 'u-self');
                         const isSelected = selectedTeamMember && selectedTeamMember.userId === member.userId;
                         const isWalking = member.activity === 'walking';
 
-                        const roleColor = member.role === 'owner'
-                          ? 'from-teal-400 to-emerald-600 text-white'
+                        // Vibrant role gradients for the pion head
+                        const pionGradient = isSos
+                          ? 'from-rose-500 via-red-500 to-rose-700 text-white'
+                          : isMe
+                          ? 'from-emerald-500 via-teal-500 to-emerald-700 text-white'
                           : member.role === 'admin'
-                          ? 'from-amber-400 to-amber-600 text-slate-950'
-                          : 'from-sky-400 to-blue-600 text-white';
+                          ? 'from-amber-400 via-amber-500 to-amber-600 text-slate-950'
+                          : 'from-sky-400 via-blue-500 to-indigo-600 text-white';
+
+                        const needleColor = isSos
+                          ? 'border-t-rose-600'
+                          : isMe
+                          ? 'border-t-teal-600'
+                          : member.role === 'admin'
+                          ? 'border-t-amber-500'
+                          : 'border-t-blue-600';
 
                         // Clean short name without parenthetical tags (e.g. ភិក្ខុអាន់ឃ្លី, សំណាង, លោកប្រធាន)
                         const cleanName = String(member.userName || member.name || '')
                           .replace(/\s*\([^)]*\)/g, '')
                           .trim() || 'ក្រុមការងារ';
-                        const initialLetter = cleanName ? cleanName.charAt(0) : 'U';
+                        const initialLetter = cleanName ? Array.from(cleanName)[0] : 'U';
 
                         return (
                           <div
@@ -3825,51 +3837,43 @@ export default function TempleMapModal({
                               top: `${member.y}%`,
                               zIndex: isSos ? 99 : (isMe || isSelected ? 80 : 45)
                             }}
-                            className={`-translate-x-1/2 -translate-y-1/2 cursor-pointer group select-none ${isSettingMySpot ? 'pointer-events-none' : 'pointer-events-auto'}`}
+                            className={`-translate-x-1/2 -translate-y-1/2 cursor-pointer group select-none flex flex-col items-center ${
+                              isSettingMySpot ? 'pointer-events-none' : 'pointer-events-auto'
+                            }`}
                             onClick={(e) => {
                               e.stopPropagation();
                               setSelectedTeamMember(member);
                             }}
                           >
-                            {/* Subtle single pulse ring for self, selected, or SOS */}
-                            {isSos ? (
-                              <div className="absolute -inset-2 rounded-full bg-rose-500/50 animate-ping pointer-events-none" />
-                            ) : (isMe || isSelected) ? (
-                              <div className="absolute -inset-1.5 rounded-full bg-emerald-400/25 animate-ping pointer-events-none" />
-                            ) : null}
-
-                            {/* Mini Tooltip on Hover or Selected */}
+                            {/* Hover / Selected Tooltip Bubble */}
                             {(isSelected || isSos) && (
-                              <div className={`absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md text-[10px] font-bold font-kantumruy whitespace-nowrap shadow-lg border pointer-events-none flex items-center gap-1 z-50 ${
+                              <div className={`absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-md text-[9.5px] font-bold font-kantumruy whitespace-nowrap shadow-xl border pointer-events-none flex items-center gap-1 z-50 ${
                                 isSos
                                   ? 'bg-rose-950/95 border-rose-500 text-rose-200'
                                   : isMe
                                   ? 'bg-slate-900/95 border-emerald-400 text-emerald-300'
                                   : 'bg-slate-900/95 border-amber-400 text-amber-300'
                               }`}>
-                                <MapPin className="w-3 h-3 text-amber-300 shrink-0" />
-                                <span>{isSos ? '🚨 ត្រូវការជំនួយ!' : member.locationName || member.name || 'ទីតាំងលើ Map'}</span>
+                                <span>{cleanName} ៖ {isSos ? '🚨 ត្រូវការជំនួយ!' : isWalking ? 'កំពុងដើរ 🚶‍♂️' : 'នៅស្ងៀម 🧍'}</span>
                                 <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
                               </div>
                             )}
 
-                            {/* Compact Circular Pin */}
-                            <div className={`relative flex items-center justify-center transition-transform duration-200 group-hover:scale-115 ${
+                            {/* Pion Pin Body (20px Avatar Badge + Pointer needle) */}
+                            <div className={`relative flex flex-col items-center transition-transform duration-150 group-hover:scale-110 ${
                               isSelected || isMe ? 'scale-105' : ''
                             }`}>
-                              <div className={`w-6 h-6 rounded-full bg-gradient-to-br ${
-                                isSos
-                                  ? 'from-rose-500 to-red-600 text-white ring-2 ring-rose-400'
-                                  : isMe
-                                  ? 'from-emerald-400 to-teal-600 text-slate-950 ring-2 ring-emerald-300'
-                                  : roleColor
-                              } ring-1 ring-white/90 shadow-md flex items-center justify-center font-bold text-[10px] font-kantumruy`}>
+                              {/* 20px Circular Pion Head */}
+                              <div className={`w-5 h-5 rounded-full bg-gradient-to-br ${pionGradient} ring-1.5 ring-white/95 shadow-md flex items-center justify-center font-bold text-[10px] font-kantumruy select-none leading-none`}>
                                 {isSos ? '🚨' : initialLetter}
                               </div>
 
-                              {/* Small Status Indicator Dot at bottom-right */}
+                              {/* Pion Needle pointing directly to map coordinate */}
+                              <div className={`w-0 h-0 border-l-[3px] border-l-transparent border-r-[3px] border-r-transparent border-t-[3.5px] ${needleColor} -mt-[0.5px] drop-shadow-sm`} />
+
+                              {/* Tiny Status Indicator Dot */}
                               <span
-                                className={`absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-slate-950 shadow-sm ${
+                                className={`absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full border border-slate-950 shadow-sm ${
                                   isSos
                                     ? 'bg-rose-500 animate-ping'
                                     : isWalking
@@ -3880,15 +3884,15 @@ export default function TempleMapModal({
                               />
                             </div>
 
-                            {/* Clean, Compact Short Name Pill */}
-                            <div className={`mt-0.5 px-1.5 py-0.2 rounded-full border text-[9px] font-bold text-center whitespace-nowrap shadow-sm pointer-events-none flex items-center justify-center gap-0.5 font-kantumruy max-w-[85px] truncate backdrop-blur-sm transition-all ${
+                            {/* Clean, Simple Short Name Pill */}
+                            <div className={`mt-0.5 px-1.5 py-[0.5px] rounded-full border text-[8.5px] font-bold text-center whitespace-nowrap shadow-sm pointer-events-none flex items-center justify-center font-kantumruy max-w-[70px] truncate backdrop-blur-md transition-all ${
                               isSos
                                 ? 'bg-rose-950/90 border-rose-500/80 text-rose-200'
                                 : isMe
-                                ? 'bg-slate-950/85 border-emerald-400/80 text-emerald-300'
+                                ? 'bg-slate-950/90 border-emerald-400/80 text-emerald-300 ring-1 ring-emerald-400/40'
                                 : isSelected
-                                ? 'bg-slate-950/90 border-amber-400/80 text-amber-300'
-                                : 'bg-slate-950/75 border-slate-700/60 text-slate-200 group-hover:bg-slate-950/95 group-hover:text-white'
+                                ? 'bg-slate-950/95 border-amber-400 text-amber-300'
+                                : 'bg-slate-950/80 border-slate-700/60 text-slate-200 group-hover:bg-slate-950/95 group-hover:text-white'
                             }`}>
                               <span className="truncate">{cleanName}</span>
                             </div>
@@ -3952,14 +3956,22 @@ export default function TempleMapModal({
                           {selectedTeamMember.userName || selectedTeamMember.name}
                         </span>
                         <span className={`text-[8px] px-1.5 py-0.2 rounded font-bold ${
-                          selectedTeamMember.role === 'admin' ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'
+                          selectedTeamMember.role === 'owner'
+                            ? 'bg-emerald-500/20 text-emerald-300'
+                            : selectedTeamMember.role === 'admin'
+                            ? 'bg-amber-500/20 text-amber-300'
+                            : 'bg-sky-500/20 text-sky-300'
                         }`}>
-                          {selectedTeamMember.role === 'admin' ? 'Admin ផែន' : 'Assistant ផែន'}
+                          {selectedTeamMember.role === 'owner' ? 'ម្ចាស់ប្រព័ន្ធ (Owner)' : selectedTeamMember.role === 'admin' ? 'អ្នកគ្រប់គ្រង (Admin)' : 'ជំនួយការ (Assistant)'}
                         </span>
                       </div>
                       <div className="text-[11px] text-slate-300 truncate mt-0.5 flex items-center gap-1">
                         <MapPin className="w-3 h-3 text-amber-400 shrink-0" />
-                        <span>{selectedTeamMember.locationName || selectedTeamMember.assignedZone || 'ទីតាំងលើ Map'}</span>
+                        <span>
+                          {(selectedTeamMember.locationName && !selectedTeamMember.locationName.includes('ALL') && !selectedTeamMember.locationName.includes('ធម្មសភា'))
+                            ? selectedTeamMember.locationName
+                            : 'ទីតាំងលើ Map'}
+                        </span>
                       </div>
 
                       {/* Live Motion Status Chip in Popover */}
@@ -4000,7 +4012,12 @@ export default function TempleMapModal({
 
                 <div className="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between gap-1.5">
                   <div className="text-[10px] text-slate-400 truncate">
-                    {selectedTeamMember.assignedZone && <span>{selectedTeamMember.assignedZone}</span>}
+                    {selectedTeamMember.assignedZone &&
+                      !selectedTeamMember.assignedZone.includes('ALL') &&
+                      !selectedTeamMember.assignedZone.includes('ផែន') &&
+                      !selectedTeamMember.assignedZone.includes('ធម្មសភា') && (
+                        <span>{selectedTeamMember.assignedZone}</span>
+                      )}
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {selectedTeamMember.phone && (
