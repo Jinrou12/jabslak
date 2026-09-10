@@ -327,13 +327,35 @@ const COLOR_SWATCHES = [
     badgeBg: 'bg-pink-500/20 text-pink-300 border-pink-500/40',
     activeChip: 'bg-pink-500 text-white shadow-md shadow-pink-500/30 font-extrabold',
     gradient: 'bg-gradient-to-br from-pink-300 via-fuchsia-400 to-purple-600 text-slate-950 border-white ring-1 ring-pink-400/60'
+  },
+  {
+    key: 'sky',
+    label: '🧊 ពណ៌ផ្ទៃមេឃ (Sky Blue)',
+    bg: 'bg-sky-400',
+    text: 'text-sky-300',
+    badgeBg: 'bg-sky-500/20 text-sky-300 border-sky-500/40',
+    activeChip: 'bg-sky-500 text-slate-950 shadow-md shadow-sky-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-sky-300 via-sky-400 to-blue-600 text-slate-950 border-white ring-1 ring-sky-400/60'
+  },
+  {
+    key: 'amber',
+    label: '🔶 ពណ៌ទឹកក្រូចខ្ចី (Amber)',
+    bg: 'bg-amber-400',
+    text: 'text-amber-300',
+    badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+    activeChip: 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/30 font-extrabold',
+    gradient: 'bg-gradient-to-br from-amber-300 via-orange-400 to-amber-500 text-slate-950 border-white ring-1 ring-orange-400/60'
   }
 ];
 
 const COLOR_OPTION_GRADIENTS = COLOR_SWATCHES.reduce((acc, swatch) => {
   acc[swatch.key] = swatch.gradient;
   return acc;
-}, {});
+}, {
+  amber: 'bg-gradient-to-br from-amber-300 via-orange-400 to-amber-500 text-slate-950 border-white ring-1 ring-orange-400/60',
+  sky: 'bg-gradient-to-br from-sky-300 via-sky-400 to-blue-600 text-slate-950 border-white ring-1 ring-sky-400/60',
+  blue: 'bg-gradient-to-br from-indigo-300 via-indigo-400 to-blue-600 text-white border-white ring-1 ring-indigo-400/60'
+});
 
 function getGroupColorMeta(colorKey) {
   const swatch = COLOR_SWATCHES.find((s) => s.key === colorKey);
@@ -374,30 +396,31 @@ function getGroupColorKey(groupName, locationsList = []) {
     }
   }
 
-  // 2. Zone-based default fallback colors for standard zones (1 to 8)
+  // 2. Zone-based default fallback colors matching Image 2 reference exactly
   const zoneMatch = cleanCat.match(/^(?:ផែន|ដែន|zone)\s*([១២៣៤៥៦៧៨1-8])/i);
   if (zoneMatch) {
     const digit = parseInt(khmerToWesternDigits(zoneMatch[1]), 10);
     const zoneColorMap = {
-      1: 'emerald',  // ផែន១ ៖ ធម្មសភា
-      2: 'teal',     // ផែន២ ៖ សាលាឆាន់ចាស់
-      3: 'indigo',   // ផែន៣ ៖ មុខសាលាឆាន់ចាស់
-      4: 'rose',     // ផែន៤ ៖ ព្រះបរិនិព្វាន
-      5: 'purple',   // ផែន៥ ៖ បណ្ណាល័យ
-      6: 'fuchsia',  // ផែន៦ ៖ ព្រះផ្ទម
-      7: 'lime',     // ផែន៧ ៖ តាមកុដិ
-      8: 'violet'    // ផែន៨ ៖ សាលារៀន
+      1: 'lime',     // ផែន១ ៖ ធម្មសភា (Lime Green in Image 2)
+      2: 'sky',      // ផែន២ ៖ សាលាឆាន់ចាស់ (Sky Blue in Image 2)
+      3: 'pink',     // ផែន៣ ៖ មុខសាលាឆាន់ចាស់ (Pink in Image 2)
+      4: 'orange',   // ផែន៤ ៖ ព្រះបរិនិព្វាន (Orange in Image 2)
+      5: 'lime',     // ផែន៥ ៖ បណ្ណាល័យ (Lime Green in Image 2)
+      6: 'purple',   // ផែន៦ ៖ ព្រះផ្ទម (Purple in Image 2)
+      7: 'rose',     // ផែន៧ ៖ តាមកុដិ (Rose/Pink in Image 2)
+      8: 'teal'      // ផែន៨ ៖ សាលារៀន
     };
     if (zoneColorMap[digit]) return zoneColorMap[digit];
   }
 
-  // 3. Name-based keywords fallback
-  if (cleanCat.includes('ធម្មសភា') || cleanCat.includes('ធម្មសាលា')) return 'emerald';
-  if (cleanCat.includes('សាលាឆាន់')) return 'teal';
-  if (cleanCat.includes('បរិនិព្វាន') || cleanCat.includes('វិហារ') || cleanCat.includes('ពោធិ')) return 'rose';
-  if (cleanCat.includes('បណ្ណាល័យ')) return 'purple';
-  if (cleanCat.includes('ព្រះផ្ទម') || cleanCat.includes('ព្រះផ្ទំ')) return 'fuchsia';
-  if (cleanCat.includes('កុដិ')) return 'lime';
+  // 3. Name-based keywords fallback matching Image 2 reference
+  if (cleanCat.includes('ធម្មសភា') || cleanCat.includes('ធម្មសាលា')) return 'lime';
+  if (cleanCat.includes('មុខសាលាឆាន់')) return 'pink';
+  if (cleanCat.includes('សាលាឆាន់')) return 'sky';
+  if (cleanCat.includes('បរិនិព្វាន')) return 'orange';
+  if (cleanCat.includes('បណ្ណាល័យ')) return 'lime';
+  if (cleanCat.includes('ព្រះផ្ទម') || cleanCat.includes('ព្រះផ្ទំ')) return 'purple';
+  if (cleanCat.includes('កុដិ')) return 'rose';
   if (cleanCat.includes('សាលារៀន') || cleanCat.includes('វិទ្យុ')) return 'violet';
   if (cleanCat.includes('ខ្លោងទ្វារ') || cleanCat.includes('gate') || cleanCat.includes('⛩️')) return 'orange';
   if (cleanCat.includes('អគារ') || cleanCat.includes('🏢')) return 'teal';

@@ -36,16 +36,16 @@ function groupTagsByName(tags) {
 const zones = [
   {
     name: 'ផែន១ ៖ ធម្មសភា',
-    color: 'emerald',
+    color: 'lime',
     min: 1,
     max: 46,
     generateCoords: (count) => {
       const coords = [];
       const cols = 7;
-      const spacingX = 1.15;
-      const spacingY = 1.35;
-      const cx = 31.0;
-      const cy = 44.8;
+      const spacingX = 1.0;
+      const spacingY = 1.22;
+      const cx = 30.7;
+      const cy = 44.3;
       for (let idx = 0; idx < count; idx++) {
         const row = Math.floor(idx / cols);
         const col = idx % cols;
@@ -67,9 +67,9 @@ const zones = [
     generateCoords: (count) => {
       const coords = [];
       const cols = 3;
-      const spacingX = 1.1;
-      const spacingY = 1.3;
-      const cx = 36.3;
+      const spacingX = 1.05;
+      const spacingY = 1.25;
+      const cx = 36.5;
       const cy = 38.0;
       for (let idx = 0; idx < count; idx++) {
         const row = Math.floor(idx / cols);
@@ -91,11 +91,11 @@ const zones = [
     max: 92,
     generateCoords: (count) => {
       const coords = [];
-      const cols = 4;
-      const spacingX = 1.1;
-      const spacingY = 1.25;
-      const cx = 33.2;
-      const cy = 40.5;
+      const cols = 2;
+      const spacingX = 1.15;
+      const spacingY = 1.28;
+      const cx = 47.7;
+      const cy = 33.8;
       for (let idx = 0; idx < count; idx++) {
         const row = Math.floor(idx / cols);
         const col = idx % cols;
@@ -111,16 +111,16 @@ const zones = [
   },
   {
     name: 'ផែន៤ ៖ ព្រះបរិនិព្វាន',
-    color: 'amber',
+    color: 'orange',
     min: 93,
     max: 111,
     generateCoords: (count) => {
       const coords = [];
       const cols = 5;
-      const spacingX = 1.3;
-      const spacingY = 1.4;
-      const cx = 53.6;
-      const cy = 50.8;
+      const spacingX = 1.2;
+      const spacingY = 1.28;
+      const cx = 53.5;
+      const cy = 50.6;
       for (let idx = 0; idx < count; idx++) {
         const row = Math.floor(idx / cols);
         const col = idx % cols;
@@ -142,10 +142,10 @@ const zones = [
     generateCoords: (count) => {
       const coords = [];
       const cols = 4;
-      const spacingX = 1.25;
-      const spacingY = 1.4;
-      const cx = 52.8;
-      const cy = 43.5;
+      const spacingX = 1.15;
+      const spacingY = 1.25;
+      const cx = 53.0;
+      const cy = 43.8;
       for (let idx = 0; idx < count; idx++) {
         const row = Math.floor(idx / cols);
         const col = idx % cols;
@@ -165,8 +165,8 @@ const zones = [
     min: 124,
     max: 133,
     generateCoords: () => [
-      { x: 54.5, y: 37.8 }, { x: 55.4, y: 38.8 }, { x: 56.4, y: 39.8 }, { x: 57.4, y: 40.8 }, { x: 58.4, y: 41.8 },
-      { x: 55.2, y: 37.0 }, { x: 56.1, y: 38.0 }, { x: 57.1, y: 39.0 }, { x: 58.1, y: 40.0 }, { x: 59.1, y: 41.0 }
+      { x: 55.8, y: 38.8 }, { x: 56.7, y: 39.8 }, { x: 57.7, y: 40.8 }, { x: 58.7, y: 41.8 }, { x: 59.7, y: 42.8 },
+      { x: 56.5, y: 38.0 }, { x: 57.4, y: 39.0 }, { x: 58.4, y: 40.0 }, { x: 59.4, y: 41.0 }, { x: 60.4, y: 42.0 }
     ]
   },
   {
@@ -175,18 +175,16 @@ const zones = [
     min: 134,
     max: 150,
     generateCoords: () => [
-      { x: 35.5, y: 34.5 }, { x: 36.8, y: 35.5 }, // 2 pins near Gate D
-      // 8 pins at Kuti Yeay Ta (2 cols x 4 rows)
-      { x: 46.9, y: 31.8 }, { x: 48.1, y: 31.8 },
-      { x: 46.9, y: 33.1 }, { x: 48.1, y: 33.1 },
-      { x: 46.9, y: 34.4 }, { x: 48.1, y: 34.4 },
-      { x: 46.9, y: 35.7 }, { x: 48.1, y: 35.7 },
-      // 2 pins above library building
-      { x: 50.8, y: 34.8 }, { x: 52.2, y: 34.8 },
-      // 1 pin at top of golden pagoda
-      { x: 39.5, y: 42.5 },
-      // 3 pins in front of golden pagoda
-      { x: 37.5, y: 54.8 }, { x: 38.8, y: 54.8 }, { x: 40.0, y: 54.8 }
+      // 4 pins in vertical trail through bottom trees:
+      { x: 34.0, y: 58.0 }, { x: 34.2, y: 59.8 }, { x: 34.4, y: 61.6 }, { x: 34.6, y: 63.4 },
+      // 3 pins in front of golden pagoda:
+      { x: 38.2, y: 55.0 }, { x: 39.4, y: 55.0 }, { x: 40.6, y: 55.0 },
+      // 2 pins above Zone 2 blue cluster:
+      { x: 36.0, y: 32.2 }, { x: 37.2, y: 32.2 },
+      // 4 pins on roof above Zone 1:
+      { x: 32.8, y: 36.6 }, { x: 34.0, y: 36.6 }, { x: 33.3, y: 37.8 }, { x: 34.5, y: 37.8 },
+      // 3 pins near kutis:
+      { x: 24.5, y: 38.2 }, { x: 28.8, y: 32.8 }, { x: 33.6, y: 32.4 }
     ]
   },
 ];

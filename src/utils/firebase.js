@@ -7,6 +7,7 @@ import {
   getSavedTempleLocations,
   getSavedTab3Locations
 } from '../data/templeLocations.js';
+import { INITIAL_TAB3_LOCATIONS } from '../data/initialTab3Locations.js';
 
 // Dynamically read custom Firebase Database credentials from localStorage or URL parameter
 let urlDbParam = '';
@@ -440,7 +441,7 @@ export async function saveTab3LocationsToFirebase(locations, templeId = 'khemava
  */
 export function resetTab3Locations(templeId = 'khemavan') {
   const isKhemavan = !templeId || templeId === 'khemavan';
-  const defaultLocs = isKhemavan ? INITIAL_TEMPLE_LOCATIONS : [];
+  const defaultLocs = isKhemavan ? INITIAL_TAB3_LOCATIONS : [];
   saveTab3LocationsToFirebase(defaultLocs, templeId);
   return defaultLocs;
 }
