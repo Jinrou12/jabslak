@@ -968,5 +968,75 @@ export async function saveGpsCalibrationToFirebase(calibrationData, templeId = '
   return true;
 }
 
+/**
+ * Subscribe to System Users from Firebase Realtime Database
+ * Enables real-time synchronization of users across all devices and browsers.
+ */
+export function subscribeToSystemUsers(callback) {
+  let isSubscribed = true;
+  const path = 'system_users';
+
+  const processUsers = (val) => {
+    if (!isSubscribed || !val) return;
+    let list = [];
+    if (Array.isArray(val)) {
+      list = val.filter(Boolean);
+    } else if (typeof val === 'object') {
+      list = Object.values(val).filter(Boolean);
+    }
+    if (list.length > 0) {
+      callback(list);
+    }
+  };
+
+  // Immediate REST fetch
+  restGet(path).then((data) => {
+    if (data && isSubscribed) processUsers(data);
+  }).catch(() => {});
+
+  // Periodic REST poll (every 10s)
+  const pollInterval = setInterval(() => {
+    if (!isSubscribed) return;
+    restGet(path).then((data) => {
+      if (data && isSubscribed) processUsers(data);
+    }).catch(() => {});
+  }, 10000);
+
+  let unsubscribeDb = () => {};
+  if (db) {
+    try {
+      const usersRef = ref(db, path);
+      unsubscribeDb = onValue(usersRef, (snapshot) => {
+        const val = snapshot.val();
+        if (val) processUsers(val);
+      });
+    } catch (e) {}
+  }
+
+  return () => {
+    isSubscribed = false;
+    clearInterval(pollInterval);
+    unsubscribeDb();
+  };
+}
+
+/**
+ * Save System Users to Firebase Realtime Database
+ */
+export async function saveSystemUsersToFirebase(users) {
+  if (!Array.isArray(users) || users.length === 0) return false;
+  const path = 'system_users';
+
+  restPut(path, users).catch(() => {});
+  if (db) {
+    try {
+      const usersRef = ref(db, path);
+      await set(usersRef, users);
+    } catch (e) {}
+  }
+  return true;
+}
+
 export { db, isConnected };
+
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, LogIn, Key, AlertCircle } from 'lucide-react';
-import { GUEST_USER, DEFAULT_USERS } from '../utils/storage';
+import { GUEST_USER, DEFAULT_USERS, getSavedUsers } from '../utils/storage';
 
 export default function LoginModal({
   currentUser,
@@ -25,21 +25,59 @@ export default function LoginModal({
       return;
     }
 
-    const userPool = Array.isArray(users) && users.length > 0 ? [...users, ...DEFAULT_USERS] : DEFAULT_USERS;
+    // Always fetch fresh users from memory + localStorage + DEFAULT_USERS
+    const latestSaved = typeof window !== 'undefined' ? getSavedUsers() : [];
+    const pool = [
+      ...(Array.isArray(users) ? users : []),
+      ...latestSaved,
+      ...DEFAULT_USERS
+    ];
+
+    // Deduplicate pool
+    const userPool = [];
+    const seen = new Set();
+    for (const u of pool) {
+      if (!u) continue;
+      const key = (u.id || '') + '||' + (u.email || '').toLowerCase().trim();
+      if (!seen.has(key)) {
+        seen.add(key);
+        userPool.push(u);
+      }
+    }
 
     // Check if email matches any promoted user in system (with robust alias matching)
     const matchingCandidates = userPool.filter((u) => {
       const userEmail = (u.email || '').toLowerCase().trim();
       const altEmail = (u.altEmail || '').toLowerCase().trim();
+      const userName = (u.name || '').toLowerCase().trim();
+      const userPhone = (u.phone || '').replace(/[\s-]/g, '');
+      const inputClean = trimmedEmail.replace(/[\s-]/g, '');
 
-      // Direct email match or username prefix match (e.g. samnang, annkle, admin, assistant)
+      // Direct email match or altEmail match
       if (userEmail === trimmedEmail || altEmail === trimmedEmail) return true;
-      if (userEmail.split('@')[0] === trimmedEmail) return true;
 
-      // Owner aliases: owner@gmail.com, thonvisal12@gmail.com, or "owner"
+      // Username prefix match (e.g. thonvisal, samnang, annkle, admin, assistant)
+      if (userEmail.split('@')[0] === trimmedEmail) return true;
+      if (altEmail.split('@')[0] === trimmedEmail) return true;
+
+      // Phone match
+      if (userPhone && userPhone === inputClean) return true;
+
+      // Direct name match
+      if (userName === trimmedEmail) return true;
+
+      // Thon Visal aliases: thonvisal@gmail.com, thonvisal12@gmail.com, thonvisal
+      if (
+        (u.id === 'u-admin-thonvisal' || userEmail === 'thonvisal@gmail.com' || altEmail === 'thonvisal12@gmail.com') &&
+        (trimmedEmail === 'thonvisal@gmail.com' || trimmedEmail === 'thonvisal12@gmail.com' || trimmedEmail === 'thonvisal')
+      ) {
+        return true;
+      }
+
+      // Owner aliases: owner@gmail.com or "owner"
       if (
         u.role === 'owner' &&
-        (trimmedEmail === 'owner@gmail.com' || trimmedEmail === 'thonvisal12@gmail.com' || trimmedEmail === 'owner')
+        (trimmedEmail === 'owner@gmail.com' || trimmedEmail === 'owner')
       ) {
         return true;
       }
@@ -73,7 +111,14 @@ export default function LoginModal({
 
     // Guaranteed hard fallback
     if (!matchedUser) {
-      if (trimmedEmail === 'owner@gmail.com' || trimmedEmail === 'owner' || trimmedEmail === 'thonvisal12@gmail.com') {
+      if (
+        trimmedEmail === 'thonvisal@gmail.com' ||
+        trimmedEmail === 'thonvisal12@gmail.com' ||
+        trimmedEmail === 'thonvisal'
+      ) {
+        matchedUser = userPool.find((u) => u.id === 'u-admin-thonvisal' || u.email === 'thonvisal@gmail.com')
+          || DEFAULT_USERS.find((u) => u.id === 'u-admin-thonvisal' || u.email === 'thonvisal@gmail.com');
+      } else if (trimmedEmail === 'owner@gmail.com' || trimmedEmail === 'owner') {
         matchedUser = DEFAULT_USERS.find((u) => u.role === 'owner');
       } else if (trimmedEmail === 'admin@gmail.com' || trimmedEmail === 'admin') {
         matchedUser = DEFAULT_USERS.find((u) => u.role === 'admin');

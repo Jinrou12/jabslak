@@ -23,7 +23,7 @@ import InstallAppModal from './components/InstallAppModal';
 import ZoneAttendanceModal from './components/ZoneAttendanceModal';
 import SplashScreen from './components/SplashScreen';
 import { searchTags, westernToKhmerDigits, khmerToWesternDigits, getKhmerPhoneticSuggestions } from './utils/khmerSearch';
-import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER, getEffectiveUser } from './utils/storage';
+import { getSavedTags, saveTags, getSavedUsers, saveUsers, getCurrentUser, saveCurrentUser, GUEST_USER, getEffectiveUser, DEFAULT_USERS } from './utils/storage';
 import {
   DEFAULT_TEMPLES,
   getSavedTemples,
@@ -46,7 +46,9 @@ import {
   migrateTempleFirebaseData,
   subscribeToFirebaseTab3Locations,
   subscribeToTeamLiveLocations,
-  clearTeamSOSAlert
+  clearTeamSOSAlert,
+  subscribeToSystemUsers,
+  saveSystemUsersToFirebase
 } from './utils/firebase';
 import { pushTagsToCloud, subscribeToCloudTags } from './utils/cloudSync';
 import { phoneTracker } from './utils/phoneTracker';
@@ -131,6 +133,53 @@ export default function App() {
     };
     window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  // 👥 Real-time Cloud Synchronization & Multi-tab Sync for System Users
+  useEffect(() => {
+    const unsub = subscribeToSystemUsers((cloudUsers) => {
+      if (Array.isArray(cloudUsers) && cloudUsers.length > 0) {
+        setUsers((prev) => {
+          const map = new Map();
+          // 1. Base DEFAULT_USERS
+          DEFAULT_USERS.forEach((u) => map.set(u.id, u));
+          // 2. Overlay previous state
+          (prev || []).forEach((u) => {
+            if (u && u.id) map.set(u.id, u);
+          });
+          // 3. Overlay cloud users (source of truth across all devices)
+          cloudUsers.forEach((u) => {
+            if (u && u.id) map.set(u.id, u);
+          });
+          const merged = Array.from(map.values());
+          saveUsers(merged);
+          return merged;
+        });
+      } else {
+        // If cloud is currently empty, seed it with current local users
+        const currentLocal = getSavedUsers();
+        if (currentLocal && currentLocal.length > 0) {
+          saveSystemUsersToFirebase(currentLocal);
+        }
+      }
+    });
+
+    const handleStorage = (e) => {
+      if (e.key === 'KHMER_TAG_SYSTEM_USERS_V1') {
+        try {
+          const updated = JSON.parse(e.newValue);
+          if (Array.isArray(updated) && updated.length > 0) {
+            setUsers(updated);
+          }
+        } catch (err) {}
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      unsub();
+      window.removeEventListener('storage', handleStorage);
+    };
   }, []);
 
   // 🛰️ Immediate Location Acquired Event -> Show Popup for Admin/Assistant
@@ -829,6 +878,7 @@ export default function App() {
 
     setUsers(updated);
     saveUsers(updated);
+    saveSystemUsersToFirebase(updated);
 
     if (currentUser && currentUser.id === userData.id) {
       setCurrentUser(userData);
@@ -840,6 +890,7 @@ export default function App() {
     const updated = users.filter((u) => u.id !== userId);
     setUsers(updated);
     saveUsers(updated);
+    saveSystemUsersToFirebase(updated);
     showToast('បានលុបគណនីអ្នកប្រើប្រាស់រួចរាល់!');
   };
 
