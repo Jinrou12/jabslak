@@ -3734,23 +3734,16 @@ export default function TempleMapModal({
                 <button
                   type="button"
                   onClick={() => setActiveTab('owners')}
-                  className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                  className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
                     activeTab === 'owners'
                       ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/25 font-black ring-1 ring-amber-400/50'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
-                  title={`ឈ្មោះ (${westernToKhmerDigits(totalInZone)} ស្លាក)`}
+                  title="ឈ្មោះ"
                   aria-label="ឈ្មោះ"
                 >
                   <Tag className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
                   <span>ឈ្មោះ</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border font-bold ${
-                    activeTab === 'owners'
-                      ? 'bg-slate-950/40 text-slate-950 border-slate-950/50'
-                      : 'bg-slate-800 text-amber-300 border-slate-700'
-                  }`}>
-                    {westernToKhmerDigits(totalInZone)} {isZoneScoped ? 'នាក់' : 'ស្លាក'}
-                  </span>
                 </button>
 
                 {/* Button 2: កន្លែងគ្រប់គ្រង (Icon Button) */}
@@ -3763,23 +3756,16 @@ export default function TempleMapModal({
                       setSelectedSizeGroup(activeZoneScope);
                     }
                   }}
-                  className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                  className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
                     activeTab === 'tagger'
                       ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/25 font-black ring-1 ring-amber-400/50'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
-                  title={`កន្លែងគ្រប់គ្រង (${westernToKhmerDigits(currentLocations.length)} ទីតាំង)`}
+                  title="កន្លែងគ្រប់គ្រង"
                   aria-label="កន្លែងគ្រប់គ្រង"
                 >
                   <MapPin className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
                   <span>កន្លែងគ្រប់គ្រង</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border font-bold ${
-                    activeTab === 'tagger'
-                      ? 'bg-slate-950/40 text-slate-950 border-slate-950/50'
-                      : 'bg-slate-800 text-sky-300 border-slate-700'
-                  }`}>
-                    {westernToKhmerDigits(currentLocations.length)} ទីតាំង
-                  </span>
                 </button>
 
                 {/* Button 3: Tracking (Icon Button) */}
@@ -3790,12 +3776,12 @@ export default function TempleMapModal({
                     setShowTeamTracker(true);
                     setTab2SubView('team');
                   }}
-                  className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer relative ${
+                  className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer relative ${
                     activeTab === 'interactive'
                       ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/25 font-black ring-1 ring-amber-400/50'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
-                  title={`Tracking (${westernToKhmerDigits(scopedTeamLiveLocations.length)} នាក់)`}
+                  title="Tracking"
                   aria-label="Tracking"
                 >
                   {scopedTeamLiveLocations.some((m) => m.needHelp) && (
@@ -3803,13 +3789,6 @@ export default function TempleMapModal({
                   )}
                   <Users className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
                   <span>Tracking</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border font-bold ${
-                    activeTab === 'interactive'
-                      ? 'bg-slate-950/40 text-slate-950 border-slate-950/50'
-                      : 'bg-slate-800 text-emerald-300 border-slate-700'
-                  }`}>
-                    {westernToKhmerDigits(scopedTeamLiveLocations.length)} នាក់
-                  </span>
                 </button>
               </>
             ) : (
