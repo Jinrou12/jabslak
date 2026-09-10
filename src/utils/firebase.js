@@ -8,6 +8,7 @@ import {
   getSavedTab3Locations
 } from '../data/templeLocations.js';
 import { INITIAL_TAB3_LOCATIONS } from '../data/initialTab3Locations.js';
+import { getDeviceId } from './storage.js';
 
 // Dynamically read custom Firebase Database credentials from localStorage or URL parameter
 let urlDbParam = '';
@@ -725,9 +726,47 @@ export function subscribeToTeamLiveLocations(onDataReceived, templeId = 'khemava
       onDataReceived([]);
       return;
     }
-    const list = Array.isArray(val)
+    const rawList = Array.isArray(val)
       ? val.filter(Boolean)
       : Object.values(val).filter(Boolean);
+
+    // 📱 Device-Centric Deduplication:
+    // 1 physical device = 1 live location pin.
+    // If the same physical device (`deviceId`) broadcasted under multiple user accounts (e.g. Owner -> Admin),
+    // strictly keep ONLY the newest one (latest updatedAt)!
+    const deviceMap = new Map();
+    const staleUserIdsToDelete = [];
+
+    rawList.forEach((item) => {
+      if (!item) return;
+      const devKey = item.deviceId || `legacy-${item.userId || item.id}`;
+      if (!deviceMap.has(devKey)) {
+        deviceMap.set(devKey, item);
+      } else {
+        const existing = deviceMap.get(devKey);
+        const existingTime = new Date(existing.updatedAt || existing.lastSyncAt || 0).getTime();
+        const itemTime = new Date(item.updatedAt || item.lastSyncAt || 0).getTime();
+        if (itemTime >= existingTime) {
+          deviceMap.set(devKey, item);
+          if (existing.userId && existing.userId !== item.userId) {
+            staleUserIdsToDelete.push(existing.userId);
+          }
+        } else {
+          if (item.userId && item.userId !== existing.userId) {
+            staleUserIdsToDelete.push(item.userId);
+          }
+        }
+      }
+    });
+
+    const list = Array.from(deviceMap.values());
+
+    // Clean up stale superseded accounts from Firebase in background
+    if (staleUserIdsToDelete.length > 0) {
+      staleUserIdsToDelete.forEach((staleId) => {
+        deleteUserLiveLocation(staleId, templeId).catch(() => {});
+      });
+    }
 
     const jsonStr = JSON.stringify(list);
     if (jsonStr !== lastJson) {
@@ -802,23 +841,28 @@ export async function saveUserLiveLocation(locData, templeId = 'khemavan') {
     ? `team_live_locations/${locData.userId}` 
     : `temples/${templeId}/team_live_locations/${locData.userId}`;
 
+  const devId = locData.deviceId || getDeviceId();
   const payload = {
     ...locData,
+    deviceId: devId,
     updatedAt: new Date().toISOString()
   };
 
-  // Optimistic local cache update
+  // Optimistic local cache update & cleanup of any other user on the same device
   const localCacheKey = `TEAM_LOCATIONS_CACHE_${templeId}`;
   try {
     const cached = localStorage.getItem(localCacheKey);
     let list = cached ? JSON.parse(cached) : [];
     if (!Array.isArray(list)) list = [];
-    const idx = list.findIndex((m) => m.userId === locData.userId);
-    if (idx >= 0) {
-      list[idx] = { ...list[idx], ...payload };
-    } else {
-      list.push(payload);
-    }
+
+    // Remove any older user from this physical device
+    const staleDeviceUsers = list.filter((m) => m && m.deviceId === devId && m.userId !== locData.userId);
+    staleDeviceUsers.forEach((su) => {
+      deleteUserLiveLocation(su.userId, templeId).catch(() => {});
+    });
+
+    list = list.filter((m) => !m || (m.deviceId !== devId && m.userId !== locData.userId));
+    list.push(payload);
     localStorage.setItem(localCacheKey, JSON.stringify(list));
   } catch (e) {}
 

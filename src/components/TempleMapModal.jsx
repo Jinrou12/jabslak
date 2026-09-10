@@ -1237,7 +1237,40 @@ export default function TempleMapModal({
       };
     });
 
-    return [...mappedUsers, ...extraLive];
+    const combinedList = [...mappedUsers, ...extraLive];
+
+    // 📱 Device-Centric Deduplication:
+    // 1 physical device = 1 live location pin.
+    // If multiple accounts are associated with the same deviceId,
+    // ONLY the newest active account gets isOnline: true and coordinates (x, y).
+    const seenDevIds = new Set();
+    const sortedOnline = combinedList.filter((m) => m && m.isOnline);
+    sortedOnline.sort((a, b) => new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime());
+
+    const activeOnlineUserIds = new Set();
+    sortedOnline.forEach((m) => {
+      const devKey = m.deviceId || `legacy-${m.userId}`;
+      if (!seenDevIds.has(devKey)) {
+        seenDevIds.add(devKey);
+        activeOnlineUserIds.add(m.userId);
+      }
+    });
+
+    return combinedList.map((m) => {
+      if (!m.isOnline) return m;
+      if (!activeOnlineUserIds.has(m.userId)) {
+        // Superseded older account on this same physical device -> mark offline
+        return {
+          ...m,
+          isOnline: false,
+          x: null,
+          y: null,
+          activity: 'offline',
+          activityText: 'ក្រៅបណ្តាញ'
+        };
+      }
+      return m;
+    });
   }, [isZoneScoped, activeZoneScope, allSavedUsers, teamLiveLocations, deletedMemberIds]);
 
   // 🗑️ Delete Team Member from Live Tracking & Saved Users
@@ -4021,7 +4054,7 @@ export default function TempleMapModal({
                 title={showTeamTracker ? 'លាក់ទីតាំងក្រុមការងារលើ Map' : 'បង្ហាញទីតាំងក្រុមការងារលើ Map'}
               >
                 <Users className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="hidden sm:inline font-kantumruy">👥 ក្រុមការងារ ({westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline).length)} Online)</span>
+                <span className="hidden sm:inline font-kantumruy">👥 ក្រុមការងារ ({westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline).length)} ឧបករណ៍ Online)</span>
               </button>
             )}
 
@@ -4470,11 +4503,11 @@ export default function TempleMapModal({
                   <div className="flex items-center gap-2 text-[11px] text-slate-300 flex-wrap">
                     <span className="flex items-center gap-1 text-emerald-400 font-bold">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                      <span>🚶‍♂️ {scopedTeamLiveLocations.filter((m) => m.isOnline && m.activity === 'walking').length} កំពុងដើរ</span>
+                      <span>🚶‍♂️ {westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline && m.activity === 'walking').length)} ឧបករណ៍ កំពុងដើរ</span>
                     </span>
                     <span className="text-slate-600">•</span>
                     <span className="flex items-center gap-1 text-amber-400 font-bold">
-                      <span>🧍 {scopedTeamLiveLocations.filter((m) => m.isOnline && m.activity !== 'walking').length} នៅស្ងៀម</span>
+                      <span>🧍 {westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline && m.activity !== 'walking').length)} ឧបករណ៍ នៅស្ងៀម</span>
                     </span>
                   </div>
                 )}
@@ -5028,7 +5061,7 @@ export default function TempleMapModal({
                     className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 font-black cursor-pointer"
                   >
                     <Users className="w-3.5 h-3.5" />
-                    <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline).length)} Online / {westernToKhmerDigits(scopedTeamLiveLocations.length)} នាក់)</span>
+                    <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline).length)} ឧបករណ៍ Online)</span>
                   </button>
                 </div>
               )}
@@ -5145,8 +5178,8 @@ export default function TempleMapModal({
               {/* Filter Chips Bar */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {[
-                  { id: 'online', label: `🟢 កំពុង Online (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline).length)})` },
-                  { id: 'all', label: `🌐 គណនីទាំងអស់ (${westernToKhmerDigits(scopedTeamLiveLocations.length)})` },
+                  { id: 'online', label: `🟢 ឧបករណ៍ Online (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline).length)})` },
+                  { id: 'all', label: `🌐 គណនីក្នុងប្រព័ន្ធ (${westernToKhmerDigits(scopedTeamLiveLocations.length)})` },
                   { id: 'walking', label: `🚶‍♂️ កំពុងដើរ (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline && m.activity === 'walking').length)})` },
                   { id: 'stationary', label: `🟡 🧍 នៅស្ងៀម (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline && m.activity !== 'walking' && !m.needHelp).length)})` },
                   { id: 'sos', label: `🚨 SOS (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline && m.needHelp).length)})` }

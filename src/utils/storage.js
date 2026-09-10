@@ -284,3 +284,46 @@ export function getEffectiveUser(user, currentTempleId = 'khemavan') {
     isRestricted: true
   };
 }
+
+const DEVICE_ID_KEY = 'KHMER_TAG_DEVICE_ID_V1';
+
+/**
+ * Returns a permanent unique ID for this physical device / browser instance.
+ * Stays identical even when user switches accounts (e.g. Owner -> Admin).
+ */
+export function getDeviceId() {
+  if (typeof window === 'undefined' || !window.localStorage) {
+    return 'dev-server';
+  }
+  try {
+    let devId = localStorage.getItem(DEVICE_ID_KEY);
+    if (!devId) {
+      devId = 'dev-' + Date.now().toString(36) + '-' + Math.random().toString(36).substring(2, 8);
+      localStorage.setItem(DEVICE_ID_KEY, devId);
+    }
+    return devId;
+  } catch (e) {
+    return 'dev-' + Date.now().toString(36);
+  }
+}
+
+const LAST_DEVICE_USER_KEY = 'KHMER_TAG_LAST_DEVICE_USER_ID_V1';
+
+export function getLastDeviceUserId() {
+  try {
+    return localStorage.getItem(LAST_DEVICE_USER_KEY) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+export function setLastDeviceUserId(userId) {
+  try {
+    if (userId) {
+      localStorage.setItem(LAST_DEVICE_USER_KEY, userId);
+    } else {
+      localStorage.removeItem(LAST_DEVICE_USER_KEY);
+    }
+  } catch (e) {}
+}
+

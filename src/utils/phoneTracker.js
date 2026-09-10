@@ -10,8 +10,9 @@
  * on the static aerial JPEG temple map, while preserving manual spot positioning (Hybrid).
  */
 
-import { saveUserLiveLocation, subscribeToGpsCalibration } from './firebase';
+import { saveUserLiveLocation, deleteUserLiveLocation, subscribeToGpsCalibration } from './firebase';
 import { gpsToMapCoords, getNearestLandmark, DEFAULT_KHEMAVAN_CALIBRATION } from './geoCalibrator.js';
+import { getDeviceId, getLastDeviceUserId, setLastDeviceUserId } from './storage.js';
 
 // Haversine formula to compute distance between two GPS coordinates in meters
 function getHaversineDistanceMeters(lat1, lon1, lat2, lon2) {
@@ -42,6 +43,7 @@ class PhoneTrackerManager {
     this.initialLockData = null;
 
     this.currentUser = null;
+    this.deviceId = getDeviceId();
     this.currentTempleId = 'khemavan';
     this.manualSpot = null; // { name, x, y } (when user manually sets spot)
     this.currentGpsSpot = null; // { name, x, y } (auto-calculated from GPS)
@@ -118,6 +120,19 @@ class PhoneTrackerManager {
    */
   start({ user, templeId = 'khemavan', defaultSpot = null }) {
     if (!user || !user.id) return;
+
+    // 📱 Device-Centric User Switching:
+    // If a different user was previously active on THIS physical device,
+    // immediately delete the previous user's live location from Firebase!
+    const prevUserId = (this.currentUser && this.currentUser.id !== user.id)
+      ? this.currentUser.id
+      : getLastDeviceUserId();
+
+    if (prevUserId && prevUserId !== user.id) {
+      deleteUserLiveLocation(prevUserId, this.currentTempleId || templeId);
+    }
+    setLastDeviceUserId(user.id);
+
     if (this.currentUser?.id !== user.id) {
       this.hasInitialLocationLock = false;
       this.initialLockData = null;
@@ -222,6 +237,11 @@ class PhoneTrackerManager {
   stop() {
     this.isActive = false;
     this.state.isTracking = false;
+
+    // Clean up current user live location when tracking stops
+    if (this.currentUser?.id && this.currentUser.role !== 'guest') {
+      deleteUserLiveLocation(this.currentUser.id, this.currentTempleId);
+    }
 
     if (this.watchId != null && typeof navigator !== 'undefined') {
       try {
@@ -554,6 +574,7 @@ class PhoneTrackerManager {
       : 0;
 
     const payload = {
+      deviceId: this.deviceId,
       userId: this.currentUser.id,
       userName: this.currentUser.name || this.currentUser.username || 'ក្រុមការងារ',
       role: this.currentUser.role || 'assistant',

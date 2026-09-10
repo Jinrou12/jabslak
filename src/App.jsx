@@ -46,6 +46,7 @@ import {
   migrateTempleFirebaseData,
   subscribeToFirebaseTab3Locations,
   subscribeToTeamLiveLocations,
+  deleteUserLiveLocation,
   clearTeamSOSAlert,
   subscribeToSystemUsers,
   saveSystemUsersToFirebase
@@ -895,12 +896,19 @@ export default function App() {
   };
 
   const handleLogout = () => {
+    if (currentUser && currentUser.id && currentUser.role !== 'guest') {
+      deleteUserLiveLocation(currentUser.id, currentTemple?.id || 'khemavan');
+    }
+    phoneTracker.stop();
     setCurrentUser(GUEST_USER);
     saveCurrentUser(GUEST_USER);
     showToast('បានចាកចេញពីគណនី (Logout) ៖ ត្រឡប់ទៅជាអ្នកមើលធម្មតា (Guest)');
   };
 
   const handleLoginUser = (userObj) => {
+    if (currentUser && currentUser.id && currentUser.id !== userObj.id && currentUser.role !== 'guest') {
+      deleteUserLiveLocation(currentUser.id, currentTemple?.id || 'khemavan');
+    }
     setCurrentUser(userObj);
     saveCurrentUser(userObj);
     if (userObj.role === 'guest') {
