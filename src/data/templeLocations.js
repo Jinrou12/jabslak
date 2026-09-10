@@ -39,7 +39,7 @@ export const TEMPLE_PALI_DIRECTIONS = [
 ];
 
 const STORAGE_KEY = 'TEMPLE_MAP_LOCATIONS_PERSIST_V4';
-const STORAGE_KEY_TAB3 = 'TEMPLE_MAP_LOCATIONS_TAB3_V3';
+const STORAGE_KEY_TAB3 = 'TEMPLE_MAP_LOCATIONS_TAB3_V5';
 
 /**
  * Load temple locations from LocalStorage or return default points
