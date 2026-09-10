@@ -4992,23 +4992,8 @@ export default function TempleMapModal({
                 </div>
               )}
 
-              {/* Team Panel Header */}
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-slate-800">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40 shadow-inner">
-                      <Users className="w-4 h-4" />
-                    </div>
-                    <h3 className="font-moul text-sm sm:text-base text-emerald-400">
-                      👥 ផ្ទាំងទី២ ៖ តាមដានទីតាំងក្រុមការងារ (Team Tracker)
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-400 mt-1">
-                    តាមដានទីតាំងផ្ទាល់របស់ Admin & Assistant តាមផែននីមួយៗ លើផែនទីវត្តអារាម (Real-time GPS / Spot)
-                  </p>
-                </div>
-
-                {/* Action Buttons: Set My Spot + Dropdown */}
+              {/* Action Buttons Toolbar: Set My Spot + Dropdown + GPS + SOS */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800">
                 <div className="flex flex-wrap items-center gap-2">
                   {/* Interactive Pin-on-map button */}
                   <button
