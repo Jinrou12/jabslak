@@ -1137,7 +1137,7 @@ export default function App() {
             const targetZone = (effectiveUser?.assignedZone && effectiveUser.assignedZone !== 'ALL')
               ? effectiveUser.assignedZone
               : 'ផែន១ ៖ ធម្មសភា';
-            setTempleMapTargetLoc({ zone: targetZone, tab: 'owners' });
+            setTempleMapTargetLoc({ zone: targetZone, tab: 'tagger', isZoneOnly: true });
             setIsTempleMapOpen(true);
           }}
           onOpenTempleSelectModal={() => {

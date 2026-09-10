@@ -903,38 +903,42 @@ export default function TempleMapModal({
   const userAssignedZone = currentUser?.assignedZone && currentUser.assignedZone !== 'ALL'
     ? currentUser.assignedZone
     : '';
-  const isZoneRestricted = Boolean(userAssignedZone) && !isOwner;
-  const canCustomizeMap = (userRole === 'admin' || userRole === 'owner') && !isZoneRestricted;
 
   // 🎯 ZONE-SPECIFIC MAP MODE vs GENERAL TEMPLE MAP
-// 🏛️ Khemawan Core Zones List
-const KHEMAVAN_CORE_ZONES = [
-  'ផែន១ ៖ ធម្មសភា',
-  'ផែន២ ៖ សាលាឆាន់ចាស់',
-  'ផែន៣ ៖ មុខសាលាឆាន់',
-  'ផែន៤ ៖ បុព្វសាលាពោធិ៍',
-  'ផែន៥ ៖ វិហារ & បរិនិព្វាន',
-  'ផែន៦ ៖ បណ្ណាល័យ',
-  'ផែន៧ ៖ ព្រះផ្ទំ',
-  'ផែន៨ ៖ សាលារៀន'
-];
+  // 🏛️ Khemawan Core Zones List
+  const KHEMAVAN_CORE_ZONES = [
+    'ផែន១ ៖ ធម្មសភា',
+    'ផែន២ ៖ សាលាឆាន់ចាស់',
+    'ផែន៣ ៖ មុខសាលាឆាន់',
+    'ផែន៤ ៖ បុព្វសាលាពោធិ៍',
+    'ផែន៥ ៖ វិហារ & បរិនិព្វាន',
+    'ផែន៦ ៖ បណ្ណាល័យ',
+    'ផែន៧ ៖ ព្រះផ្ទំ',
+    'ផែន៨ ៖ សាលារៀន'
+  ];
 
-  // When opened from ZoneAttendanceModal, targetZoneParam is set.
-  // If user is zone-restricted, activeZoneScope is set to their assigned zone.
-  const targetZoneParam = highlightLocationName && typeof highlightLocationName === 'object' ? highlightLocationName.zone : null;
-  const initialZone = targetZoneParam
-    ? normalizeZoneName(targetZoneParam)
-    : (isZoneRestricted ? normalizeZoneName(userAssignedZone) : null);
+  // When opened from Logo or zone attendance badge, targetZoneParam is set.
+  // When opened from "ផែនទីវត្ត" (Temple Map), highlightLocationName is null, so targetZoneParam is null!
+  const targetZoneParam = highlightLocationName && typeof highlightLocationName === 'object' && highlightLocationName.zone
+    ? highlightLocationName.zone
+    : (typeof highlightLocationName === 'string' && highlightLocationName.includes('ផែន') ? highlightLocationName : null);
+
+  const initialZone = targetZoneParam ? normalizeZoneName(targetZoneParam) : null;
   const [scopedZone, setScopedZone] = useState(initialZone);
 
   useEffect(() => {
     if (targetZoneParam) {
       setScopedZone(normalizeZoneName(targetZoneParam));
+    } else {
+      setScopedZone(null);
     }
   }, [targetZoneParam]);
 
-  const activeZoneScope = isZoneRestricted ? normalizeZoneName(userAssignedZone) : scopedZone;
+  const activeZoneScope = scopedZone;
   const isZoneScoped = Boolean(activeZoneScope);
+
+  const isZoneRestricted = Boolean(userAssignedZone) && !isOwner;
+  const canCustomizeMap = (userRole === 'admin' || userRole === 'owner');
 
   const currentTempleId = currentTemple?.id || 'khemavan';
   const isKhemavan = currentTempleId === 'khemavan';
@@ -1007,7 +1011,7 @@ const KHEMAVAN_CORE_ZONES = [
       if (highlightLocationName.tab === 'tagger' || highlightLocationName.tab === 'pins') return 'tagger';
       if (highlightLocationName.tab === 'owners') return 'owners';
     }
-    return isZoneScoped ? 'owners' : 'tagger';
+    return 'tagger';
   });
   const [tab2SubView, setTab2SubView] = useState(() => {
     if (highlightLocationName && typeof highlightLocationName === 'object' && highlightLocationName.tab === 'team') {
@@ -1015,6 +1019,20 @@ const KHEMAVAN_CORE_ZONES = [
     }
     return isZoneScoped ? 'team' : 'locations';
   });
+
+  useEffect(() => {
+    if (highlightLocationName && typeof highlightLocationName === 'object') {
+      if (highlightLocationName.tab === 'team' || highlightLocationName.tab === 'interactive') {
+        setActiveTab('interactive');
+      } else if (highlightLocationName.tab === 'tagger' || highlightLocationName.tab === 'pins') {
+        setActiveTab('tagger');
+      } else if (highlightLocationName.tab === 'owners') {
+        setActiveTab('owners');
+      }
+    } else if (!targetZoneParam) {
+      setActiveTab('tagger');
+    }
+  }, [highlightLocationName, targetZoneParam]);
 
   useEffect(() => {
     setLocations(getSavedTempleLocations(currentTempleId));
@@ -1505,6 +1523,16 @@ const KHEMAVAN_CORE_ZONES = [
   const [isDragEnabled, setIsDragEnabled] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(() => isZoneScoped && activeZoneScope ? activeZoneScope : 'all');
+
+  useEffect(() => {
+    if (isZoneScoped && activeZoneScope) {
+      setSelectedCategory(activeZoneScope);
+      setSelectedSizeGroup(activeZoneScope);
+    } else if (!isZoneScoped) {
+      setSelectedCategory('all');
+      setSelectedSizeGroup('all');
+    }
+  }, [isZoneScoped, activeZoneScope]);
 
   // Strict Zone Restriction Guard: never allow labeled (Tab 1) or locations mode on Tab 2 when zone scoped
   useEffect(() => {
@@ -3623,12 +3651,17 @@ const KHEMAVAN_CORE_ZONES = [
                 {isZoneScoped ? (
                   <>
                     <span className="bg-sky-500/25 text-sky-300 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border border-sky-500/40 shrink-0 font-kantumruy">
-                      ផ្នែកគ្រប់គ្រង
+                      បញ្ចូលទិន្នន័យ
                     </span>
                     {!isZoneRestricted && (
                       <select
-                        value={scopedZone}
-                        onChange={(e) => setScopedZone(e.target.value)}
+                        value={scopedZone || ''}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setScopedZone(val);
+                          setSelectedCategory(val);
+                          setSelectedSizeGroup(val);
+                        }}
                         className="bg-slate-900 border border-amber-500/40 text-amber-300 text-[10px] sm:text-xs font-bold rounded-lg px-2 py-0.5 focus:outline-none cursor-pointer font-kantumruy"
                         title="ប្តូរផែនគ្រប់គ្រង"
                       >
@@ -3640,9 +3673,9 @@ const KHEMAVAN_CORE_ZONES = [
                       </select>
                     )}
                   </>
-                ) : currentTemple?.name && (
-                  <span className="bg-amber-500/25 text-amber-300 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border border-amber-500/40 shrink-0 font-moul">
-                    {currentTemple.name}
+                ) : (
+                  <span className="bg-sky-500/25 text-sky-300 text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full border border-sky-500/40 shrink-0 font-kantumruy">
+                    បញ្ចូលទិន្នន័យ
                   </span>
                 )}
                 <span className="bg-slate-800 text-slate-300 text-[10px] sm:text-xs font-bold px-2 py-0.2 rounded-full border border-slate-700 shrink-0">
@@ -3651,15 +3684,15 @@ const KHEMAVAN_CORE_ZONES = [
               </div>
               <p className="text-[10px] sm:text-xs text-slate-400 truncate hidden sm:block">
                 {isZoneScoped
-                  ? `ផែនទីសម្រាប់តែ ${activeZoneScope} (ឃើញតែ Pion Pin និងក្រុមការងារក្នុងផែននេះ)`
-                  : 'ប្លង់វត្តអន្តរកម្ម ទិសទាំង ៨ និងការគ្រប់គ្រងទីតាំងស្លាកលេខ'}
+                  ? `ផែនទីត្រួតពិនិត្យ ${activeZoneScope} (មើលតែ Pion Pin ដែនប្រធានគ្រប់គ្រងនេះ)`
+                  : 'ប្លង់វត្តអ្នកម្នាង ចំការប៉ាង បី ទីតាំងត្រួតពិនិត្យស្លាកលេខ'}
               </p>
             </div>
           </div>
 
-          {/* Quick Header Actions (Upload Map for Owner, Close / Back Button) */}
+          {/* Quick Header Actions (Upload Map for Owner & Admin, Close / Back Button) */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {userRole === 'owner' && !isZoneScoped && (
+            {(userRole === 'owner' || userRole === 'admin') && !isZoneScoped && (
               <>
                 <input
                   type="file"
@@ -3697,29 +3730,30 @@ const KHEMAVAN_CORE_ZONES = [
           <div className="flex items-center gap-1 bg-slate-900 p-0.5 sm:p-1 rounded-2xl border border-slate-800 w-full sm:w-auto overflow-x-auto no-scrollbar justify-start">
             {isZoneScoped ? (
               <>
-                {/* Button 1: ឈ្មោះម្ចាស់ស្លាក */}
+                {/* Button 1: ឈ្មោះ (Icon Button) */}
                 <button
                   type="button"
                   onClick={() => setActiveTab('owners')}
-                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                  className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
                     activeTab === 'owners'
-                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/25 font-black ring-1 ring-amber-400/50'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
-                  title="មើលឈ្មោះម្ចាស់ស្លាកក្នុងផែន និងកត់ត្រាការយកស្លាក"
+                  title={`ឈ្មោះ (${westernToKhmerDigits(totalInZone)} ស្លាក)`}
+                  aria-label="ឈ្មោះ"
                 >
-                  <Tag className="w-3.5 h-3.5 shrink-0" />
-                  <span>ឈ្មោះម្ចាស់ស្លាក</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
+                  <Tag className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
+                  <span>ឈ្មោះ</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border font-bold ${
                     activeTab === 'owners'
                       ? 'bg-slate-950/40 text-slate-950 border-slate-950/50'
-                      : 'bg-slate-800 text-slate-300 border-slate-700'
+                      : 'bg-slate-800 text-amber-300 border-slate-700'
                   }`}>
-                    {westernToKhmerDigits(totalInZone)} ស្លាក
+                    {westernToKhmerDigits(totalInZone)} {isZoneScoped ? 'នាក់' : 'ស្លាក'}
                   </span>
                 </button>
 
-                {/* Button 2: Pion Pin លើ Map */}
+                {/* Button 2: កន្លែងគ្រប់គ្រង (Icon Button) */}
                 <button
                   type="button"
                   onClick={() => {
@@ -3729,25 +3763,26 @@ const KHEMAVAN_CORE_ZONES = [
                       setSelectedSizeGroup(activeZoneScope);
                     }
                   }}
-                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                  className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
                     activeTab === 'tagger'
-                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/25 font-black ring-1 ring-amber-400/50'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
-                  title="មើល Pion Pin ក្នុងផែននេះលើ Map"
+                  title={`កន្លែងគ្រប់គ្រង (${westernToKhmerDigits(currentLocations.length)} ទីតាំង)`}
+                  aria-label="កន្លែងគ្រប់គ្រង"
                 >
-                  <MapPin className="w-3.5 h-3.5 shrink-0" />
-                  <span>Pion Pin លើ Map</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
+                  <MapPin className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
+                  <span>កន្លែងគ្រប់គ្រង</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border font-bold ${
                     activeTab === 'tagger'
                       ? 'bg-slate-950/40 text-slate-950 border-slate-950/50'
-                      : 'bg-slate-800 text-slate-300 border-slate-700'
+                      : 'bg-slate-800 text-sky-300 border-slate-700'
                   }`}>
                     {westernToKhmerDigits(currentLocations.length)} ទីតាំង
                   </span>
                 </button>
 
-                {/* Button 3: Track ក្រុមលើ Map */}
+                {/* Button 3: Tracking (Icon Button) */}
                 <button
                   type="button"
                   onClick={() => {
@@ -3755,19 +3790,23 @@ const KHEMAVAN_CORE_ZONES = [
                     setShowTeamTracker(true);
                     setTab2SubView('team');
                   }}
-                  className={`px-3 sm:px-4 py-1 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer ${
+                  className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all whitespace-nowrap cursor-pointer relative ${
                     activeTab === 'interactive'
-                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20 font-black'
+                      ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-500/25 font-black ring-1 ring-amber-400/50'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
-                  title="តាមដានទីតាំងក្រុមការងារផ្ទាល់លើ Map"
+                  title={`Tracking (${westernToKhmerDigits(scopedTeamLiveLocations.length)} នាក់)`}
+                  aria-label="Tracking"
                 >
-                  <Users className="w-3.5 h-3.5 shrink-0" />
-                  <span>Track ក្រុមលើ Map</span>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border ${
+                  {scopedTeamLiveLocations.some((m) => m.needHelp) && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping pointer-events-none" />
+                  )}
+                  <Users className="w-4 h-4 sm:w-4.5 sm:h-4.5 shrink-0" />
+                  <span>Tracking</span>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full border font-bold ${
                     activeTab === 'interactive'
                       ? 'bg-slate-950/40 text-slate-950 border-slate-950/50'
-                      : 'bg-slate-800 text-slate-300 border-slate-700'
+                      : 'bg-slate-800 text-emerald-300 border-slate-700'
                   }`}>
                     {westernToKhmerDigits(scopedTeamLiveLocations.length)} នាក់
                   </span>
@@ -3846,7 +3885,7 @@ const KHEMAVAN_CORE_ZONES = [
             </button>
 
             {/* Toggle Team Live Tracker Layer Button - ONLY VISIBLE ON TAB 2 FOR FULL ADMIN */}
-            {!isZoneRestricted && activeTab === 'interactive' && (
+            {!isZoneScoped && activeTab === 'interactive' && (
               <button
                 type="button"
                 onClick={() => {
@@ -3868,7 +3907,7 @@ const KHEMAVAN_CORE_ZONES = [
               </button>
             )}
 
-            {!isZoneRestricted && (
+            {!isZoneScoped && (
               <>
                 <div className="h-4 w-px bg-slate-800 mx-0.5 shrink-0"></div>
 
@@ -3917,14 +3956,18 @@ const KHEMAVAN_CORE_ZONES = [
                   </span>
                   <select
                     value={selectedSizeGroup}
-                    onChange={(e) => setSelectedSizeGroup(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedSizeGroup(val);
+                      setSelectedCategory(val);
+                    }}
                     className={`bg-slate-950 border border-slate-700/80 rounded-lg px-2 py-0.5 text-xs font-bold focus:outline-none focus:border-amber-400 font-kantumruy max-w-[140px] sm:max-w-[180px] truncate cursor-pointer ${
                       selectedSizeGroup !== 'all' && categoryGroups[selectedSizeGroup]
                         ? getGroupMetaFromItems(categoryGroups[selectedSizeGroup]).text
                         : 'text-amber-300'
                     }`}
                   >
-                    <option value="all">🌐 All</option>
+                    {!isZoneScoped && <option value="all">🌐 All</option>}
                     {Object.keys(categoryGroups).map((cat) => (
                       <option key={cat} value={cat}>
                         {cat} ({categoryGroups[cat].length})
@@ -4850,7 +4893,7 @@ const KHEMAVAN_CORE_ZONES = [
           {(activeTab === 'interactive' && tab2SubView === 'team') ? (
             <div className="bg-slate-950/90 border border-emerald-500/40 rounded-2xl p-3 sm:p-5 space-y-4 shadow-2xl font-kantumruy">
               {/* Sub-view switcher on Tab 2 (Only for full admin/owner) */}
-              {!isZoneRestricted && (
+              {!isZoneScoped && (
                 <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
                   <button
                     type="button"
@@ -5192,7 +5235,7 @@ const KHEMAVAN_CORE_ZONES = [
             </div>
 
             {/* Sub-view switcher for Tab 2 (Only for full admin/owner) */}
-            {!isZoneRestricted && activeTab === 'interactive' && (
+            {!isZoneScoped && activeTab === 'interactive' && (
               <div className="flex items-center gap-2 pb-2 border-b border-slate-800">
                 <button
                   type="button"
