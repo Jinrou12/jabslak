@@ -1136,6 +1136,12 @@ export default function TempleMapModal({
         const live = teamLiveLocations.find(
           (l) => l && (l.userId === user.id || (l.email && l.email === user.email) || (user.name && l.userName === user.name))
         );
+        const liveTimeStr = live?.updatedAt || live?.lastSyncAt;
+        const isOnline = Boolean(
+          live &&
+          liveTimeStr &&
+          (Date.now() - new Date(liveTimeStr).getTime() < 180000)
+        );
         const defaults = getDefaultCoordsForZone(user.assignedZone || targetNorm);
         return {
           userId: user.id,
@@ -1146,15 +1152,18 @@ export default function TempleMapModal({
           phone: user.phone || '',
           assignedZone: user.assignedZone || targetNorm,
           locationName: live?.locationName || defaults.loc,
-          x: live?.x != null ? Number(live.x) : defaults.x,
-          y: live?.y != null ? Number(live.y) : defaults.y,
-          activity: live?.activity || 'stationary',
-          activityText: live?.activityText || 'នៅស្ងៀម',
-          speedKmh: live?.speedKmh || 0,
-          stationaryMinutes: live?.stationaryMinutes || 0,
-          needHelp: Boolean(live?.needHelp),
+          x: isOnline && live?.x != null ? Number(live.x) : null,
+          y: isOnline && live?.y != null ? Number(live.y) : null,
+          defaultX: defaults.x,
+          defaultY: defaults.y,
+          isOnline: isOnline,
+          activity: isOnline ? (live?.activity || 'stationary') : 'offline',
+          activityText: isOnline ? (live?.activityText || 'នៅស្ងៀម') : 'ក្រៅបណ្តាញ',
+          speedKmh: isOnline ? (live?.speedKmh || 0) : 0,
+          stationaryMinutes: isOnline ? (live?.stationaryMinutes || 0) : 0,
+          needHelp: isOnline && Boolean(live?.needHelp),
           helpMessage: live?.helpMessage || '',
-          status: live?.status || 'active',
+          status: isOnline ? (live?.status || 'active') : 'offline',
           isAutoGps: live?.isAutoGps ?? true,
           updatedAt: live?.updatedAt || null
         };
@@ -1172,6 +1181,12 @@ export default function TempleMapModal({
       const live = teamLiveLocations.find(
         (l) => l && (l.userId === user.id || (l.email && l.email === user.email) || (user.name && l.userName === user.name))
       );
+      const liveTimeStr = live?.updatedAt || live?.lastSyncAt;
+      const isOnline = Boolean(
+        live &&
+        liveTimeStr &&
+        (Date.now() - new Date(liveTimeStr).getTime() < 180000)
+      );
       const defaults = getDefaultCoordsForZone(user.assignedZone);
       return {
         userId: user.id,
@@ -1182,15 +1197,18 @@ export default function TempleMapModal({
         phone: user.phone || '',
         assignedZone: user.assignedZone || 'ALL',
         locationName: live?.locationName || defaults.loc,
-        x: live?.x != null ? Number(live.x) : defaults.x,
-        y: live?.y != null ? Number(live.y) : defaults.y,
-        activity: live?.activity || 'stationary',
-        activityText: live?.activityText || 'នៅស្ងៀម',
-        speedKmh: live?.speedKmh || 0,
-        stationaryMinutes: live?.stationaryMinutes || 0,
-        needHelp: Boolean(live?.needHelp),
+        x: isOnline && live?.x != null ? Number(live.x) : null,
+        y: isOnline && live?.y != null ? Number(live.y) : null,
+        defaultX: defaults.x,
+        defaultY: defaults.y,
+        isOnline: isOnline,
+        activity: isOnline ? (live?.activity || 'stationary') : 'offline',
+        activityText: isOnline ? (live?.activityText || 'នៅស្ងៀម') : 'ក្រៅបណ្តាញ',
+        speedKmh: isOnline ? (live?.speedKmh || 0) : 0,
+        stationaryMinutes: isOnline ? (live?.stationaryMinutes || 0) : 0,
+        needHelp: isOnline && Boolean(live?.needHelp),
         helpMessage: live?.helpMessage || '',
-        status: live?.status || 'active',
+        status: isOnline ? (live?.status || 'active') : 'offline',
         isAutoGps: live?.isAutoGps ?? true,
         updatedAt: live?.updatedAt || null
       };
@@ -1203,6 +1221,20 @@ export default function TempleMapModal({
       if (deletedMemberIds.has(targetId) || (l.email && deletedMemberIds.has(l.email))) return false;
       const alreadyMapped = mappedUsers.some((u) => u.userId === targetId || (l.email && u.email === l.email));
       return !alreadyMapped;
+    }).map((l) => {
+      const liveTimeStr = l.updatedAt || l.lastSyncAt;
+      const isOnline = Boolean(
+        liveTimeStr &&
+        (Date.now() - new Date(liveTimeStr).getTime() < 180000)
+      );
+      return {
+        ...l,
+        isOnline,
+        x: isOnline && l.x != null ? Number(l.x) : null,
+        y: isOnline && l.y != null ? Number(l.y) : null,
+        activity: isOnline ? (l.activity || 'stationary') : 'offline',
+        activityText: isOnline ? (l.activityText || 'នៅស្ងៀម') : 'ក្រៅបណ្តាញ'
+      };
     });
 
     return [...mappedUsers, ...extraLive];
@@ -1257,7 +1289,7 @@ export default function TempleMapModal({
 
   // 👥 Tab 4 Team Interactive Spot Positioning State
   const [isSettingMySpot, setIsSettingMySpot] = useState(false);
-  const [teamFilter, setTeamFilter] = useState('all'); // 'all' | 'walking' | 'stationary' | 'sos'
+  const [teamFilter, setTeamFilter] = useState('online'); // 'online' | 'all' | 'walking' | 'stationary' | 'sos'
   const [isSpotDropdownOpen, setIsSpotDropdownOpen] = useState(false);
 
   useEffect(() => {
@@ -3989,7 +4021,7 @@ export default function TempleMapModal({
                 title={showTeamTracker ? 'លាក់ទីតាំងក្រុមការងារលើ Map' : 'បង្ហាញទីតាំងក្រុមការងារលើ Map'}
               >
                 <Users className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="hidden sm:inline font-kantumruy">👥 ក្រុមការងារ ({westernToKhmerDigits(scopedTeamLiveLocations.length)})</span>
+                <span className="hidden sm:inline font-kantumruy">👥 ក្រុមការងារ ({westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline).length)} Online)</span>
               </button>
             )}
 
@@ -4434,15 +4466,15 @@ export default function TempleMapModal({
                 </button>
 
                 {/* Live count summary */}
-                {showTeamTracker && scopedTeamLiveLocations.length > 0 && (
+                {showTeamTracker && scopedTeamLiveLocations.some((m) => m.isOnline) && (
                   <div className="flex items-center gap-2 text-[11px] text-slate-300 flex-wrap">
                     <span className="flex items-center gap-1 text-emerald-400 font-bold">
                       <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-                      <span>🚶‍♂️ {scopedTeamLiveLocations.filter((m) => m.activity === 'walking').length} កំពុងដើរ</span>
+                      <span>🚶‍♂️ {scopedTeamLiveLocations.filter((m) => m.isOnline && m.activity === 'walking').length} កំពុងដើរ</span>
                     </span>
                     <span className="text-slate-600">•</span>
                     <span className="flex items-center gap-1 text-amber-400 font-bold">
-                      <span>🧍 {scopedTeamLiveLocations.filter((m) => m.activity !== 'walking').length} នៅស្ងៀម</span>
+                      <span>🧍 {scopedTeamLiveLocations.filter((m) => m.isOnline && m.activity !== 'walking').length} នៅស្ងៀម</span>
                     </span>
                   </div>
                 )}
@@ -4996,7 +5028,7 @@ export default function TempleMapModal({
                     className="px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1 bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/30 font-black cursor-pointer"
                   >
                     <Users className="w-3.5 h-3.5" />
-                    <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(scopedTeamLiveLocations.length)})</span>
+                    <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline).length)} Online / {westernToKhmerDigits(scopedTeamLiveLocations.length)} នាក់)</span>
                   </button>
                 </div>
               )}
@@ -5113,10 +5145,11 @@ export default function TempleMapModal({
               {/* Filter Chips Bar */}
               <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
                 {[
-                  { id: 'all', label: `🌐 ទាំងអស់ (${westernToKhmerDigits(scopedTeamLiveLocations.length)})` },
-                  { id: 'walking', label: `🟢 🚶‍♂️ កំពុងដើរ (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.activity === 'walking').length)})` },
-                  { id: 'stationary', label: `🟡 🧍 នៅស្ងៀម (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.activity !== 'walking' && !m.needHelp).length)})` },
-                  { id: 'sos', label: `🚨 SOS សុំជំនួយ (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.needHelp).length)})` }
+                  { id: 'online', label: `🟢 កំពុង Online (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline).length)})` },
+                  { id: 'all', label: `🌐 គណនីទាំងអស់ (${westernToKhmerDigits(scopedTeamLiveLocations.length)})` },
+                  { id: 'walking', label: `🚶‍♂️ កំពុងដើរ (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline && m.activity === 'walking').length)})` },
+                  { id: 'stationary', label: `🟡 🧍 នៅស្ងៀម (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline && m.activity !== 'walking' && !m.needHelp).length)})` },
+                  { id: 'sos', label: `🚨 SOS (${westernToKhmerDigits(scopedTeamLiveLocations.filter((m) => m.isOnline && m.needHelp).length)})` }
                 ].map((f) => (
                   <button
                     key={f.id}
@@ -5142,9 +5175,10 @@ export default function TempleMapModal({
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-80 overflow-y-auto pr-1">
                   {scopedTeamLiveLocations
                     .filter((m) => {
-                      if (teamFilter === 'walking') return m.activity === 'walking';
-                      if (teamFilter === 'stationary') return m.activity !== 'walking' && !m.needHelp;
-                      if (teamFilter === 'sos') return Boolean(m.needHelp);
+                      if (teamFilter === 'online') return m.isOnline;
+                      if (teamFilter === 'walking') return m.isOnline && m.activity === 'walking';
+                      if (teamFilter === 'stationary') return m.isOnline && m.activity !== 'walking' && !m.needHelp;
+                      if (teamFilter === 'sos') return m.isOnline && Boolean(m.needHelp);
                       return true;
                     })
                     .map((member) => {
@@ -5160,7 +5194,9 @@ export default function TempleMapModal({
                           className={`p-3 rounded-xl border transition-all flex flex-col justify-between gap-2.5 ${
                             isSos
                               ? 'bg-rose-950/40 border-rose-500/80 shadow-rose-950/50 shadow-lg'
-                              : 'bg-slate-900/90 border-slate-800 hover:border-emerald-500/50 shadow-md'
+                              : member.isOnline
+                              ? 'bg-slate-900/90 border-slate-800 hover:border-emerald-500/50 shadow-md'
+                              : 'bg-slate-950/60 border-slate-800/60 opacity-60'
                           }`}
                         >
                           {/* Top row: Avatar + Name + Status */}
@@ -5184,29 +5220,37 @@ export default function TempleMapModal({
 
                             {/* Status pill & GPS source badge */}
                             <div className="flex items-center gap-1 shrink-0">
-                              {member.isAutoGps ? (
-                                <span className="px-1.5 py-0.5 rounded bg-sky-950/80 border border-sky-500/50 text-sky-300 text-[10px] font-bold flex items-center gap-0.5" title="ទីតាំងមកពី GPS ផ្កាយរណបទូរស័ព្ទផ្ទាល់">
-                                  <Radio className="w-2.5 h-2.5 text-sky-400 animate-pulse" />
-                                  <span>Auto GPS</span>
+                              {!member.isOnline ? (
+                                <span className="px-2 py-0.5 rounded-md bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-bold">
+                                  ⚪ ក្រៅបណ្តាញ
                                 </span>
                               ) : (
-                                <span className="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 text-[10px]" title="ទីតាំងដៅលើ Map ដោយដៃ">
-                                  📍 ដៅដោយដៃ
-                                </span>
-                              )}
+                                <>
+                                  {member.isAutoGps ? (
+                                    <span className="px-1.5 py-0.5 rounded bg-sky-950/80 border border-sky-500/50 text-sky-300 text-[10px] font-bold flex items-center gap-0.5" title="ទីតាំងមកពី GPS ផ្កាយរណបទូរស័ព្ទផ្ទាល់">
+                                      <Radio className="w-2.5 h-2.5 text-sky-400 animate-pulse" />
+                                      <span>Auto GPS</span>
+                                    </span>
+                                  ) : (
+                                    <span className="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 text-[10px]" title="ទីតាំងដៅលើ Map ដោយដៃ">
+                                      📍 ដៅដោយដៃ
+                                    </span>
+                                  )}
 
-                              {isSos ? (
-                                <span className="px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black animate-pulse">
-                                  🚨 SOS
-                                </span>
-                              ) : member.activity === 'walking' ? (
-                                <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">
-                                  🚶‍♂️ កំពុងដើរ
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">
-                                  🧍 នៅស្ងៀម
-                                </span>
+                                  {isSos ? (
+                                    <span className="px-2 py-0.5 rounded-md bg-rose-500 text-white text-[10px] font-black animate-pulse">
+                                      🚨 SOS
+                                    </span>
+                                  ) : member.activity === 'walking' ? (
+                                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold">
+                                      🚶‍♂️ កំពុងដើរ
+                                    </span>
+                                  ) : (
+                                    <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold">
+                                      🧍 នៅស្ងៀម
+                                    </span>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>
@@ -5220,7 +5264,9 @@ export default function TempleMapModal({
                               </span>
                             </div>
                             <span className="text-[10px] text-slate-500 shrink-0">
-                              ({member.x}%, {member.y}%)
+                              {member.x != null && member.y != null
+                                ? `(${member.x}%, ${member.y}%)`
+                                : '(ក្រៅបណ្តាញ)'}
                             </span>
                           </div>
 
@@ -5229,14 +5275,22 @@ export default function TempleMapModal({
                             <button
                               type="button"
                               onClick={() => {
-                                centerPinOnMap({ x: member.x, y: member.y });
-                                setSelectedTeamMember(member);
-                                viewportRef.current?.scrollIntoView({ behavior: 'smooth' });
+                                const targetX = member.x != null ? member.x : member.defaultX;
+                                const targetY = member.y != null ? member.y : member.defaultY;
+                                if (targetX != null && targetY != null) {
+                                  centerPinOnMap({ x: targetX, y: targetY });
+                                  setSelectedTeamMember(member);
+                                  viewportRef.current?.scrollIntoView({ behavior: 'smooth' });
+                                }
                               }}
-                              className="flex-1 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] rounded-lg shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95 cursor-pointer"
+                              className={`flex-1 py-1.5 font-bold text-[11px] rounded-lg shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95 cursor-pointer ${
+                                member.isOnline
+                                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
+                                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+                              }`}
                             >
                               <Search className="w-3 h-3" />
-                              <span>🔍 រកលើ Map</span>
+                              <span>{member.isOnline ? '🔍 រកលើ Map' : '📍 ទីតាំងដើម'}</span>
                             </button>
 
                             {member.userId === currentUser?.id && !member.isAutoGps && (
