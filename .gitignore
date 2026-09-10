@@ -26,3 +26,10 @@ dist-ssr
 # Scratch archives
 *.zip
 temple_map_unzipped/
+map_full_crop.png
+z*_cluster.png
+tags_firebase.json
+tab3_firebase.json
+src/data/temple_locations_tab3_recovered.json
+video_frames/
+zone1_frames/

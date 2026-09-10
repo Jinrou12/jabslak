@@ -40,6 +40,7 @@ import {
 } from 'lucide-react';
 import {
   INITIAL_TEMPLE_LOCATIONS,
+  INITIAL_TAB3_LOCATIONS,
   TEMPLE_PALI_DIRECTIONS,
   getSavedTempleLocations,
   getSavedTab3Locations,
@@ -1830,11 +1831,6 @@ export default function TempleMapModal({
     saver(previousLocs);
     saveDeletedCategories(previousDeleted);
 
-    if (activeTab === 'interactive') {
-      setTab3Locations(previousLocs);
-      saveTab3LocationsToFirebase(previousLocs);
-    }
-
     setUndoToast('↩️ បានថយក្រោយ (Undo - Ctrl+Z)');
     setTimeout(() => setUndoToast(''), 2200);
   };
@@ -1857,11 +1853,6 @@ export default function TempleMapModal({
     setter(nextLocs);
     saver(nextLocs);
     saveDeletedCategories(nextDeleted);
-
-    if (activeTab === 'interactive') {
-      setTab3Locations(nextLocs);
-      saveTab3LocationsToFirebase(nextLocs);
-    }
 
     setUndoToast('↪️ បានទៅមុខ (Redo - Ctrl+U)');
     setTimeout(() => setUndoToast(''), 2200);
@@ -1969,9 +1960,13 @@ export default function TempleMapModal({
         if (Array.isArray(cloudLocations)) {
           if (isKhemavan && cloudLocations.length === 0) return;
           if (isKhemavan) {
-            const existingIds = new Set(cloudLocations.map((l) => String(l.id || '').trim()));
+            let locsToUse = cloudLocations;
+            if (cloudLocations.length < 50 && INITIAL_TAB3_LOCATIONS && INITIAL_TAB3_LOCATIONS.length > 50) {
+              locsToUse = INITIAL_TAB3_LOCATIONS;
+            }
+            const existingIds = new Set(locsToUse.map((l) => String(l.id || '').trim()));
             const missing = INITIAL_TEMPLE_LOCATIONS.filter((b) => !existingIds.has(String(b.id).trim()));
-            setTab3Locations(missing.length > 0 ? [...cloudLocations, ...missing] : cloudLocations);
+            setTab3Locations(missing.length > 0 ? [...locsToUse, ...missing] : locsToUse);
           } else {
             setTab3Locations(cloudLocations);
           }
@@ -3321,10 +3316,13 @@ export default function TempleMapModal({
       const updated = baseLocations.filter((l) => !idsToDelete.includes(l.id));
       setter(updated);
       saver(updated);
-      // If Tab 2 delete, also propagate to Tab 3
+      // If Tab 2 delete, safely remove only that specific landmark ID from Tab 3, preserving all tag pins
       if (activeTab === 'interactive') {
-        setTab3Locations(updated);
-        saveTab3LocationsToFirebase(updated);
+        setTab3Locations((prev3) => {
+          const filtered = prev3.filter((l) => !idsToDelete.includes(l.id));
+          saveTab3LocationsToFirebase(filtered);
+          return filtered;
+        });
       }
       setIsEditModalOpen(false);
       if (selectedLocation && (selectedLocation.id === id || idsToDelete.includes(selectedLocation.id))) {
@@ -3347,9 +3345,6 @@ export default function TempleMapModal({
         const reset = resetTempleLocations();
         setLocations(reset);
         saveTempleLocationsToFirebase(reset);
-        // Tab 2 reset also propagates to Tab 3
-        setTab3Locations(reset);
-        saveTab3LocationsToFirebase(reset);
       }
       setSelectedLocation(null);
     }
@@ -3377,10 +3372,6 @@ export default function TempleMapModal({
           const { setter, saver } = getTabDataFunctions();
           setter(list);
           saver(list);
-          if (activeTab === 'interactive') {
-            setTab3Locations(list);
-            saveTab3LocationsToFirebase(list);
-          }
           alert(`បាននាំចូលទិន្នន័យទីតាំងចំនួន ${list.length} ចំណុចដោយជោគជ័យ!`);
         }
       } catch (err) {
@@ -3549,10 +3540,6 @@ export default function TempleMapModal({
 
     setter(updated);
     saver(updated);
-    if (activeTab === 'interactive') {
-      setTab3Locations(updated);
-      saveTab3LocationsToFirebase(updated);
-    }
 
     if (newGroupManagerInput.trim()) {
       const updatedMgrs = { ...groupManagers, [name]: newGroupManagerInput.trim() };
@@ -7088,10 +7075,6 @@ export default function TempleMapModal({
                           const { setter, saver } = getTabDataFunctions();
                           setter(updatedLocations);
                           saver(updatedLocations);
-                          if (activeTab === 'interactive') {
-                            setTab3Locations(updatedLocations);
-                            saveTab3LocationsToFirebase(updatedLocations);
-                          }
                         }
                         setTagNumbersBatchInput('');
                         setBatchTagWarnings([]);
@@ -7158,10 +7141,6 @@ export default function TempleMapModal({
                                 );
                                 setter(updated);
                                 saver(updated);
-                                if (activeTab === 'interactive') {
-                                  setTab3Locations(updated);
-                                  saveTab3LocationsToFirebase(updated);
-                                }
                               }}
                               className="rounded border-slate-700 text-amber-500 focus:ring-0 shrink-0"
                             />

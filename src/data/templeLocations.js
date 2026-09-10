@@ -117,13 +117,16 @@ export function resetTempleLocations(templeId = 'khemavan') {
   return INITIAL_TEMPLE_LOCATIONS;
 }
 
+import { INITIAL_TAB3_LOCATIONS } from './initialTab3Locations';
+export { INITIAL_TAB3_LOCATIONS };
+
 // ════════════════════════════════════════════════
 // TAB 3 INDEPENDENT STORAGE (does NOT affect Tab 1 & Tab 2)
 // ════════════════════════════════════════════════
 
 /**
  * Load Tab 3 locations from LocalStorage
- * For Wat Khemavan: loads original 170 locations
+ * For Wat Khemavan: loads original 169 locations
  * For other temples: returns empty array [] so new temples start with clean map!
  */
 export function getSavedTab3Locations(templeId = 'khemavan') {
@@ -146,6 +149,10 @@ export function getSavedTab3Locations(templeId = 'khemavan') {
     if (saved) {
       const parsed = JSON.parse(saved);
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // If saved in local storage has fewer than 50 pins for Wat Khemavan (corrupted by previous bug), fallback to full 169
+        if (parsed.length < 50) {
+          return INITIAL_TAB3_LOCATIONS;
+        }
         return parsed.map((loc) => ({
           ...loc,
           category: loc.category || (loc.type === 'gate' ? '⛩️ ក្រុមខ្លោងទ្វារវត្ត' : '🏢 ក្រុមអគារ និង កុដិ')
@@ -155,7 +162,7 @@ export function getSavedTab3Locations(templeId = 'khemavan') {
   } catch (e) {
     console.error('Failed to parse Tab 3 locations from storage:', e);
   }
-  return INITIAL_TEMPLE_LOCATIONS;
+  return INITIAL_TAB3_LOCATIONS;
 }
 
 /**
@@ -180,6 +187,7 @@ export function resetTab3Locations(templeId = 'khemavan') {
     saveTab3Locations([], templeId);
     return [];
   }
-  saveTab3Locations(INITIAL_TEMPLE_LOCATIONS, 'khemavan');
-  return INITIAL_TEMPLE_LOCATIONS;
+  saveTab3Locations(INITIAL_TAB3_LOCATIONS, 'khemavan');
+  return INITIAL_TAB3_LOCATIONS;
 }
+
