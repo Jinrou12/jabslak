@@ -117,7 +117,7 @@ export function resetTempleLocations(templeId = 'khemavan') {
   return INITIAL_TEMPLE_LOCATIONS;
 }
 
-import { INITIAL_TAB3_LOCATIONS } from './initialTab3Locations';
+import { INITIAL_TAB3_LOCATIONS } from './initialTab3Locations.js';
 export { INITIAL_TAB3_LOCATIONS };
 
 // ════════════════════════════════════════════════

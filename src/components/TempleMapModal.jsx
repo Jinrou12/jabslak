@@ -1484,62 +1484,8 @@ export default function TempleMapModal({
       };
     });
 
-    // ════════ DEDUPLICATE PINS WITH SAME NAME (ទីតាំង/pin ដែលមានឈ្មោះដូចគ្នា ដាក់ pin តែ ១) ════════
-    const grouped = new Map();
-    mapped.forEach((item) => {
-      const rawOwner = item.tagOwnerName || item.displayName || item.name || '';
-      const cleanOwner = String(rawOwner)
-        .replace(/^ស្លាកលេខ\s*\S+\s*៖\s*/, '')
-        .replace(/[\u200B-\u200D\uFEFF]/g, '')
-        .trim()
-        .normalize('NFC');
-
-      const isPersonName = cleanOwner && !cleanOwner.startsWith('ស្លាក') && !cleanOwner.startsWith('ស្លាកលេខ');
-      const groupKey = isPersonName ? `name_${cleanOwner.toLowerCase()}` : `id_${item.id}`;
-
-      if (!grouped.has(groupKey)) {
-        grouped.set(groupKey, []);
-      }
-      grouped.get(groupKey).push(item);
-    });
-
-    const result = [];
-    grouped.forEach((items) => {
-      if (items.length === 1) {
-        result.push(items[0]);
-      } else {
-        const primary = items[0];
-        const allTagNumbers = [];
-        const mergedIds = [];
-
-        items.forEach((i) => {
-          mergedIds.push(i.id);
-          if (i.tagNumber) allTagNumbers.push(i.tagNumber);
-          if (i.tagNumbers && Array.isArray(i.tagNumbers)) {
-            allTagNumbers.push(...i.tagNumbers);
-          }
-        });
-
-        const mergedTagDisp = formatTagRanges(allTagNumbers) || primary.tagNumberDisplay;
-
-        const validCoords = items.filter((i) => typeof i.x === 'number' && typeof i.y === 'number' && !i.isUnpinned);
-        const avgX = validCoords.length > 0 ? validCoords.reduce((acc, curr) => acc + curr.x, 0) / validCoords.length : primary.x;
-        const avgY = validCoords.length > 0 ? validCoords.reduce((acc, curr) => acc + curr.y, 0) / validCoords.length : primary.y;
-
-        result.push({
-          ...primary,
-          id: primary.id,
-          mergedIds,
-          mergedCount: items.length,
-          x: parseFloat(avgX.toFixed(2)),
-          y: parseFloat(avgY.toFixed(2)),
-          tagNumberDisplay: mergedTagDisp,
-          tagNumbers: allTagNumbers
-        });
-      }
-    });
-
-    return result;
+    // In Tab 3 (រូបទី២), every pin represents its own pin on the map (169 authentic locations)
+    return mapped;
   }, [tab3Locations, tagLookups, isKhemavan]);
 
   // Filter out visitor tag pins from Tab 1 & Tab 2 locations so Tab 1 & Tab 2 NEVER display visitor tag pins
