@@ -860,6 +860,40 @@ export async function clearTeamSOSAlert(userId, currentData = {}, templeId = 'kh
 }
 
 /**
+ * Delete a Team Member's Live Location from Firebase & LocalStorage
+ */
+export async function deleteUserLiveLocation(userId, templeId = 'khemavan') {
+  if (!userId) return false;
+  const isKhemavan = !templeId || templeId === 'khemavan';
+  const path = isKhemavan 
+    ? `team_live_locations/${userId}` 
+    : `temples/${templeId}/team_live_locations/${userId}`;
+
+  // Optimistic local cache update
+  const localCacheKey = `TEAM_LOCATIONS_CACHE_${templeId}`;
+  try {
+    const cached = localStorage.getItem(localCacheKey);
+    let list = cached ? JSON.parse(cached) : [];
+    if (Array.isArray(list)) {
+      list = list.filter((m) => m && m.userId !== userId && m.id !== userId);
+      localStorage.setItem(localCacheKey, JSON.stringify(list));
+    }
+  } catch (e) {}
+
+  // 1. Direct REST DELETE
+  restDelete(path).catch(() => {});
+
+  // 2. Firebase SDK remove
+  if (db) {
+    try {
+      const itemRef = ref(db, path);
+      await remove(itemRef);
+    } catch (e) {}
+  }
+  return true;
+}
+
+/**
  * Subscribe to Temple GPS Calibration
  */
 export function subscribeToGpsCalibration(onDataReceived, templeId = 'khemavan') {

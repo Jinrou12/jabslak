@@ -57,6 +57,7 @@ import {
   saveGroupSettingsToFirebase as rawSaveGroupSettingsToFirebase,
   subscribeToTeamLiveLocations,
   saveUserLiveLocation,
+  deleteUserLiveLocation,
   sendTeamSOSAlert,
   clearTeamSOSAlert,
   subscribeToGpsCalibration,
@@ -66,7 +67,7 @@ import { phoneTracker } from '../utils/phoneTracker';
 import { DEFAULT_KHEMAVAN_CALIBRATION, gpsToMapCoords, getNearestLandmark, parseCoordinatesString } from '../utils/geoCalibrator.js';
 import { getTempleCustomMapImage, saveTempleCustomMapImage, compressImage } from '../utils/templeStorage';
 import { westernToKhmerDigits, khmerToWesternDigits, groupTagsByName, formatTagRanges } from '../utils/khmerSearch';
-import { getSavedUsers } from '../utils/storage';
+import { getSavedUsers, saveUsers } from '../utils/storage';
 
 // 🎨 Group Theme Palettes for Live Team Tracking Pins (Members in the same group share the EXACT same color)
 const TEAM_GROUP_PRESETS = [
@@ -1062,9 +1063,10 @@ export default function TempleMapModal({
 
   // 👥 Team Live Tracker State
   const [teamLiveLocations, setTeamLiveLocations] = useState([]);
+  const [deletedMemberIds, setDeletedMemberIds] = useState(() => new Set());
   const [showTeamTracker, setShowTeamTracker] = useState(true);
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
-  const allSavedUsers = useMemo(() => getSavedUsers(), []);
+  const allSavedUsers = useMemo(() => getSavedUsers(), [deletedMemberIds]);
 
   // 🎯 Helper to check if a user is a regular viewer (guest / user) who should not be tracked
   const isRegularUser = (u) => {
@@ -1100,6 +1102,7 @@ export default function TempleMapModal({
       // Filter registered team members strictly belonging to this zone
       const zoneTeamUsers = allSavedUsers.filter((u) => {
         if (!u || isRegularUser(u)) return false;
+        if (deletedMemberIds.has(u.id) || (u.email && deletedMemberIds.has(u.email))) return false;
         const uZone = normalizeZoneName(u.assignedZone || '');
         if (!uZone || uZone.toLowerCase() === 'all') return false;
         return uZone === targetNorm || uZone.includes(targetNorm) || targetNorm.includes(uZone);
@@ -1137,7 +1140,9 @@ export default function TempleMapModal({
     // 2. Full Temple Map Mode (Image 2)
     // Show all team members (Zone 1, Zone 2, ..., Admins, Assistants, Owner)
     // Regular users (role === 'guest' / 'user') are strictly EXCLUDED!
-    const allTeamUsers = allSavedUsers.filter((u) => u && !isRegularUser(u));
+    const allTeamUsers = allSavedUsers.filter(
+      (u) => u && !isRegularUser(u) && !deletedMemberIds.has(u.id) && (!u.email || !deletedMemberIds.has(u.email))
+    );
 
     const mappedUsers = allTeamUsers.map((user) => {
       const live = teamLiveLocations.find(
@@ -1170,12 +1175,60 @@ export default function TempleMapModal({
     // Also include any extra live location from Firebase that is NOT in allSavedUsers, as long as it's NOT a regular user
     const extraLive = teamLiveLocations.filter((l) => {
       if (!l || isRegularUser(l)) return false;
-      const alreadyMapped = mappedUsers.some((u) => u.userId === l.userId || (l.email && u.email === l.email));
+      const targetId = l.userId || l.id;
+      if (deletedMemberIds.has(targetId) || (l.email && deletedMemberIds.has(l.email))) return false;
+      const alreadyMapped = mappedUsers.some((u) => u.userId === targetId || (l.email && u.email === l.email));
       return !alreadyMapped;
     });
 
     return [...mappedUsers, ...extraLive];
-  }, [isZoneScoped, activeZoneScope, allSavedUsers, teamLiveLocations]);
+  }, [isZoneScoped, activeZoneScope, allSavedUsers, teamLiveLocations, deletedMemberIds]);
+
+  // 🗑️ Delete Team Member from Live Tracking & Saved Users
+  const handleDeleteTeamMember = async (member) => {
+    if (!member) return;
+    const memberName = member.userName || member.name || 'សមាជិក';
+    const confirmDelete = window.confirm(`តើអ្នកពិតជាចង់លុប «${memberName}» ចេញពីប្រព័ន្ធតាមដានមែនទេ?`);
+    if (!confirmDelete) return;
+
+    const targetId = member.userId || member.id;
+
+    // 1. Mark as deleted locally to update UI immediately
+    setDeletedMemberIds((prev) => {
+      const next = new Set(prev);
+      if (targetId) next.add(targetId);
+      if (member.email) next.add(member.email);
+      return next;
+    });
+
+    // 2. Remove from Firebase & local cache
+    try {
+      await deleteUserLiveLocation(targetId, currentTempleId);
+    } catch (e) {
+      console.warn('Failed to delete live location:', e);
+    }
+
+    // 3. Remove from localStorage saved users
+    try {
+      const currentUsers = getSavedUsers();
+      const filtered = currentUsers.filter(
+        (u) => u && u.id !== targetId && (!member.email || u.email !== member.email)
+      );
+      saveUsers(filtered);
+    } catch (e) {}
+
+    // 4. Remove from teamLiveLocations local state
+    setTeamLiveLocations((prev) =>
+      prev.filter((m) => m && m.userId !== targetId && m.id !== targetId && (!member.email || m.email !== member.email))
+    );
+
+    if (selectedTeamMember && (selectedTeamMember.userId === targetId || selectedTeamMember.id === targetId)) {
+      setSelectedTeamMember(null);
+    }
+
+    setUndoToast(`🗑️ បានលុប «${memberName}» ចេញពីប្រព័ន្ធតាមដានរួចរាល់`);
+    setTimeout(() => setUndoToast(''), 4000);
+  };
 
 
   // 👥 Tab 4 Team Interactive Spot Positioning State
@@ -5252,6 +5305,17 @@ export default function TempleMapModal({
                                 <span>ខល</span>
                               </a>
                             )}
+
+                            {/* Delete Team Member Button */}
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTeamMember(member)}
+                              className="px-2.5 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-rose-100 border border-rose-600/50 hover:border-rose-500 rounded-lg text-[11px] font-bold transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0 shadow-sm active:scale-95"
+                              title={`លុបសមាជិក «${member.userName || member.name}» ចេញពីប្រព័ន្ធតាមដាន`}
+                            >
+                              <Trash2 className="w-3 h-3 text-rose-400" />
+                              <span>លុប</span>
+                            </button>
                           </div>
                         </div>
                       );
