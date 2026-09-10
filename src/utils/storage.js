@@ -51,6 +51,8 @@ export const DEFAULT_USERS = [
   { id: 'u-owner', name: 'លោកប្រធាន (Owner)', email: 'owner@gmail.com', altEmail: 'thonvisal12@gmail.com', role: 'owner', templeId: 'ALL', assignedZone: 'ALL', phone: '012345678', pin: '123' },
   { id: 'u-admin-zone1', name: 'ភិក្ខុអាន់ឃ្លី (Admin ផែន១)', email: 'annkle@gmail.com', role: 'admin', templeId: 'khemavan', assignedZone: 'ផែន១ ៖ ធម្មសភា', phone: '012999888', pin: '123' },
   { id: 'u-assistant-samnang', name: 'សំណាង (Assistant ផែន១)', email: 'samnang@gmail.com', role: 'assistant', templeId: 'khemavan', assignedZone: 'ផែន១ ៖ ធម្មសភា', phone: '012112233', pin: '123' },
+  { id: 'u-admin-zone2', name: 'ព្រះគ្រូសច្ចៈ (Admin ផែន២)', email: 'zone2.admin@gmail.com', role: 'admin', templeId: 'khemavan', assignedZone: 'ផែន២ ៖ សាលាឆាន់ចាស់', phone: '012445566', pin: '123' },
+  { id: 'u-assistant-zone2', name: 'សុខា (Assistant ផែន២)', email: 'zone2.assistant@gmail.com', role: 'assistant', templeId: 'khemavan', assignedZone: 'ផែន២ ៖ សាលាឆាន់ចាស់', phone: '012778899', pin: '123' },
   { id: 'u-admin', name: 'អ្នកគ្រប់គ្រង (Admin - ខេមវ័ន)', email: 'admin@gmail.com', role: 'admin', templeId: 'khemavan', assignedZone: 'ALL', phone: '098765432', pin: '123' },
   { id: 'u-assistant', name: 'អ្នកជំនួយការ (Assistant - ខេមវ័ន)', email: 'assistant@gmail.com', role: 'assistant', templeId: 'khemavan', assignedZone: 'ALL', phone: '011223344', pin: '123' },
   { id: 'u-assistant2', name: 'អ្នកជំនួយការ (Assistion - ខេមវ័ន)', email: 'assistion@gmail.com', role: 'assistant', templeId: 'khemavan', assignedZone: 'ALL', phone: '011223344', pin: '123' }
@@ -95,10 +97,48 @@ export function getSavedUsers() {
           changed = true;
         }
 
+        const hasZone2Admin = workingList.some((u) => u.email === 'zone2.admin@gmail.com');
+        if (!hasZone2Admin) {
+          workingList.push({
+            id: 'u-admin-zone2',
+            name: 'ព្រះគ្រូសច្ចៈ (Admin ផែន២)',
+            email: 'zone2.admin@gmail.com',
+            role: 'admin',
+            templeId: 'khemavan',
+            assignedZone: 'ផែន២ ៖ សាលាឆាន់ចាស់',
+            phone: '012445566',
+            pin: '123'
+          });
+          changed = true;
+        }
+
+        const hasZone2Assistant = workingList.some((u) => u.email === 'zone2.assistant@gmail.com');
+        if (!hasZone2Assistant) {
+          workingList.push({
+            id: 'u-assistant-zone2',
+            name: 'សុខា (Assistant ផែន២)',
+            email: 'zone2.assistant@gmail.com',
+            role: 'assistant',
+            templeId: 'khemavan',
+            assignedZone: 'ផែន២ ៖ សាលាឆាន់ចាស់',
+            phone: '012778899',
+            pin: '123'
+          });
+          changed = true;
+        }
+
         const migrated = workingList.map((u) => {
           const updated = { ...u };
-          if (!updated.assignedZone) {
-            updated.assignedZone = updated.role === 'owner' ? 'ALL' : (updated.id === 'u-admin-zone1' || updated.email === 'annkle@gmail.com' ? 'ផែន១ ៖ ធម្មសភា' : 'ALL');
+          if (updated.id === 'u-admin-zone1' || updated.email === 'annkle@gmail.com') {
+            updated.assignedZone = 'ផែន១ ៖ ធម្មសភា';
+          } else if (updated.id === 'u-assistant-samnang' || updated.email === 'samnang@gmail.com') {
+            updated.assignedZone = 'ផែន១ ៖ ធម្មសភា';
+          } else if (updated.id === 'u-admin-zone2' || updated.email === 'zone2.admin@gmail.com') {
+            updated.assignedZone = 'ផែន២ ៖ សាលាឆាន់ចាស់';
+          } else if (updated.id === 'u-assistant-zone2' || updated.email === 'zone2.assistant@gmail.com') {
+            updated.assignedZone = 'ផែន២ ៖ សាលាឆាន់ចាស់';
+          } else if (!updated.assignedZone) {
+            updated.assignedZone = updated.role === 'owner' ? 'ALL' : 'ALL';
             changed = true;
           }
           if (updated.role === 'owner') {

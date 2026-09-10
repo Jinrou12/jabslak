@@ -1066,18 +1066,116 @@ export default function TempleMapModal({
   const [selectedTeamMember, setSelectedTeamMember] = useState(null);
   const allSavedUsers = useMemo(() => getSavedUsers(), []);
 
-  // 🎯 Team Live Locations strictly filtered to current zone when in Zone Scope Mode
+  // 🎯 Helper to check if a user is a regular viewer (guest / user) who should not be tracked
+  const isRegularUser = (u) => {
+    if (!u) return true;
+    if (u.role === 'guest' || u.role === 'user' || u.id === 'u-guest' || u.userId === 'u-guest') return true;
+    const name = String(u.userName || u.name || '');
+    if (name.includes('អ្នកមើលធម្មតា') || name.toLowerCase().includes('guest')) return true;
+    return false;
+  };
+
+  // 🎯 Default landmark spot for a zone
+  const getDefaultCoordsForZone = (zoneStr) => {
+    const norm = normalizeZoneName(zoneStr || '');
+    if (norm.includes('ធម្មសភា') || norm.includes('ធម្មសាលា') || norm.includes('ផែន១')) return { x: 29.02, y: 44.01, loc: 'ធម្មសភា' };
+    if (norm.includes('មុខសាលាឆាន់ចាស់') || norm.includes('ផែន៣')) return { x: 45.0, y: 62.0, loc: 'មុខសាលាឆាន់ចាស់' };
+    if (norm.includes('សាលាឆាន់') || norm.includes('ផែន២')) return { x: 39.19, y: 43.49, loc: 'សាលាសន្សំកុសល' };
+    if (norm.includes('បរិនិព្វាន') || norm.includes('វិហារ') || norm.includes('ផែន៤')) return { x: 41.08, y: 51.29, loc: 'ព្រះវិហារ' };
+    if (norm.includes('បណ្ណាល័យ') || norm.includes('ផែន៥')) return { x: 53.12, y: 51.71, loc: 'បណ្ណាល័យ' };
+    if (norm.includes('ព្រះផ្ទម') || norm.includes('ព្រះផ្ទំ') || norm.includes('ផែន៦')) return { x: 56.75, y: 39.44, loc: 'ព្រះផ្ទំ' };
+    if (norm.includes('កុដិ') || norm.includes('ផែន៧')) return { x: 30.3, y: 51.36, loc: 'មហាកុដិ' };
+    if (norm.includes('សាលារៀន') || norm.includes('វិទ្យុ') || norm.includes('ផែន៨')) return { x: 52.03, y: 43.28, loc: 'សាលារៀន' };
+    return { x: 41.08, y: 51.29, loc: 'វត្តខេមវ័ន' };
+  };
+
+  // 🎯 Team Live Locations:
+  // - In Zone Scope Mode (រូបទី១, ដែន១ : ធម្មសភា): STRICTLY only members belonging to this zone (e.g. annkle & samnang for ដែន១ -> ឃើញតែ ២នាក់ប៉ុណ្ណោះ)
+  // - In Full Temple Map Mode (រូបទី២, ផែនទីវត្ត): ALL team members across all zones (ផែន១, ផែន២, ...), strictly EXCLUDING regular users (user ធម្មតាមិនបាច់ tracking ទេ)
   const scopedTeamLiveLocations = useMemo(() => {
-    if (!isZoneScoped || !activeZoneScope) return teamLiveLocations;
-    return teamLiveLocations.filter((m) => {
-      const memberZoneNorm = normalizeZoneName(m.assignedZone || '');
-      return (
-        memberZoneNorm === activeZoneScope ||
-        memberZoneNorm.includes(activeZoneScope) ||
-        activeZoneScope.includes(memberZoneNorm)
+    // 1. Zone Scope Mode (Image 1)
+    if (isZoneScoped && activeZoneScope) {
+      const targetNorm = normalizeZoneName(activeZoneScope);
+
+      // Filter registered team members strictly belonging to this zone
+      const zoneTeamUsers = allSavedUsers.filter((u) => {
+        if (!u || isRegularUser(u)) return false;
+        const uZone = normalizeZoneName(u.assignedZone || '');
+        if (!uZone || uZone.toLowerCase() === 'all') return false;
+        return uZone === targetNorm || uZone.includes(targetNorm) || targetNorm.includes(uZone);
+      });
+
+      return zoneTeamUsers.map((user) => {
+        const live = teamLiveLocations.find(
+          (l) => l && (l.userId === user.id || (l.email && l.email === user.email) || (user.name && l.userName === user.name))
+        );
+        const defaults = getDefaultCoordsForZone(user.assignedZone || targetNorm);
+        return {
+          userId: user.id,
+          userName: user.name,
+          name: user.name,
+          role: user.role || 'assistant',
+          email: user.email,
+          phone: user.phone || '',
+          assignedZone: user.assignedZone || targetNorm,
+          locationName: live?.locationName || defaults.loc,
+          x: live?.x != null ? Number(live.x) : defaults.x,
+          y: live?.y != null ? Number(live.y) : defaults.y,
+          activity: live?.activity || 'stationary',
+          activityText: live?.activityText || 'នៅស្ងៀម',
+          speedKmh: live?.speedKmh || 0,
+          stationaryMinutes: live?.stationaryMinutes || 0,
+          needHelp: Boolean(live?.needHelp),
+          helpMessage: live?.helpMessage || '',
+          status: live?.status || 'active',
+          isAutoGps: live?.isAutoGps ?? true,
+          updatedAt: live?.updatedAt || null
+        };
+      });
+    }
+
+    // 2. Full Temple Map Mode (Image 2)
+    // Show all team members (Zone 1, Zone 2, ..., Admins, Assistants, Owner)
+    // Regular users (role === 'guest' / 'user') are strictly EXCLUDED!
+    const allTeamUsers = allSavedUsers.filter((u) => u && !isRegularUser(u));
+
+    const mappedUsers = allTeamUsers.map((user) => {
+      const live = teamLiveLocations.find(
+        (l) => l && (l.userId === user.id || (l.email && l.email === user.email) || (user.name && l.userName === user.name))
       );
+      const defaults = getDefaultCoordsForZone(user.assignedZone);
+      return {
+        userId: user.id,
+        userName: user.name,
+        name: user.name,
+        role: user.role || 'assistant',
+        email: user.email,
+        phone: user.phone || '',
+        assignedZone: user.assignedZone || 'ALL',
+        locationName: live?.locationName || defaults.loc,
+        x: live?.x != null ? Number(live.x) : defaults.x,
+        y: live?.y != null ? Number(live.y) : defaults.y,
+        activity: live?.activity || 'stationary',
+        activityText: live?.activityText || 'នៅស្ងៀម',
+        speedKmh: live?.speedKmh || 0,
+        stationaryMinutes: live?.stationaryMinutes || 0,
+        needHelp: Boolean(live?.needHelp),
+        helpMessage: live?.helpMessage || '',
+        status: live?.status || 'active',
+        isAutoGps: live?.isAutoGps ?? true,
+        updatedAt: live?.updatedAt || null
+      };
     });
-  }, [isZoneScoped, activeZoneScope, teamLiveLocations]);
+
+    // Also include any extra live location from Firebase that is NOT in allSavedUsers, as long as it's NOT a regular user
+    const extraLive = teamLiveLocations.filter((l) => {
+      if (!l || isRegularUser(l)) return false;
+      const alreadyMapped = mappedUsers.some((u) => u.userId === l.userId || (l.email && u.email === l.email));
+      return !alreadyMapped;
+    });
+
+    return [...mappedUsers, ...extraLive];
+  }, [isZoneScoped, activeZoneScope, allSavedUsers, teamLiveLocations]);
 
 
   // 👥 Tab 4 Team Interactive Spot Positioning State
@@ -3882,7 +3980,7 @@ export default function TempleMapModal({
                 title={showTeamTracker ? 'លាក់ទីតាំងក្រុមការងារលើ Map' : 'បង្ហាញទីតាំងក្រុមការងារលើ Map'}
               >
                 <Users className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="hidden sm:inline font-kantumruy">👥 ក្រុមការងារ ({westernToKhmerDigits(teamLiveLocations.length)})</span>
+                <span className="hidden sm:inline font-kantumruy">👥 ក្រុមការងារ ({westernToKhmerDigits(scopedTeamLiveLocations.length)})</span>
               </button>
             )}
 
@@ -5239,7 +5337,7 @@ export default function TempleMapModal({
                   }`}
                 >
                   <Users className="w-3.5 h-3.5" />
-                  <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(teamLiveLocations.length)})</span>
+                  <span>👥 តាមដានក្រុមការងារ ({westernToKhmerDigits(scopedTeamLiveLocations.length)})</span>
                 </button>
               </div>
             )}

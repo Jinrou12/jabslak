@@ -531,11 +531,20 @@ class PhoneTrackerManager {
    */
   async syncToFirebase(force = false) {
     if (!this.currentUser || !this.currentUser.id) return;
+    // Regular users / guests are never tracked
+    if (
+      this.currentUser.role === 'guest' ||
+      this.currentUser.role === 'user' ||
+      this.currentUser.id === 'u-guest' ||
+      String(this.currentUser.name || '').includes('អ្នកមើលធម្មតា')
+    ) {
+      return;
+    }
 
     const now = Date.now();
     const isManual = Boolean(this.manualSpot);
     const activeSpot = this.manualSpot || this.currentGpsSpot || {
-      name: this.currentUser.assignedZone || 'ធម្មសភា',
+      name: this.currentUser.assignedZone || 'វត្តខេមវ័ន',
       x: 16.15,
       y: 44.31
     };
@@ -549,8 +558,8 @@ class PhoneTrackerManager {
       userName: this.currentUser.name || this.currentUser.username || 'ក្រុមការងារ',
       role: this.currentUser.role || 'assistant',
       phone: this.currentUser.phone || '',
-      assignedZone: this.currentUser.assignedZone || 'ផែន១ ៖ ធម្មសភា',
-      locationName: activeSpot.name || this.currentUser.assignedZone || 'ធម្មសភា',
+      assignedZone: this.currentUser.assignedZone || '',
+      locationName: activeSpot.name || this.currentUser.assignedZone || 'ទីតាំងលើ Map',
       x: activeSpot.x != null ? activeSpot.x : 16.15,
       y: activeSpot.y != null ? activeSpot.y : 44.31,
       activity: this.state.activity,
