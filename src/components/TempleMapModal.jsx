@@ -982,6 +982,10 @@ export default function TempleMapModal({
   const activeMapSrc = isKhemavan ? (customMapImage || '/temple_map/map_new_latest.jpg') : customMapImage;
 
   const handleMapImageUpload = async (e) => {
+    if (!isOwner) {
+      alert('មានតែម្ចាស់ប្រព័ន្ធ (Owner) ប៉ុណ្ណោះដែលអាចផ្លាស់ប្តូររូបភាពប្លង់វត្តបាន!');
+      return;
+    }
     const file = e.target.files?.[0];
     if (!file) return;
     try {
@@ -3862,9 +3866,9 @@ export default function TempleMapModal({
             </div>
           </div>
 
-          {/* Quick Header Actions (Upload Map for Owner & Admin, Close / Back Button) */}
+          {/* Quick Header Actions (Upload Map for Owner Only, Close / Back Button) */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {(userRole === 'owner' || userRole === 'admin') && !isZoneScoped && (
+            {isOwner && !isZoneScoped && (
               <>
                 <input
                   type="file"
