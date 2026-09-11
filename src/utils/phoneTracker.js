@@ -41,6 +41,9 @@ class PhoneTrackerManager {
     this.initialLockListeners = new Set();
     this.hasInitialLocationLock = false;
     this.initialLockData = null;
+    this.filteredLat = null;
+    this.filteredLon = null;
+    this.acquiredFixCount = 0;
 
     this.currentUser = null;
     this.deviceId = getDeviceId();
@@ -136,6 +139,9 @@ class PhoneTrackerManager {
     if (this.currentUser?.id !== user.id) {
       this.hasInitialLocationLock = false;
       this.initialLockData = null;
+      this.filteredLat = null;
+      this.filteredLon = null;
+      this.acquiredFixCount = 0;
     }
     this.currentUser = user;
     this.currentTempleId = templeId;
@@ -267,6 +273,10 @@ class PhoneTrackerManager {
       this.calibrationUnsub = null;
     }
 
+    this.filteredLat = null;
+    this.filteredLon = null;
+    this.acquiredFixCount = 0;
+
     this.notify();
   }
 
@@ -382,6 +392,15 @@ class PhoneTrackerManager {
     if (!pos || !pos.coords) return;
     const { latitude, longitude, accuracy, speed } = pos.coords;
     const now = Date.now();
+    const acc = typeof accuracy === 'number' && !isNaN(accuracy) ? accuracy : 999;
+    this.acquiredFixCount = (this.acquiredFixCount || 0) + 1;
+
+    // 1. Initial Accuracy Gate (Prevents wild jumping during GPS cold start)
+    // Mobile browsers often start with cached/cell tower location with accuracy 40m - 500m.
+    // We skip wildly inaccurate initial readings to let true satellite GPS settle (with a 4-attempt fallback for indoors).
+    if (!this.hasInitialLocationLock && acc > 35 && this.acquiredFixCount < 4) {
+      return;
+    }
 
     let calculatedSpeedKmh = 0;
     let hasMoved = false;
@@ -392,7 +411,6 @@ class PhoneTrackerManager {
         hasMoved = true;
       }
     } else if (this.prevPosition) {
-      // Calculate distance from previous position
       const distMeters = getHaversineDistanceMeters(
         this.prevPosition.latitude,
         this.prevPosition.longitude,
@@ -400,19 +418,49 @@ class PhoneTrackerManager {
         longitude
       );
       const timeSec = (now - this.prevPosition.time) / 1000;
-      if (timeSec > 1) {
+      if (timeSec > 0.5) {
         const estSpeedMs = distMeters / timeSec;
         calculatedSpeedKmh = estSpeedMs * 3.6;
-        if (distMeters > 2.5 && calculatedSpeedKmh > 1.2 && calculatedSpeedKmh < 25) {
+        if (distMeters > 4.0 && calculatedSpeedKmh > 1.2 && calculatedSpeedKmh < 25) {
           hasMoved = true;
         }
       }
     }
 
+    // 2. Kalman / Low-Pass Filter (EMA) & Stationary Deadband
+    let effectiveLat = latitude;
+    let effectiveLon = longitude;
+
+    if (this.filteredLat == null || this.filteredLon == null) {
+      this.filteredLat = latitude;
+      this.filteredLon = longitude;
+    } else {
+      const distFromFiltered = getHaversineDistanceMeters(
+        this.filteredLat,
+        this.filteredLon,
+        latitude,
+        longitude
+      );
+
+      // Deadband: when stationary and displacement is within GPS noise threshold (< 6.5m),
+      // DO NOT shift coordinates! Lock the pin solidly in place to eliminate jitter!
+      if (!hasMoved && distFromFiltered < 6.5) {
+        effectiveLat = this.filteredLat;
+        effectiveLon = this.filteredLon;
+      } else {
+        // Adaptive smoothing: responsive when moving, stable when slow
+        const alpha = hasMoved ? 0.55 : 0.25;
+        this.filteredLat = this.filteredLat * (1 - alpha) + latitude * alpha;
+        this.filteredLon = this.filteredLon * (1 - alpha) + longitude * alpha;
+        effectiveLat = this.filteredLat;
+        effectiveLon = this.filteredLon;
+      }
+    }
+
     this.prevPosition = { latitude, longitude, time: now };
 
-    // 🛰️ Georeferencing: Map real GPS (lat, lon) -> JPEG map percentage (x%, y%)
-    const mapped = gpsToMapCoords(latitude, longitude, this.gpsCalibration);
+    // 🛰️ Georeferencing: Map smoothed real GPS (lat, lon) -> JPEG map percentage (x%, y%)
+    const mapped = gpsToMapCoords(effectiveLat, effectiveLon, this.gpsCalibration);
     let landmark = null;
     if (mapped) {
       landmark = getNearestLandmark(mapped.x, mapped.y);
@@ -432,8 +480,8 @@ class PhoneTrackerManager {
         y: mapped ? mapped.y : this.state.y,
         locationName: landmark ? landmark.name : this.state.locationName,
         name: landmark ? landmark.name : this.state.locationName,
-        latitude,
-        longitude,
+        latitude: effectiveLat,
+        longitude: effectiveLon,
         accuracy,
         user: this.currentUser,
         timestamp: Date.now()
@@ -451,11 +499,11 @@ class PhoneTrackerManager {
 
     if (!this.state.isManualOverride) {
       const isWalking = hasMoved || this.checkMotionSensorWalking();
-      this.updateActivityState(isWalking, calculatedSpeedKmh, latitude, longitude, accuracy);
+      this.updateActivityState(isWalking, calculatedSpeedKmh, effectiveLat, effectiveLon, accuracy);
     } else {
-      this.state.latitude = latitude;
-      this.state.longitude = longitude;
-      this.state.accuracy = accuracy;
+      this.state.latitude = effectiveLat;
+      this.state.longitude = effectiveLon;
+      if (accuracy != null) this.state.accuracy = accuracy;
       this.notify();
     }
   }

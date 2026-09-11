@@ -14,7 +14,7 @@ import { INITIAL_TEMPLE_LOCATIONS } from '../data/templeLocations.js';
 export const KHEMAVAN_GROUND_TRUTH_LANDMARKS = [
   { id: '៧',  name: 'ព្រះវិហារ',                     x: 41.08, y: 51.29, lat: 11.984897224889126, lon: 105.44128741684511 },
   { id: '១',  name: 'ធម្មសាលាសភា',                  x: 29.02, y: 44.01, lat: 11.985295923766817, lon: 105.44040696655021 },
-  { id: '៣',  name: 'កុដិសាឡុម',                     x: 28.70, y: 62.19, lat: 11.984335338472055, lon: 105.44038781554987 },
+  { id: '៣',  name: 'កុដិសាឡុម',                     x: 28.70, y: 62.19, lat: 11.984580, lon: 105.440547 },
   { id: '៤',  name: 'កុដិតូច',                       x: 23.41, y: 38.51, lat: 11.985678125492388, lon: 105.43985659031111 },
   { id: '៥',  name: 'កុដិថ្មី',                      x: 29.11, y: 32.69, lat: 11.986019814960358, lon: 105.44036462168334 },
   { id: '៦',  name: 'កុដិគ្រូធំ',                   x: 33.90, y: 32.28, lat: 11.986008683406926, lon: 105.44067566540645 },
@@ -58,8 +58,8 @@ export const DEFAULT_KHEMAVAN_CALIBRATION = {
     name: 'កុដិសាឡុម',
     x: 28.70,
     y: 62.19,
-    lat: 11.984335338472055,
-    lon: 105.44038781554987
+    lat: 11.984580,
+    lon: 105.440547
   },
   updatedAt: new Date().toISOString()
 };
@@ -103,6 +103,25 @@ export function parseCoordinatesString(input) {
  * Guarantees 0.000% error at all 21 authentic landmark buildings and smooth continuous transitions everywhere else.
  */
 export function predictKhemavanMapCoords(lat, lon) {
+  // Find closest landmark building first
+  let nearestLm = null;
+  let minLmDist = 99999;
+
+  for (const lm of KHEMAVAN_GROUND_TRUTH_LANDMARKS) {
+    const dLat = (lat - lm.lat) * 111320;
+    const dLon = (lon - lm.lon) * 111320 * KHEMAVAN_COS_LAT;
+    const distMeters = Math.hypot(dLat, dLon);
+    if (distMeters < minLmDist) {
+      minLmDist = distMeters;
+      nearestLm = lm;
+    }
+  }
+
+  // Exact snap if inside / within building vicinity (<= 20 meters)
+  if (nearestLm && minLmDist <= 20.0) {
+    return { x: nearestLm.x, y: nearestLm.y };
+  }
+
   const u = (lon - KHEMAVAN_REF_LON) * KHEMAVAN_COS_LAT;
   const v = lat - KHEMAVAN_REF_LAT;
   const baseUx = KHEMAVAN_AFFINE_X[0] * u + KHEMAVAN_AFFINE_X[1] * v + KHEMAVAN_AFFINE_X[2];
@@ -116,11 +135,6 @@ export function predictKhemavanMapCoords(lat, lon) {
     const dLat = (lat - lm.lat) * 111320;
     const dLon = (lon - lm.lon) * 111320 * KHEMAVAN_COS_LAT;
     const distMeters = Math.hypot(dLat, dLon);
-
-    // Exact snap if within building vicinity (<= 14 meters)
-    if (distMeters <= 14.0) {
-      return { x: lm.x, y: lm.y };
-    }
 
     // 25-meter smooth Gaussian influence kernel
     const w = Math.exp(-0.5 * Math.pow(distMeters / 25, 2));

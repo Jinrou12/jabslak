@@ -4729,7 +4729,8 @@ export default function TempleMapModal({
                               position: 'absolute',
                               left: `${member.x}%`,
                               top: `${member.y}%`,
-                              zIndex: isSos ? 99 : (isMe || isSelected ? 80 : 45)
+                              zIndex: isSos ? 99 : (isMe || isSelected ? 80 : 45),
+                              transition: 'left 0.75s cubic-bezier(0.25, 1, 0.5, 1), top 0.75s cubic-bezier(0.25, 1, 0.5, 1)'
                             }}
                             className={`-translate-x-1/2 -translate-y-1/2 cursor-pointer group select-none flex flex-col items-center ${
                               isSettingMySpot ? 'pointer-events-none' : 'pointer-events-auto'
